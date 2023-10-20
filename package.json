@@ -1,0 +1,31 @@
+{
+  "name": "jman-bitburner-scripts",
+  "version": "1.0.0",
+  "scripts": {
+    "watch:transpile": "tsc -w --preserveWatchOutput",
+    "watch:local": "node sync/watch.js",
+    "watch:remote": "bitburner-filesync",
+    "watch:init": "node sync/init.js",
+    "watch:all": "concurrently npm:watch:transpile npm:watch:local npm:watch:remote",
+    "watch": "npm run watch:init && npm run watch:all",
+    "lint": "gts lint",
+    "clean": "gts clean",
+    "compile": "tsc",
+    "fix": "gts fix"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.18",
+    "@types/react-dom": "^18.2.7",
+    "@typescript-eslint/eslint-plugin": "^5.35.1",
+    "@typescript-eslint/parser": "^5.35.1",
+    "bitburner-filesync": "^1.1.5",
+    "chokidar": "^3.5.3",
+    "concurrently": "^7.4.0",
+    "eslint": "^8.22.0",
+    "fast-glob": "^3.2.12",
+    "sync-directory": "^5.1.7",
+    "typescript": "^5.2.0",
+    "gts": "^5.2.0",
+    "@types/node": "20.8.2"
+  }
+}
