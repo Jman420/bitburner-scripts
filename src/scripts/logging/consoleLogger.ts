@@ -1,4 +1,4 @@
-import { NS } from "@ns";
+import {NS} from '@ns';
 
 class ConsoleLogger {
   readonly netscript: NS;

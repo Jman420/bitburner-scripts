@@ -1,9 +1,9 @@
-import { NS } from "@ns";
+import {NS} from '@ns';
 
-import { ScriptLogger } from "/scripts/logging/scriptLogger";
-import { TerminalLogger } from "/scripts/logging/terminalLogger";
-import { NoopLooger } from "/scripts/logging/noopLogger";
-import { ConsoleLogger } from "/scripts/logging/consoleLogger";
+import {ScriptLogger} from '/scripts/logging/scriptLogger';
+import {TerminalLogger} from '/scripts/logging/terminalLogger';
+import {NoopLooger} from '/scripts/logging/noopLogger';
+import {ConsoleLogger} from '/scripts/logging/consoleLogger';
 
 type Logger = ConsoleLogger | ScriptLogger | TerminalLogger | NoopLooger;
 
@@ -11,7 +11,7 @@ enum LoggerMode {
   CONSOLE,
   SCRIPT,
   TERMINAL,
-  NOOP
+  NOOP,
 }
 
 class LogWritersManager {
@@ -23,18 +23,15 @@ class LogWritersManager {
   }
 
   public getLogger(netscript: NS, moduleName: string) {
-    var logWriter = LogWritersManager.loggersMap.get(moduleName);
+    let logWriter = LogWritersManager.loggersMap.get(moduleName);
     if (!logWriter) {
       if (this.loggerMode === LoggerMode.CONSOLE) {
         logWriter = new ConsoleLogger(netscript, moduleName);
-      }
-      else if (this.loggerMode === LoggerMode.SCRIPT) {
+      } else if (this.loggerMode === LoggerMode.SCRIPT) {
         logWriter = new ScriptLogger(netscript, moduleName);
-      }
-      else if (this.loggerMode === LoggerMode.TERMINAL) {
+      } else if (this.loggerMode === LoggerMode.TERMINAL) {
         logWriter = new TerminalLogger(netscript, moduleName);
-      }
-      else {
+      } else {
         logWriter = new NoopLooger(netscript, moduleName);
       }
       LogWritersManager.loggersMap.set(moduleName, logWriter);

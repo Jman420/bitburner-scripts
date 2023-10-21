@@ -11,7 +11,10 @@
     "lint": "gts lint",
     "clean": "gts clean",
     "compile": "tsc",
-    "fix": "gts fix"
+    "fix": "gts fix",
+    "prepare": "npm.cmd run compile",
+    "pretest": "npm.cmd run compile",
+    "posttest": "npm.cmd run lint"
   },
   "devDependencies": {
     "@types/react": "^18.2.18",
@@ -24,7 +27,7 @@
     "eslint": "^8.22.0",
     "fast-glob": "^3.2.12",
     "sync-directory": "^5.1.7",
-    "typescript": "^5.2.0",
+    "typescript": "~5.2.0",
     "gts": "^5.2.0",
     "@types/node": "20.8.2"
   }

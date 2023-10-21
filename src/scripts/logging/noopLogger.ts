@@ -1,4 +1,4 @@
-import { NS } from "@ns";
+import {NS} from '@ns';
 
 class NoopLooger {
   readonly netscript: NS;
@@ -9,6 +9,7 @@ class NoopLooger {
     this.moduleName = moduleName;
   }
 
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   public writeLine(msg: string) {}
 }
 
