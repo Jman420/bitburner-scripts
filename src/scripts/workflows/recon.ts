@@ -13,12 +13,24 @@ interface ServerDetails {
   rootAccess: boolean;
 }
 
-function scanNetwork(netscript: NS) {
+function scanLocalNetwork(netscript: NS, includeHome: boolean = false) {
   const availableHosts = netscript.scan();
-  
   const homeServerIndex = availableHosts.indexOf(HOME_SERVER_NAME);
-  if (homeServerIndex) {
+  if (!includeHome && homeServerIndex) {
     availableHosts.splice(homeServerIndex, 1);
+  }
+
+  return availableHosts;
+}
+
+function scanWideNetwork(netscript: NS, includeHome: boolean = false) {
+  const availableHosts = [ HOME_SERVER_NAME ];
+  for (var hostCounter = 0; hostCounter < availableHosts.length; hostCounter++) {
+    netscript.scan(availableHosts[hostCounter]).forEach(host => !availableHosts.includes(host) ? availableHosts.push(host) : false);
+  }
+  availableHosts.shift();
+  if (includeHome) {
+    availableHosts.push(HOME_SERVER_NAME);
   }
 
   return availableHosts;
@@ -69,4 +81,4 @@ function analyzeServer(netscript: NS, hostname: string) {
   return result;
 }
 
-export {ServerDetails, scanNetwork, getAvailableRam, canRunScript, maxScriptThreads, analyzeServer};
+export {ServerDetails, scanLocalNetwork, scanWideNetwork, getAvailableRam, canRunScript, maxScriptThreads, analyzeServer};

@@ -14,11 +14,9 @@ const CMD_ARGS_SCHEMA: [string, string | number | boolean | string[]][] = [
   [CMD_ARG_SCRIPT_ARGS, []]
 ];
 
-const logWriterManager = new LogWritersManager();
-
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = logWriterManager.getLogger(netscript, 'delay-script-runner');
+  const logWriter = new LogWritersManager().getLogger(netscript, 'delay-script-runner');
   logWriter.writeLine('Delay Script Runner');
   logWriter.writeLine(SECTION_DIVIDER);
 

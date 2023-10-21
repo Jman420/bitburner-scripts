@@ -18,7 +18,7 @@ class LogWritersManager {
   static readonly loggersMap = new Map<string, ScriptLogger | TerminalLogger>();
   readonly loggerMode: LoggerMode;
 
-  constructor(loggerMode: LoggerMode = LoggerMode.CONSOLE) {
+  constructor(loggerMode: LoggerMode = LoggerMode.NOOP) {
     this.loggerMode = loggerMode;
   }
 

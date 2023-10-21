@@ -3,16 +3,14 @@ import { NS } from "@ns";
 import { LogWritersManager, Logger } from "/scripts/logging/loggerManager";
 import { ENTRY_DIVIDER, SECTION_DIVIDER, logServerDetails } from "/scripts/logging/logOutput";
 
-import { scanNetwork, analyzeServer } from "/scripts/workflows/recon";
+import { scanLocalNetwork, analyzeServer } from "/scripts/workflows/recon";
 import { obtainRoot } from "/scripts/workflows/escalation";
 import { growWeakenHack } from "/scripts/workflows/attack";
 import { infiniteLoop } from "/scripts/workflows/shared";
 
-const logWriterManager = new LogWritersManager();
-
 async function attackNetwork(netscript: NS, logWriter: Logger) {
-  const hosts = scanNetwork(netscript);
-  logWriter.writeLine(`Found ${hosts.length} available servers`);
+  const hosts = scanLocalNetwork(netscript);
+  logWriter.writeLine(`Found ${hosts.length} available hosts`);
 
   for (const hostname of hosts) {
     logWriter.writeLine(ENTRY_DIVIDER);
@@ -41,7 +39,7 @@ async function attackNetwork(netscript: NS, logWriter: Logger) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = logWriterManager.getLogger(netscript, 'local-gwh-attack');
+  const logWriter = new LogWritersManager().getLogger(netscript, 'gwh-attack');
   logWriter.writeLine('Local Network Grow-Weaken-Hack Attack');
   logWriter.writeLine(`Local Host : ${netscript.getHostname()}`);
   logWriter.writeLine(SECTION_DIVIDER);

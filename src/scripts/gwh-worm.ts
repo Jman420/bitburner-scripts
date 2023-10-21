@@ -4,7 +4,7 @@ import { Logger, LogWritersManager } from "/scripts/logging/loggerManager";
 import { ENTRY_DIVIDER, SECTION_DIVIDER } from "/scripts/logging/logOutput";
 import { LOGGING_PACKAGE } from "/scripts/logging/package";
 
-import { maxScriptThreads, scanNetwork } from "/scripts/workflows/recon";
+import { maxScriptThreads, scanLocalNetwork } from "/scripts/workflows/recon";
 import { obtainRoot } from "/scripts/workflows/escalation";
 import { copyFiles, runScript, spawnScript } from "/scripts/workflows/propagation";
 import { getCmdArgFlag, randomIntWithinRange } from "/scripts/workflows/shared";
@@ -12,18 +12,16 @@ import { WORKFLOWS_PACKAGE } from "/scripts/workflows/package";
 
 import { CMD_ARG_DELAY, CMD_ARG_SCRIPT_PATH, CMD_ARG_THREAD_COUNT } from "/scripts/delay-script-runner";
 
-const WORM_SCRIPT = '/scripts/local-gwh-worm.js';
-const ATTACK_SCRIPT = '/scripts/local-gwh-attack.js';
+const WORM_SCRIPT = '/scripts/gwh-worm.js';
+const ATTACK_SCRIPT = '/scripts/gwh-attack.js';
 const RUNNER_SCRIPT = '/scripts/delay-script-runner.js';
 const RUNNER_SCRIPT_MIN_DELAY = 1;
 const RUNNER_SCRIPT_MAX_DELAY = 100;
 
 const PAYLOAD_PACKAGE = [ WORM_SCRIPT, RUNNER_SCRIPT, ATTACK_SCRIPT ];
 
-const logWriterManager = new LogWritersManager();
-
 async function attackNetwork(netscript: NS, logWriter: Logger) {
-  const hosts = scanNetwork(netscript);
+  const hosts = scanLocalNetwork(netscript);
   logWriter.writeLine(`Found ${hosts.length} available servers`);
 
   for (const hostname of hosts) {
@@ -43,7 +41,6 @@ async function attackNetwork(netscript: NS, logWriter: Logger) {
         await copyFiles(netscript, LOGGING_PACKAGE, hostname);
         logWriter.writeLine('  Copying Payload Scripts...');
         await copyFiles(netscript, PAYLOAD_PACKAGE, hostname);
-        
         logWriter.writeLine('  Running Worm Script...');
         if (!runScript(netscript, WORM_SCRIPT, hostname, false)) {
           logWriter.writeLine('  Worm Execution Failed!');
@@ -55,7 +52,7 @@ async function attackNetwork(netscript: NS, logWriter: Logger) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = logWriterManager.getLogger(netscript, 'local-gwh-worm');
+  const logWriter = new LogWritersManager().getLogger(netscript, 'gwh-worm');
   const hostname = netscript.getHostname();
   logWriter.writeLine('Local Grow-Weaken-Hack Attack Worm');
   logWriter.writeLine(`Local Host : ${hostname}`);
