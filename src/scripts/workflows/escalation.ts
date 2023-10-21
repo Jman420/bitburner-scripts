@@ -15,7 +15,7 @@ function obtainRoot(netscript: NS, hostname: string) {
     ['FTPCrack.exe', netscript.ftpcrack],
     ['relaySMTP.exe', netscript.relaysmtp],
     ['HTTPWorm.exe', netscript.httpworm],
-    ['SQLInject.exe', netscript.sqlinject]
+    ['SQLInject.exe', netscript.sqlinject],
   ]);
   let rootAccess = netscript.hasRootAccess(hostname);
 

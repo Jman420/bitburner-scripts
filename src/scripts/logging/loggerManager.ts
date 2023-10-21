@@ -22,7 +22,7 @@ class LogWritersManager {
     this.loggerMode = loggerMode;
   }
 
-  public getLogger(netscript: NS, moduleName: string) {
+  public getLogger(netscript: NS, moduleName: string): Logger {
     let logWriter = LogWritersManager.loggersMap.get(moduleName);
     if (!logWriter) {
       if (this.loggerMode === LoggerMode.CONSOLE) {

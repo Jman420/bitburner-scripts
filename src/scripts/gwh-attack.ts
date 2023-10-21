@@ -49,5 +49,5 @@ export async function main(netscript: NS) {
   logWriter.writeLine(`Local Host : ${netscript.getHostname()}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
-  await infiniteLoop(attackNetwork, netscript, logWriter);
+  await infiniteLoop(netscript, attackNetwork, netscript, logWriter);
 }
