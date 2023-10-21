@@ -13,6 +13,9 @@ function obtainRoot(netscript: NS, hostname: string) {
   const ESCALATION_TOOLS = new Map<string, ToolFunction>([
     ['BruteSSH.exe', netscript.brutessh],
     ['FTPCrack.exe', netscript.ftpcrack],
+    ['relaySMTP.exe', netscript.relaysmtp],
+    ['HTTPWorm.exe', netscript.httpworm],
+    ['SQLInject.exe', netscript.sqlinject]
   ]);
   let rootAccess = netscript.hasRootAccess(hostname);
 
