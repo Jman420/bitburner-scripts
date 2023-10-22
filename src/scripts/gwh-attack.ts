@@ -9,7 +9,14 @@ import {
 
 import {scanLocalNetwork, analyzeServer} from '/scripts/workflows/recon';
 import {growWeakenHack} from '/scripts/workflows/attack';
-import {infiniteLoop} from '/scripts/workflows/shared';
+import {SCRIPTS_PATH, infiniteLoop} from '/scripts/workflows/shared';
+import {LOGGING_PACKAGE} from '/scripts/logging/package';
+import {WORKFLOWS_PACKAGE} from '/scripts/workflows/package';
+
+const ATTACK_SCRIPT = `${SCRIPTS_PATH}/gwh-attack.js`;
+const PAYLOAD_PACKAGE = [ATTACK_SCRIPT]
+  .concat(LOGGING_PACKAGE)
+  .concat(WORKFLOWS_PACKAGE);
 
 const CMD_ARG_TARGETS = 'targets';
 const CMD_ARG_SECURITY_LIMIT_MULTIPLIER = 'securityLimitMultiplier';
@@ -17,10 +24,16 @@ const CMD_ARGS_FUNDS_LIMIT_MULTIPLIER = 'fundsLimitMultiplier';
 const CMD_ARGS_SCHEMA: [string, string | number | boolean | string[]][] = [
   [CMD_ARG_TARGETS, []],
   [CMD_ARG_SECURITY_LIMIT_MULTIPLIER, 1],
-  [CMD_ARGS_FUNDS_LIMIT_MULTIPLIER, 1]
+  [CMD_ARGS_FUNDS_LIMIT_MULTIPLIER, 1],
 ];
 
-async function attackNetwork(netscript: NS, logWriter: Logger, targetHosts: string[] = [], securityLimitMultiplier = 1, fundsLimitMultiplier = 1) {
+async function attackNetwork(
+  netscript: NS,
+  logWriter: Logger,
+  targetHosts: string[] = [],
+  securityLimitMultiplier = 1,
+  fundsLimitMultiplier = 1
+) {
   if (!targetHosts) {
     targetHosts = scanLocalNetwork(netscript, false, true);
   }
@@ -37,7 +50,12 @@ async function attackNetwork(netscript: NS, logWriter: Logger, targetHosts: stri
     logServerDetails(logWriter, serverDetails);
 
     logWriter.writeLine('  Grow-Weaken-Hack Attacking Server...');
-    await growWeakenHack(netscript, serverDetails, securityLimitMultiplier, fundsLimitMultiplier);
+    await growWeakenHack(
+      netscript,
+      serverDetails,
+      securityLimitMultiplier,
+      fundsLimitMultiplier
+    );
   }
 }
 
@@ -51,7 +69,8 @@ export async function main(netscript: NS) {
   logWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = netscript.flags(CMD_ARGS_SCHEMA);
   const targetHosts = cmdArgs.targets.valueOf() as string[];
-  const securityLimitMultiplier = cmdArgs.securityLimitMultiplier.valueOf() as number;
+  const securityLimitMultiplier =
+    cmdArgs.securityLimitMultiplier.valueOf() as number;
   const fundsLimitMultiplier = cmdArgs.fundsLimitMultiplier.valueOf() as number;
 
   logWriter.writeLine(`Target Hosts : ${targetHosts}`);
@@ -59,5 +78,21 @@ export async function main(netscript: NS) {
   logWriter.writeLine(`Funds Limit Multiplier : ${fundsLimitMultiplier}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
-  await infiniteLoop(netscript, attackNetwork, netscript, logWriter, targetHosts, securityLimitMultiplier, fundsLimitMultiplier);
+  await infiniteLoop(
+    netscript,
+    attackNetwork,
+    netscript,
+    logWriter,
+    targetHosts,
+    securityLimitMultiplier,
+    fundsLimitMultiplier
+  );
 }
+
+export {
+  ATTACK_SCRIPT,
+  PAYLOAD_PACKAGE,
+  CMD_ARG_TARGETS,
+  CMD_ARG_SECURITY_LIMIT_MULTIPLIER,
+  CMD_ARGS_FUNDS_LIMIT_MULTIPLIER,
+};

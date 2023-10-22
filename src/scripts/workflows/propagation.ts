@@ -14,10 +14,7 @@ function runScript(
   maxThreads = true,
   ...args: (string | number | boolean)[]
 ) {
-  const logWriter = getLogger(
-    netscript,
-    `propagation.${runScript.name}`
-  );
+  const logWriter = getLogger(netscript, `propagation.${runScript.name}`);
   const serverName = hostname ?? netscript.getHostname();
   if (netscript.isRunning(scriptName, serverName)) {
     logWriter.writeLine(
@@ -47,10 +44,7 @@ function spawnScript(
   maxThreads = true,
   ...args: (string | number | boolean)[]
 ) {
-  const logWriter = getLogger(
-    netscript,
-    `propagation.${spawnScript.name}`
-  );
+  const logWriter = getLogger(netscript, `propagation.${spawnScript.name}`);
   const serverName = netscript.getHostname();
   if (netscript.isRunning(scriptName, serverName)) {
     logWriter.writeLine(

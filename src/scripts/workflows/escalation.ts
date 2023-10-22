@@ -24,10 +24,7 @@ function getRootTools(netscript: NS) {
 }
 
 function obtainRoot(netscript: NS, hostname: string) {
-  const logWriter = getLogger(
-    netscript,
-    `escalation.${obtainRoot.name}`
-  );
+  const logWriter = getLogger(netscript, `escalation.${obtainRoot.name}`);
   let rootAccess = netscript.hasRootAccess(hostname);
 
   if (!rootAccess) {

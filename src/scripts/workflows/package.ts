@@ -1,4 +1,6 @@
-const PATH = '/scripts/workflows';
+import { SCRIPTS_PATH } from "/scripts/workflows/shared";
+
+const PATH = `${SCRIPTS_PATH}/workflows`;
 const WORKFLOWS_PACKAGE = [
   `${PATH}/package.js`,
   `${PATH}/attack.js`,

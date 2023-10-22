@@ -1,4 +1,6 @@
-const PATH = '/scripts/logging';
+import { SCRIPTS_PATH } from "/scripts/workflows/shared";
+
+const PATH = `${SCRIPTS_PATH}/logging`;
 const LOGGING_PACKAGE = [
   `${PATH}/package.js`,
   `${PATH}/loggerManager.js`,

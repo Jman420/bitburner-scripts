@@ -14,7 +14,11 @@ enum LoggerMode {
   NOOP,
 }
 
-function getLogger(netscript: NS, moduleName: string, loggerMode = LoggerMode.NOOP): Logger {
+function getLogger(
+  netscript: NS,
+  moduleName: string,
+  loggerMode = LoggerMode.NOOP
+): Logger {
   let result: Logger;
   if (loggerMode === LoggerMode.CONSOLE) {
     result = new ConsoleLogger(netscript, moduleName);

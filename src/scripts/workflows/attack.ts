@@ -9,10 +9,7 @@ async function growWeakenHack(
   securityLimitMultiplier = 1,
   fundsLimitMultiplier = 1
 ) {
-  const logWriter = getLogger(
-    netscript,
-    `attack.${growWeakenHack.name}`
-  );
+  const logWriter = getLogger(netscript, `attack.${growWeakenHack.name}`);
   if (!serverDetails.rootAccess) {
     logWriter.writeLine(
       'Cannot perform Grow-Weaken-Hack attack; root access required.'

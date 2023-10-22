@@ -13,8 +13,14 @@ interface ServerDetails {
   rootAccess: boolean;
 }
 
-function scanLocalNetwork(netscript: NS, includeHome = false, rootOnly = false) {
-  const availableHosts = netscript.scan().filter(host => !rootOnly || (rootOnly && netscript.hasRootAccess(host)));
+function scanLocalNetwork(
+  netscript: NS,
+  includeHome = false,
+  rootOnly = false
+) {
+  const availableHosts = netscript
+    .scan()
+    .filter(host => !rootOnly || (rootOnly && netscript.hasRootAccess(host)));
   const homeServerIndex = availableHosts.indexOf(HOME_SERVER_NAME);
   if (!includeHome && homeServerIndex) {
     availableHosts.splice(homeServerIndex, 1);
@@ -30,7 +36,7 @@ function scanWideNetwork(netscript: NS, includeHome = false, rootOnly = false) {
       .scan(hostname)
       .filter(host => !rootOnly || (rootOnly && netscript.hasRootAccess(host)))
       .forEach(host =>
-        !availableHosts.includes(host) ? availableHosts.push(host) : false
+        !availableHosts.includes(host) ? availableHosts.push(host) : undefined
       );
   }
   availableHosts.shift();

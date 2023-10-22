@@ -1,14 +1,11 @@
 import {NS} from '@ns';
 
-import {getLogger} from '/scripts/logging/loggerManager';
+import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {scanWideNetwork} from '/scripts/workflows/recon';
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(
-    netscript,
-    'kill-all-scripts'
-  );
+  const logWriter = getLogger(netscript, 'kill-all-scripts', LoggerMode.TERMINAL);
   logWriter.writeLine('Kill All Scripts on All Hosts');
 
   logWriter.writeLine('Scanning wide network for all hosts...');

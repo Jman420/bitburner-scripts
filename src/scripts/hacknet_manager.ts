@@ -97,10 +97,7 @@ async function manageOrdersAndPurchases(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(
-    netscript,
-    'hacknet-manager'
-  );
+  const logWriter = getLogger(netscript, 'hacknet-manager');
   logWriter.writeLine('Hacknet Purchase Manager');
   logWriter.writeLine(SECTION_DIVIDER);
 

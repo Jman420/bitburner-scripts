@@ -3,6 +3,7 @@ import {NS} from '@ns';
 type LoopableFunction = (...args: any[]) => Promise<void>;
 type SleepFunction = (milliseconds: number) => Promise<true>;
 
+const SCRIPTS_PATH = '/scripts';
 const CMD_ARG_PREFIX = '--';
 const HOME_SERVER_NAME = 'home';
 const MIN_LOOP_DELAY_MILLISEC = 1;
@@ -44,6 +45,7 @@ async function infiniteLoop(
 export {
   LoopableFunction,
   SleepFunction,
+  SCRIPTS_PATH,
   CMD_ARG_PREFIX,
   HOME_SERVER_NAME,
   MIN_LOOP_DELAY_MILLISEC,
