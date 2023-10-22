@@ -1,7 +1,7 @@
 import {NS} from '@ns';
 
 import {getLogger} from '/scripts/logging/loggerManager';
-import {HOME_SERVER_NAME} from '/scripts/workflows/shared';
+import {HOME_SERVER_NAME} from '/scripts/common/shared';
 
 type ToolFunction = (server: string) => void;
 
@@ -45,4 +45,9 @@ function obtainRoot(netscript: NS, hostname: string) {
   return rootAccess;
 }
 
-export {getRootTools, obtainRoot};
+function installBackdoor(netscript: NS, hostname: string) {
+  netscript.singularity.connect(hostname);
+  netscript.singularity.installBackdoor();
+}
+
+export {getRootTools, obtainRoot, installBackdoor};

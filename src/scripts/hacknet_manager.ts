@@ -1,9 +1,10 @@
 import {Hacknet, NS} from '@ns';
 
 import {Logger, getLogger} from '/scripts/logging/loggerManager';
-import {HacknetOrder, getNodeUpgradeOrders} from '/scripts/workflows/hacknet';
-import {delayedInfiniteLoop} from '/scripts/workflows/shared';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
+
+import {delayedInfiniteLoop} from '/scripts/workflows/execution';
+import {HacknetOrder, getNodeUpgradeOrders} from '/scripts/workflows/hacknet';
 
 const LOOP_DELAY_MILLISEC = 5000;
 

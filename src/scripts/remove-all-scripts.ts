@@ -5,7 +5,11 @@ import {scanWideNetwork} from '/scripts/workflows/recon';
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'remove-all-scripts', LoggerMode.TERMINAL);
+  const logWriter = getLogger(
+    netscript,
+    'remove-all-scripts',
+    LoggerMode.TERMINAL
+  );
   logWriter.writeLine('Remove All Scripts on All Hosts');
 
   logWriter.writeLine('Scanning wide network for all hosts...');

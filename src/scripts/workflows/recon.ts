@@ -1,6 +1,6 @@
 import {NS} from '@ns';
 
-import {HOME_SERVER_NAME} from '/scripts/workflows/shared';
+import {HOME_SERVER_NAME} from '/scripts/common/shared';
 
 interface ServerDetails {
   hostname: string;
@@ -45,6 +45,18 @@ function scanWideNetwork(netscript: NS, includeHome = false, rootOnly = false) {
   }
 
   return availableHosts;
+}
+
+function scoreHost(netscript: NS, hostname: string) {
+  // TODO (JMG) : Implement Host Scoring Logic
+  return 0;
+}
+
+function sortOptimalTargetHosts(netscript: NS, targetHosts: string[]) {
+  targetHosts.sort(
+    (hostname1, hostname2) =>
+      scoreHost(netscript, hostname1) - scoreHost(netscript, hostname2)
+  );
 }
 
 function getAvailableRam(netscript: NS, hostname: string) {
@@ -109,6 +121,7 @@ export {
   ServerDetails,
   scanLocalNetwork,
   scanWideNetwork,
+  sortOptimalTargetHosts,
   getAvailableRam,
   canRunScript,
   maxScriptThreads,

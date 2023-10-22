@@ -1,6 +1,6 @@
-import {ScriptLogger} from './scriptLogger';
-import {TerminalLogger} from './terminalLogger';
-import {ServerDetails} from '../workflows/recon';
+import {ScriptLogger} from '/scripts/logging/scriptLogger';
+import {TerminalLogger} from '/scripts/logging/terminalLogger';
+import {ServerDetails} from '/scripts/workflows/recon';
 
 const LOG_WINDOW_CHAR_WIDTH = 50;
 const SECTION_DIVIDER = '*'.repeat(LOG_WINDOW_CHAR_WIDTH);

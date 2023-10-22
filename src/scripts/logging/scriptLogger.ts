@@ -8,7 +8,16 @@ class ScriptLogger {
     this.netscript = netscript;
     this.moduleName = moduleName;
 
-    const enabledLogging = ['weaken', 'grow', 'hack', 'exec', 'run', 'spawn'];
+    const enabledLogging = [
+      'weaken',
+      'grow',
+      'hack',
+      'exec',
+      'run',
+      'spawn',
+      'sleep',
+      'asleep',
+    ];
     this.netscript.disableLog('ALL');
     for (const loggedFunc of enabledLogging) {
       this.netscript.enableLog(loggedFunc);

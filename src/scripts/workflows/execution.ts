@@ -1,20 +1,23 @@
 import {NS} from '@ns';
 
-type LoopableFunction = (...args: any[]) => Promise<void>;
-type SleepFunction = (milliseconds: number) => Promise<true>;
+import {randomIntWithinRange} from '/scripts/common/shared';
 
-const SCRIPTS_PATH = '/scripts';
-const CMD_ARG_PREFIX = '--';
-const HOME_SERVER_NAME = 'home';
+type GrowWeakenHackFunction = (host: string) => Promise<number>;
+type LoopableFunction = (...args: any[]) => Promise<void>;
+
 const MIN_LOOP_DELAY_MILLISEC = 1;
 const MAX_LOOP_DELAY_MILLISEC = 100;
 
-function getCmdArgFlag(cmdArgName: string) {
-  return `${CMD_ARG_PREFIX}${cmdArgName}`;
-}
-
-function randomIntWithinRange(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1) + min);
+async function runGWH(
+  netscript: NS,
+  gwhFunc: GrowWeakenHackFunction,
+  targetHosts: string[],
+  delay = 0
+) {
+  await netscript.sleep(delay);
+  for (const hostname of targetHosts) {
+    await gwhFunc(hostname);
+  }
 }
 
 async function delayedInfiniteLoop(
@@ -43,15 +46,11 @@ async function infiniteLoop(
 }
 
 export {
+  GrowWeakenHackFunction,
   LoopableFunction,
-  SleepFunction,
-  SCRIPTS_PATH,
-  CMD_ARG_PREFIX,
-  HOME_SERVER_NAME,
   MIN_LOOP_DELAY_MILLISEC,
   MAX_LOOP_DELAY_MILLISEC,
-  getCmdArgFlag,
-  randomIntWithinRange,
+  runGWH,
   delayedInfiniteLoop,
   infiniteLoop,
 };

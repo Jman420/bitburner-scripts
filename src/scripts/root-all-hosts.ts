@@ -2,6 +2,7 @@ import {NS} from '@ns';
 
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
+
 import {scanWideNetwork} from '/scripts/workflows/recon';
 import {getRootTools, obtainRoot} from '/scripts/workflows/escalation';
 
