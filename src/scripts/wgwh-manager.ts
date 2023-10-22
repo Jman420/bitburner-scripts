@@ -1,6 +1,6 @@
 import {NS} from '@ns';
 
-import {CmdArgsSchema} from '/scripts/common/shared';
+import {CmdArgsSchema, removeEmptyString} from '/scripts/common/shared';
 
 import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
@@ -63,7 +63,7 @@ export async function main(netscript: NS) {
   logWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = netscript.flags(CMD_ARGS_SCHEMA);
   const targetHostsCsv = cmdArgs.targetsCsv.valueOf() as string;
-  const targetHosts = targetHostsCsv.split(',');
+  const targetHosts = targetHostsCsv.split(',').filter(removeEmptyString);
   const onlyOptimal = cmdArgs.onlyOptimal.valueOf() as boolean;
   const securityLimitMultiplier =
     cmdArgs.securityLimitMultiplier.valueOf() as number;

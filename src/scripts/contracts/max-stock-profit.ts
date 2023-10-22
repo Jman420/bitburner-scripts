@@ -1,6 +1,6 @@
 import {NS} from '@ns';
 
-import {CmdArgsSchema} from '/scripts/common/shared';
+import {CmdArgsSchema, removeEmptyString} from '/scripts/common/shared';
 
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
@@ -26,7 +26,10 @@ export async function main(netscript: NS) {
   const cmdArgs = netscript.flags(CMD_ARGS_SCHEMA);
   const maxTransactions = cmdArgs.maxTransactions.valueOf() as number;
   const stockPricesCsv = cmdArgs.stockPricesCsv.valueOf() as string;
-  const stockPrices = stockPricesCsv.split(',').map(Number);
+  const stockPrices = stockPricesCsv
+    .split(',')
+    .filter(removeEmptyString)
+    .map(Number);
 
   logWriter.writeLine(`Max Transactions : ${maxTransactions}`);
   logWriter.writeLine(`Stock Prices : ${stockPrices}`);

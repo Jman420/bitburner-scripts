@@ -1,8 +1,12 @@
 import {NS} from '@ns';
 
-import {CmdArgsSchema, SCRIPTS_PATH} from '/scripts/common/shared';
+import {
+  CmdArgsSchema,
+  SCRIPTS_PATH,
+  removeEmptyString,
+} from '/scripts/common/shared';
 
-import {Logger, getLogger} from '/scripts/logging/loggerManager';
+import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {
   ENTRY_DIVIDER,
   SECTION_DIVIDER,
@@ -39,7 +43,7 @@ async function attackNetwork(
   securityLimitMultiplier = 1,
   fundsLimitMultiplier = 1
 ) {
-  if (!targetHosts) {
+  if (!targetHosts.length) {
     targetHosts = scanLocalNetwork(netscript, false, true);
   }
   logWriter.writeLine(`Found ${targetHosts.length} available hosts`);
@@ -66,7 +70,7 @@ async function attackNetwork(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'gwh-attack');
+  const logWriter = getLogger(netscript, 'gwh-attack', LoggerMode.CONSOLE);
   logWriter.writeLine('Local Network Grow-Weaken-Hack Attack');
   logWriter.writeLine(`Local Host : ${netscript.getHostname()}`);
   logWriter.writeLine(SECTION_DIVIDER);
@@ -74,7 +78,7 @@ export async function main(netscript: NS) {
   logWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = netscript.flags(CMD_ARGS_SCHEMA);
   const targetHostsCsv = cmdArgs.targetsCsv.valueOf() as string;
-  const targetHosts = targetHostsCsv.split(',');
+  const targetHosts = targetHostsCsv.split(',').filter(removeEmptyString);
   const securityLimitMultiplier =
     cmdArgs.securityLimitMultiplier.valueOf() as number;
   const fundsLimitMultiplier = cmdArgs.fundsLimitMultiplier.valueOf() as number;

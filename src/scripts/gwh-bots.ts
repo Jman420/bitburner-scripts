@@ -63,7 +63,7 @@ export async function main(netscript: NS) {
         hostname,
         true,
         CMD_ARG_TARGETS_CSV,
-        targetHosts.join(' '),
+        targetHosts.join(','),
         CMD_ARG_SECURITY_LIMIT_MULTIPLIER,
         securityLimitMultiplier,
         CMD_ARGS_FUNDS_LIMIT_MULTIPLIER,
