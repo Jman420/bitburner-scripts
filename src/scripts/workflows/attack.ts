@@ -1,6 +1,6 @@
 import {NS} from '@ns';
 
-import {LogWritersManager} from '/scripts/logging/loggerManager';
+import {getLogger} from '/scripts/logging/loggerManager';
 import {ServerDetails} from '/scripts/workflows/recon';
 
 async function growWeakenHack(
@@ -9,7 +9,7 @@ async function growWeakenHack(
   securityLimitMultiplier = 1,
   fundsLimitMultiplier = 1
 ) {
-  const logWriter = new LogWritersManager().getLogger(
+  const logWriter = getLogger(
     netscript,
     `attack.${growWeakenHack.name}`
   );

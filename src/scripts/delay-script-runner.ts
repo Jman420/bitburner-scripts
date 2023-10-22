@@ -1,6 +1,6 @@
 import {NS} from '@ns';
 
-import {LogWritersManager} from '/scripts/logging/loggerManager';
+import {getLogger} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 const CMD_ARG_SCRIPT_PATH = 'scriptPath';
@@ -16,7 +16,7 @@ const CMD_ARGS_SCHEMA: [string, string | number | boolean | string[]][] = [
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = new LogWritersManager().getLogger(
+  const logWriter = getLogger(
     netscript,
     'delay-script-runner'
   );

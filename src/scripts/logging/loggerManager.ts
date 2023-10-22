@@ -14,30 +14,17 @@ enum LoggerMode {
   NOOP,
 }
 
-class LogWritersManager {
-  static readonly loggersMap = new Map<string, ScriptLogger | TerminalLogger>();
-  readonly loggerMode: LoggerMode;
-
-  constructor(loggerMode: LoggerMode = LoggerMode.NOOP) {
-    this.loggerMode = loggerMode;
+function getLogger(netscript: NS, moduleName: string, loggerMode = LoggerMode.NOOP): Logger {
+  let result: Logger;
+  if (loggerMode === LoggerMode.CONSOLE) {
+    result = new ConsoleLogger(netscript, moduleName);
+  } else if (loggerMode === LoggerMode.SCRIPT) {
+    result = new ScriptLogger(netscript, moduleName);
+  } else if (loggerMode === LoggerMode.TERMINAL) {
+    result = new TerminalLogger(netscript, moduleName);
+  } else {
+    result = new NoopLooger(netscript, moduleName);
   }
-
-  public getLogger(netscript: NS, moduleName: string): Logger {
-    let logWriter = LogWritersManager.loggersMap.get(moduleName);
-    if (!logWriter) {
-      if (this.loggerMode === LoggerMode.CONSOLE) {
-        logWriter = new ConsoleLogger(netscript, moduleName);
-      } else if (this.loggerMode === LoggerMode.SCRIPT) {
-        logWriter = new ScriptLogger(netscript, moduleName);
-      } else if (this.loggerMode === LoggerMode.TERMINAL) {
-        logWriter = new TerminalLogger(netscript, moduleName);
-      } else {
-        logWriter = new NoopLooger(netscript, moduleName);
-      }
-      LogWritersManager.loggersMap.set(moduleName, logWriter);
-    }
-    return logWriter;
-  }
+  return result;
 }
-
-export {Logger, LoggerMode, LogWritersManager};
+export {Logger, LoggerMode, getLogger};

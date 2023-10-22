@@ -1,11 +1,11 @@
 import {NS} from '@ns';
 
-import {LogWritersManager} from '/scripts/logging/loggerManager';
+import {getLogger} from '/scripts/logging/loggerManager';
 import {scanWideNetwork} from '/scripts/workflows/recon';
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = new LogWritersManager().getLogger(
+  const logWriter = getLogger(
     netscript,
     'remove-all-scripts'
   );

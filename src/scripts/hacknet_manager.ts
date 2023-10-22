@@ -1,6 +1,6 @@
 import {Hacknet, NS} from '@ns';
 
-import {LogWritersManager, Logger} from '/scripts/logging/loggerManager';
+import {Logger, getLogger} from '/scripts/logging/loggerManager';
 import {HacknetOrder, getNodeUpgradeOrders} from '/scripts/workflows/hacknet';
 import {delayedInfiniteLoop} from '/scripts/workflows/shared';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
@@ -97,7 +97,7 @@ async function manageOrdersAndPurchases(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = new LogWritersManager().getLogger(
+  const logWriter = getLogger(
     netscript,
     'hacknet-manager'
   );

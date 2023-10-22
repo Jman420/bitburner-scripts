@@ -1,6 +1,6 @@
 import {NS} from '@ns';
 
-import {LogWritersManager} from '/scripts/logging/loggerManager';
+import {getLogger} from '/scripts/logging/loggerManager';
 import {canRunScript, maxScriptThreads} from '/scripts/workflows/recon';
 
 function copyFiles(netscript: NS, filePaths: string[], hostname: string) {
@@ -14,7 +14,7 @@ function runScript(
   maxThreads = true,
   ...args: (string | number | boolean)[]
 ) {
-  const logWriter = new LogWritersManager().getLogger(
+  const logWriter = getLogger(
     netscript,
     `propagation.${runScript.name}`
   );
@@ -47,7 +47,7 @@ function spawnScript(
   maxThreads = true,
   ...args: (string | number | boolean)[]
 ) {
-  const logWriter = new LogWritersManager().getLogger(
+  const logWriter = getLogger(
     netscript,
     `propagation.${spawnScript.name}`
   );

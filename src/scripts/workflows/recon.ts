@@ -13,8 +13,8 @@ interface ServerDetails {
   rootAccess: boolean;
 }
 
-function scanLocalNetwork(netscript: NS, includeHome = false) {
-  const availableHosts = netscript.scan();
+function scanLocalNetwork(netscript: NS, includeHome = false, rootOnly = false) {
+  const availableHosts = netscript.scan().filter(host => !rootOnly || (rootOnly && netscript.hasRootAccess(host)));
   const homeServerIndex = availableHosts.indexOf(HOME_SERVER_NAME);
   if (!includeHome && homeServerIndex) {
     availableHosts.splice(homeServerIndex, 1);
@@ -23,15 +23,12 @@ function scanLocalNetwork(netscript: NS, includeHome = false) {
   return availableHosts;
 }
 
-function scanWideNetwork(netscript: NS, includeHome = false) {
+function scanWideNetwork(netscript: NS, includeHome = false, rootOnly = false) {
   const availableHosts = [HOME_SERVER_NAME];
-  for (
-    let hostCounter = 0;
-    hostCounter < availableHosts.length;
-    hostCounter++
-  ) {
+  for (const hostname of availableHosts) {
     netscript
-      .scan(availableHosts[hostCounter])
+      .scan(hostname)
+      .filter(host => !rootOnly || (rootOnly && netscript.hasRootAccess(host)))
       .forEach(host =>
         !availableHosts.includes(host) ? availableHosts.push(host) : false
       );

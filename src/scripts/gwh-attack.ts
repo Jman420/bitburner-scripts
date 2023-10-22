@@ -1,6 +1,6 @@
 import {NS} from '@ns';
 
-import {LogWritersManager, Logger} from '/scripts/logging/loggerManager';
+import {Logger, getLogger} from '/scripts/logging/loggerManager';
 import {
   ENTRY_DIVIDER,
   SECTION_DIVIDER,
@@ -8,12 +8,20 @@ import {
 } from '/scripts/logging/logOutput';
 
 import {scanLocalNetwork, analyzeServer} from '/scripts/workflows/recon';
-import {obtainRoot} from '/scripts/workflows/escalation';
 import {growWeakenHack} from '/scripts/workflows/attack';
 import {infiniteLoop} from '/scripts/workflows/shared';
 
+const CMD_ARG_TARGETS = 'targets';
+const CMD_ARG_SECURITY_LIMIT_MULTIPLIER = 'securityLimitMultiplier';
+const CMD_ARGS_FUNDS_LIMIT_MULTIPLIER = 'fundsLimitMultiplier';
+const CMD_ARGS_SCHEMA: [string, string | number | boolean | string[]][] = [
+  [CMD_ARG_TARGETS, []],
+  [CMD_ARG_SECURITY_LIMIT_MULTIPLIER, 1],
+  [CMD_ARGS_FUNDS_LIMIT_MULTIPLIER, 1]
+];
+
 async function attackNetwork(netscript: NS, logWriter: Logger) {
-  const hosts = scanLocalNetwork(netscript);
+  const hosts = scanLocalNetwork(netscript, false, true);
   logWriter.writeLine(`Found ${hosts.length} available hosts`);
 
   for (const hostname of hosts) {
@@ -26,27 +34,27 @@ async function attackNetwork(netscript: NS, logWriter: Logger) {
     logWriter.writeLine(`  Player Level : ${playerLevel}`);
     logServerDetails(logWriter, serverDetails);
 
-    if (!serverDetails.rootAccess) {
-      logWriter.writeLine('  Obtaining Root...');
-      serverDetails.rootAccess = obtainRoot(netscript, hostname);
-    }
-
-    if (serverDetails.rootAccess) {
-      logWriter.writeLine('  Grow-Weaken-Hack Attacking Server...');
-      await growWeakenHack(netscript, serverDetails);
-    } else {
-      logWriter.writeLine(
-        '  Unable to Grow-Weaken-Hack Attack ; No root access'
-      );
-    }
+    logWriter.writeLine('  Grow-Weaken-Hack Attacking Server...');
+    await growWeakenHack(netscript, serverDetails);
   }
 }
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = new LogWritersManager().getLogger(netscript, 'gwh-attack');
+  const logWriter = getLogger(netscript, 'gwh-attack');
   logWriter.writeLine('Local Network Grow-Weaken-Hack Attack');
   logWriter.writeLine(`Local Host : ${netscript.getHostname()}`);
+  logWriter.writeLine(SECTION_DIVIDER);
+
+  logWriter.writeLine('Parsing command line arguments...');
+  const cmdArgs = netscript.flags(CMD_ARGS_SCHEMA);
+  const targetHosts = cmdArgs.targets.valueOf() as string[];
+  const securityLimitMultiplier = cmdArgs.securityLimitMultiplier.valueOf() as number;
+  const fundsLimitMultiplier = cmdArgs.fundsLimitMultiplier.valueOf() as number;
+
+  logWriter.writeLine(`Target Hosts : ${targetHosts}`);
+  logWriter.writeLine(`Security Limit Multiplier : ${securityLimitMultiplier}`);
+  logWriter.writeLine(`Funds Limit Multiplier : ${fundsLimitMultiplier}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
   await infiniteLoop(netscript, attackNetwork, netscript, logWriter);

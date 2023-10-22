@@ -1,15 +1,11 @@
 import {NS} from '@ns';
 
-import {LogWritersManager} from '/scripts/logging/loggerManager';
+import {getLogger} from '/scripts/logging/loggerManager';
 import {HOME_SERVER_NAME} from '/scripts/workflows/shared';
 
 type ToolFunction = (server: string) => void;
 
-function obtainRoot(netscript: NS, hostname: string) {
-  const logWriter = new LogWritersManager().getLogger(
-    netscript,
-    `escalation.${obtainRoot.name}`
-  );
+function getRootTools(netscript: NS) {
   const ESCALATION_TOOLS = new Map<string, ToolFunction>([
     ['BruteSSH.exe', netscript.brutessh],
     ['FTPCrack.exe', netscript.ftpcrack],
@@ -17,16 +13,30 @@ function obtainRoot(netscript: NS, hostname: string) {
     ['HTTPWorm.exe', netscript.httpworm],
     ['SQLInject.exe', netscript.sqlinject],
   ]);
+
+  const availableTools = new Array<ToolFunction>();
+  for (const [toolexe, tool] of ESCALATION_TOOLS) {
+    if (netscript.fileExists(toolexe, HOME_SERVER_NAME)) {
+      availableTools.push(tool);
+    }
+  }
+  return availableTools;
+}
+
+function obtainRoot(netscript: NS, hostname: string) {
+  const logWriter = getLogger(
+    netscript,
+    `escalation.${obtainRoot.name}`
+  );
   let rootAccess = netscript.hasRootAccess(hostname);
 
   if (!rootAccess) {
     const requiredPorts = netscript.getServerNumPortsRequired(hostname);
-    if (requiredPorts <= ESCALATION_TOOLS.size) {
+    const availableTools = getRootTools(netscript);
+    if (requiredPorts <= availableTools.length) {
       logWriter.writeLine('Opening required ports to obtain root access...');
-      for (const [toolexe, tool] of ESCALATION_TOOLS) {
-        if (netscript.fileExists(toolexe, HOME_SERVER_NAME)) {
-          tool(hostname);
-        }
+      for (const tool of availableTools) {
+        tool(hostname);
       }
       netscript.nuke(hostname);
       rootAccess = netscript.hasRootAccess(hostname);
@@ -38,4 +48,4 @@ function obtainRoot(netscript: NS, hostname: string) {
   return rootAccess;
 }
 
-export {obtainRoot};
+export {getRootTools, obtainRoot};

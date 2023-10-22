@@ -1,6 +1,6 @@
 import {NS} from '@ns';
 
-import {Logger, LogWritersManager} from '/scripts/logging/loggerManager';
+import {getLogger, Logger} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 import {LOGGING_PACKAGE} from '/scripts/logging/package';
 
@@ -63,7 +63,7 @@ async function attackNetwork(netscript: NS, logWriter: Logger) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = new LogWritersManager().getLogger(netscript, 'gwh-worm');
+  const logWriter = getLogger(netscript, 'gwh-worm');
   const hostname = netscript.getHostname();
   logWriter.writeLine('Local Grow-Weaken-Hack Attack Worm');
   logWriter.writeLine(`Local Host : ${hostname}`);

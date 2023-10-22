@@ -1,12 +1,12 @@
 import {NS} from '@ns';
 
-import {LogWritersManager, LoggerMode} from '/scripts/logging/loggerManager';
+import {getLogger} from '/scripts/logging/loggerManager';
 import {scanWideNetwork} from '/scripts/workflows/recon';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = new LogWritersManager(LoggerMode.TERMINAL).getLogger(
+  const logWriter = getLogger(
     netscript,
     'find-contracts'
   );
