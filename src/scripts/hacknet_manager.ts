@@ -3,6 +3,7 @@ import {Hacknet, NS} from '@ns';
 import {LogWritersManager, Logger} from '/scripts/logging/loggerManager';
 import {HacknetOrder, getNodeUpgradeOrders} from '/scripts/workflows/hacknet';
 import {delayedInfiniteLoop} from '/scripts/workflows/shared';
+import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 const LOOP_DELAY_MILLISEC = 5000;
 
@@ -91,6 +92,7 @@ async function manageOrdersAndPurchases(
       `Successfully updated upgrade cost for ${orderDetails.resource} on node ${orderDetails.nodeIndex}.`
     );
   }
+  logWriter.writeLine(ENTRY_DIVIDER);
 }
 
 /** @param {NS} netscript */
@@ -100,12 +102,14 @@ export async function main(netscript: NS) {
     'hacknet-manager'
   );
   logWriter.writeLine('Hacknet Purchase Manager');
+  logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Initializing Hacknet Upgrade Orders...');
   const upgradeOrders = initializeUpgradeOrders(netscript.hacknet);
   logWriter.writeLine(
     `Found ${upgradeOrders.length} available Hacknet Upgrades.`
   );
+  logWriter.writeLine(ENTRY_DIVIDER);
 
   await delayedInfiniteLoop(
     netscript,
