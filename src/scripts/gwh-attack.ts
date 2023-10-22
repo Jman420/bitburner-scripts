@@ -20,11 +20,13 @@ const CMD_ARGS_SCHEMA: [string, string | number | boolean | string[]][] = [
   [CMD_ARGS_FUNDS_LIMIT_MULTIPLIER, 1]
 ];
 
-async function attackNetwork(netscript: NS, logWriter: Logger) {
-  const hosts = scanLocalNetwork(netscript, false, true);
-  logWriter.writeLine(`Found ${hosts.length} available hosts`);
+async function attackNetwork(netscript: NS, logWriter: Logger, targetHosts: string[] = [], securityLimitMultiplier = 1, fundsLimitMultiplier = 1) {
+  if (!targetHosts) {
+    targetHosts = scanLocalNetwork(netscript, false, true);
+  }
+  logWriter.writeLine(`Found ${targetHosts.length} available hosts`);
 
-  for (const hostname of hosts) {
+  for (const hostname of targetHosts) {
     logWriter.writeLine(ENTRY_DIVIDER);
     logWriter.writeLine('Getting Player Level...');
     const playerLevel = netscript.getHackingLevel();
@@ -35,7 +37,7 @@ async function attackNetwork(netscript: NS, logWriter: Logger) {
     logServerDetails(logWriter, serverDetails);
 
     logWriter.writeLine('  Grow-Weaken-Hack Attacking Server...');
-    await growWeakenHack(netscript, serverDetails);
+    await growWeakenHack(netscript, serverDetails, securityLimitMultiplier, fundsLimitMultiplier);
   }
 }
 
@@ -57,5 +59,5 @@ export async function main(netscript: NS) {
   logWriter.writeLine(`Funds Limit Multiplier : ${fundsLimitMultiplier}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
-  await infiniteLoop(netscript, attackNetwork, netscript, logWriter);
+  await infiniteLoop(netscript, attackNetwork, netscript, logWriter, targetHosts, securityLimitMultiplier, fundsLimitMultiplier);
 }
