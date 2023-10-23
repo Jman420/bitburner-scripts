@@ -9,32 +9,75 @@ interface ServerDetails {
   availableFunds: number;
   maxFunds: number;
   requiredPorts: number;
-  requiredLevel: number;
-  rootAccess: boolean;
+  hackLevel: number;
+  hackTime: number;
+  growRate: number;
+  growTime: number;
+  weakenTime: number;
+}
+
+interface MeanScoreValues {
+  hackLevel: number;
+  hackTime: number;
+  maxFunds: number;
+  growRate: number;
+  growTime: number;
+  weakenTime: number;
+}
+
+interface DeviationScoreValues {
+  hackLevel: number;
+  hackTime: number;
+  maxFunds: number;
+  growRate: number;
+  growTime: number;
+  weakenTime: number;
+}
+
+interface WeightScoreValues {
+  hackLevel: number;
+  hackTime: number;
+  maxFunds: number;
+  growRate: number;
+  growTime: number;
+  weakenTime: number;
 }
 
 function scanLocalNetwork(
   netscript: NS,
+  hostname?: string,
   includeHome = false,
   rootOnly = false
 ) {
   const availableHosts = netscript
-    .scan()
+    .scan(hostname)
     .filter(host => !rootOnly || (rootOnly && netscript.hasRootAccess(host)));
   const homeServerIndex = availableHosts.indexOf(HOME_SERVER_NAME);
-  if (!includeHome && homeServerIndex) {
+  if (!includeHome && homeServerIndex > -1) {
     availableHosts.splice(homeServerIndex, 1);
   }
 
   return availableHosts;
 }
 
-function scanWideNetwork(netscript: NS, includeHome = false, rootOnly = false) {
+function scanWideNetwork(
+  netscript: NS,
+  includeHome = false,
+  rootOnly = false,
+  requireRam = false
+) {
   const availableHosts = [HOME_SERVER_NAME];
   for (const hostname of availableHosts) {
     netscript
       .scan(hostname)
-      .filter(host => !rootOnly || (rootOnly && netscript.hasRootAccess(host)))
+      .filter(
+        host =>
+          !rootOnly ||
+          (rootOnly &&
+            netscript.hasRootAccess(host) &&
+            (!requireRam ||
+              (requireRam && netscript.getServerMaxRam(host) > 0)))
+      )
       .forEach(host =>
         !availableHosts.includes(host) ? availableHosts.push(host) : undefined
       );
@@ -47,15 +90,171 @@ function scanWideNetwork(netscript: NS, includeHome = false, rootOnly = false) {
   return availableHosts;
 }
 
-function scoreHost(netscript: NS, hostname: string) {
-  // TODO (JMG) : Implement Host Scoring Logic
-  return 0;
+function getMeanScoreValues(targetsAnalysis: ServerDetails[]): MeanScoreValues {
+  const accumulator = {
+    hackLevel: 0,
+    hackTime: 0,
+    maxFunds: 0,
+    growRate: 0,
+    growTime: 0,
+    weakenTime: 0,
+  };
+  targetsAnalysis.forEach(value => {
+    accumulator.hackLevel += value.hackLevel;
+    accumulator.hackTime += value.hackTime;
+    accumulator.maxFunds += value.maxFunds;
+    accumulator.growRate += value.growRate;
+    accumulator.growTime += value.growTime;
+    accumulator.weakenTime += value.weakenTime;
+  });
+  const totalElements = targetsAnalysis.length;
+  return {
+    hackLevel: accumulator.hackLevel / totalElements,
+    hackTime: accumulator.hackTime / totalElements,
+    maxFunds: accumulator.maxFunds / totalElements,
+    growRate: accumulator.growRate / totalElements,
+    growTime: accumulator.growTime / totalElements,
+    weakenTime: accumulator.weakenTime / totalElements,
+  };
 }
 
-function sortOptimalTargetHosts(netscript: NS, targetHosts: string[]) {
-  targetHosts.sort(
-    (hostname1, hostname2) =>
-      scoreHost(netscript, hostname1) - scoreHost(netscript, hostname2)
+function getDeviationScoreValues(
+  targetsAnalysis: ServerDetails[],
+  meanScoreValues: MeanScoreValues
+): DeviationScoreValues {
+  const accumulator = {
+    hackLevel: 0,
+    hackTime: 0,
+    maxFunds: 0,
+    growRate: 0,
+    growTime: 0,
+    weakenTime: 0,
+  };
+  targetsAnalysis.forEach(value => {
+    accumulator.hackLevel += Math.pow(
+      value.hackLevel - meanScoreValues.hackLevel,
+      2
+    );
+    accumulator.hackTime += Math.pow(
+      value.hackTime - meanScoreValues.hackTime,
+      2
+    );
+    accumulator.maxFunds += Math.pow(
+      value.maxFunds - meanScoreValues.maxFunds,
+      2
+    );
+    accumulator.growRate += Math.pow(
+      value.growRate - meanScoreValues.growRate,
+      2
+    );
+    accumulator.growTime += Math.pow(
+      value.growTime - meanScoreValues.growTime,
+      2
+    );
+    accumulator.weakenTime += Math.pow(
+      value.weakenTime - meanScoreValues.weakenTime,
+      2
+    );
+  });
+  const totalElements = targetsAnalysis.length;
+  return {
+    hackLevel: Math.sqrt(accumulator.hackLevel / totalElements),
+    hackTime: Math.sqrt(accumulator.hackTime / totalElements),
+    maxFunds: Math.sqrt(accumulator.maxFunds / totalElements),
+    growRate: Math.sqrt(accumulator.growRate / totalElements),
+    growTime: Math.sqrt(accumulator.growTime / totalElements),
+    weakenTime: Math.sqrt(accumulator.weakenTime / totalElements),
+  };
+}
+
+function getStandardValue(value: number, mean: number, deviation: number) {
+  return (value - mean) / deviation;
+}
+
+function scoreHost(
+  targetDetails: ServerDetails,
+  meanScoreValues: MeanScoreValues,
+  deviationScoreValues: DeviationScoreValues,
+  weightScoreValues: WeightScoreValues = {
+    hackLevel: 1,
+    hackTime: 1,
+    maxFunds: 1,
+    growRate: 1,
+    growTime: 1,
+    weakenTime: 1,
+  }
+) {
+  return (
+    weightScoreValues.hackLevel *
+      getStandardValue(
+        targetDetails.hackLevel,
+        meanScoreValues.hackLevel,
+        deviationScoreValues.hackLevel
+      ) +
+    weightScoreValues.hackTime *
+      getStandardValue(
+        targetDetails.hackTime,
+        meanScoreValues.hackTime,
+        deviationScoreValues.hackTime
+      ) +
+    weightScoreValues.maxFunds *
+      getStandardValue(
+        targetDetails.maxFunds,
+        meanScoreValues.maxFunds,
+        deviationScoreValues.maxFunds
+      ) +
+    weightScoreValues.growRate *
+      getStandardValue(
+        targetDetails.growRate,
+        meanScoreValues.growRate,
+        deviationScoreValues.growRate
+      ) +
+    weightScoreValues.growTime *
+      getStandardValue(
+        targetDetails.growTime,
+        meanScoreValues.growTime,
+        deviationScoreValues.growTime
+      ) +
+    weightScoreValues.weakenTime *
+      getStandardValue(
+        targetDetails.weakenTime,
+        meanScoreValues.weakenTime,
+        deviationScoreValues.weakenTime
+      )
+  );
+}
+
+function sortOptimalTargetHosts(
+  targetsAnalysis: ServerDetails[],
+  weightScoreValues: WeightScoreValues = {
+    hackLevel: 1,
+    hackTime: 1,
+    maxFunds: 1,
+    growRate: 1,
+    growTime: 1,
+    weakenTime: 1,
+  }
+) {
+  const meanScoreValues = getMeanScoreValues(targetsAnalysis);
+  const deviationScoreValues = getDeviationScoreValues(
+    targetsAnalysis,
+    meanScoreValues
+  );
+
+  targetsAnalysis.sort(
+    (hostDetails1, hostDetails2) =>
+      scoreHost(
+        hostDetails1,
+        meanScoreValues,
+        deviationScoreValues,
+        weightScoreValues
+      ) -
+      scoreHost(
+        hostDetails2,
+        meanScoreValues,
+        deviationScoreValues,
+        weightScoreValues
+      )
   );
 }
 
@@ -111,16 +310,21 @@ function analyzeServer(netscript: NS, hostname: string) {
     availableFunds: netscript.getServerMoneyAvailable(hostname),
     maxFunds: netscript.getServerMaxMoney(hostname),
     requiredPorts: netscript.getServerNumPortsRequired(hostname),
-    requiredLevel: netscript.getServerRequiredHackingLevel(hostname),
-    rootAccess: netscript.hasRootAccess(hostname),
+    hackLevel: netscript.getServerRequiredHackingLevel(hostname),
+    hackTime: netscript.getHackTime(hostname),
+    growRate: netscript.getServerGrowth(hostname),
+    growTime: netscript.getGrowTime(hostname),
+    weakenTime: netscript.getWeakenTime(hostname),
   };
   return result;
 }
 
 export {
   ServerDetails,
+  WeightScoreValues,
   scanLocalNetwork,
   scanWideNetwork,
+  scoreHost,
   sortOptimalTargetHosts,
   getAvailableRam,
   canRunScript,

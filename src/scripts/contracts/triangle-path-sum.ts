@@ -12,7 +12,7 @@ export async function main(netscript: NS) {
     'triangle-path-sum',
     LoggerMode.TERMINAL
   );
-  logWriter.writeLine('Calculate Maximum Stock Profit');
+  logWriter.writeLine('Find Smallest Triangle Path');
   logWriter.writeLine(SECTION_DIVIDER);
 
   let currentIndex = 0;

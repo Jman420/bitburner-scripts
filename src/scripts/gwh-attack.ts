@@ -7,11 +7,7 @@ import {
 } from '/scripts/common/shared';
 
 import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
-import {
-  ENTRY_DIVIDER,
-  SECTION_DIVIDER,
-  logServerDetails,
-} from '/scripts/logging/logOutput';
+import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {infiniteLoop} from '/scripts/workflows/execution';
 import {scanLocalNetwork, analyzeServer} from '/scripts/workflows/recon';
@@ -44,7 +40,7 @@ async function attackNetwork(
   fundsLimitMultiplier = 1
 ) {
   if (!targetHosts.length) {
-    targetHosts = scanLocalNetwork(netscript, false, true);
+    targetHosts = scanLocalNetwork(netscript, undefined, false, true);
   }
   logWriter.writeLine(`Found ${targetHosts.length} available hosts`);
 
@@ -56,7 +52,14 @@ async function attackNetwork(
     logWriter.writeLine(`Analyzing server : ${hostname}`);
     const serverDetails = analyzeServer(netscript, hostname);
     logWriter.writeLine(`  Player Level : ${playerLevel}`);
-    logServerDetails(logWriter, serverDetails);
+    logWriter.writeLine(`  Security Level : ${serverDetails.securityLevel}`);
+    logWriter.writeLine(
+      `  Min Security Level : ${serverDetails.minSecurityLevel}`
+    );
+    logWriter.writeLine(`  Ports Required : ${serverDetails.requiredPorts}`);
+    logWriter.writeLine(`  Hack Level : ${serverDetails.hackLevel}`);
+    logWriter.writeLine(`  Maximum Funds : ${serverDetails.maxFunds}`);
+    logWriter.writeLine(`  Available Funds : ${serverDetails.availableFunds}`);
 
     logWriter.writeLine('  Grow-Weaken-Hack Attacking Server...');
     await growWeakenHack(

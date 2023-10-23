@@ -46,7 +46,7 @@ export async function main(netscript: NS) {
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Getting all rooted hosts...');
-  const rootedHosts = scanWideNetwork(netscript, includeHome, true);
+  const rootedHosts = scanWideNetwork(netscript, includeHome, true, true);
   logWriter.writeLine(`Found ${rootedHosts.length} rooted hosts.`);
   logWriter.writeLine(ENTRY_DIVIDER);
 

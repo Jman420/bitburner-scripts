@@ -1,11 +1,13 @@
 import {NS} from '@ns';
 
-import {CmdArgsSchema, removeEmptyString} from '/scripts/common/shared';
-
 import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
+import {CmdArgsSchema, removeEmptyString} from '/scripts/common/shared';
+
 import {
+  WeightScoreValues,
+  analyzeServer,
   scanWideNetwork,
   sortOptimalTargetHosts,
 } from '/scripts/workflows/recon';
@@ -29,26 +31,42 @@ async function attackTargets(
   logWriter: Logger,
   targetHosts: string[],
   onlyOptimal = false,
-  securityLimitMultiplier = 1,
-  fundsLimitMultiplier = 1
+  weightScoreValues: WeightScoreValues = {
+    hackLevel: 1,
+    hackTime: 1,
+    maxFunds: 1,
+    growRate: 1,
+    growTime: 1,
+    weakenTime: 1,
+  }
 ) {
   if (!targetHosts) {
     logWriter.writeLine(
-      'No target hosts provided.  Getting all hackable targets...'
+      'No target hosts provided.  Getting all rooted host targets...'
     );
     targetHosts = scanWideNetwork(netscript, false, true);
   }
-
+  logWriter.writeLine('Filtering target hosts to hackable hosts...');
+  targetHosts.filter(
+    value =>
+      netscript.getServerRequiredHackingLevel(value) <=
+        netscript.getHackingLevel() &&
+      netscript.getServerMaxMoney(value) > 0 &&
+      netscript.getServerGrowth(value) > 0
+  );
   logWriter.writeLine('Sorting target hosts by optimality...');
-  sortOptimalTargetHosts(netscript, targetHosts);
-  logWriter.writeLine(`Sorted ${targetHosts.length} target hosts.`);
+  let targetsAnalysis = targetHosts.map(value =>
+    analyzeServer(netscript, value)
+  );
+  sortOptimalTargetHosts(targetsAnalysis, weightScoreValues);
+  logWriter.writeLine(`Sorted ${targetsAnalysis.length} target hosts.`);
 
   if (onlyOptimal) {
     logWriter.writeLine('Isolating most optimal target host...');
-    targetHosts = targetHosts.slice(0, 1);
+    targetsAnalysis = targetsAnalysis.slice(0, 1);
   }
 
-  for (const hostname of targetHosts) {
+  for (const hostDetails of targetsAnalysis) {
     // TODO (JMG) : Orchestrate the Weaken-Grow & Weaken-Hack Attacks
   }
   logWriter.writeLine(SECTION_DIVIDER);
@@ -78,23 +96,8 @@ export async function main(netscript: NS) {
   logWriter.writeLine(SECTION_DIVIDER);
 
   if (continuousAttack) {
-    infiniteLoop(
-      netscript,
-      attackTargets,
-      logWriter,
-      targetHosts,
-      onlyOptimal,
-      securityLimitMultiplier,
-      fundsLimitMultiplier
-    );
+    infiniteLoop(netscript, attackTargets, logWriter, targetHosts, onlyOptimal);
   } else {
-    attackTargets(
-      netscript,
-      logWriter,
-      targetHosts,
-      onlyOptimal,
-      securityLimitMultiplier,
-      fundsLimitMultiplier
-    );
+    attackTargets(netscript, logWriter, targetHosts, onlyOptimal);
   }
 }

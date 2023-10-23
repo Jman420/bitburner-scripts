@@ -1,6 +1,5 @@
 import {NS} from '@ns';
 
-import {getLogger} from '/scripts/logging/loggerManager';
 import {ServerDetails} from '/scripts/workflows/recon';
 
 async function growWeakenHack(
@@ -9,14 +8,6 @@ async function growWeakenHack(
   securityLimitMultiplier = 1,
   fundsLimitMultiplier = 1
 ) {
-  const logWriter = getLogger(netscript, `attack.${growWeakenHack.name}`);
-  if (!serverDetails.rootAccess) {
-    logWriter.writeLine(
-      'Cannot perform Grow-Weaken-Hack attack; root access required.'
-    );
-    return;
-  }
-
   const playerLevel = netscript.getHackingLevel();
   const serverName = serverDetails.hostname;
 
@@ -31,7 +22,7 @@ async function growWeakenHack(
   }
 
   if (
-    serverDetails.requiredLevel <= playerLevel &&
+    serverDetails.hackLevel <= playerLevel &&
     serverDetails.securityLevel <=
       serverDetails.minSecurityLevel * securityLimitMultiplier &&
     serverDetails.availableFunds >=
