@@ -1,7 +1,7 @@
 import {NS} from '@ns';
 
 import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
-import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
+import {ENTRY_DIVIDER, SECTION_DIVIDER, convertMillisecToTime} from '/scripts/logging/logOutput';
 
 import {CmdArgsSchema, removeEmptyString} from '/scripts/common/shared';
 
@@ -81,10 +81,10 @@ async function attackTargets(
     logWriter.writeLine(ENTRY_DIVIDER);
     logWriter.writeLine(`Target Host : ${hostDetails.hostname}`);
     logWriter.writeLine(
-      `  Weakening Host for Growth (~${hostDetails.weakenTime} ms)...`
+      `  Weakening Host for Growth (~${convertMillisecToTime(hostDetails.weakenTime)} ms)...`
     );
     hostDetails = await weakenHost(netscript, hostDetails, includeHomeAttacker);
-    logWriter.writeLine(`  Growing Host (~${hostDetails.growTime} ms)...`);
+    logWriter.writeLine(`  Growing Host (~${convertMillisecToTime(hostDetails.growTime)} ms)...`);
     hostDetails = await growHost(
       netscript,
       hostDetails,
@@ -92,10 +92,10 @@ async function attackTargets(
       fundsLimitWeight
     );
     logWriter.writeLine(
-      `  Weakening Host for Hack (~${hostDetails.weakenTime} ms)...`
+      `  Weakening Host for Hack (~${convertMillisecToTime(hostDetails.weakenTime)} ms)...`
     );
     hostDetails = await weakenHost(netscript, hostDetails, includeHomeAttacker);
-    logWriter.writeLine(`  Hacking Host (~${hostDetails.hackTime} ms)...`);
+    logWriter.writeLine(`  Hacking Host (~${convertMillisecToTime(hostDetails.hackTime)} ms)...`);
     const hackResults = await hackHost(
       netscript,
       hostDetails,
