@@ -6,11 +6,11 @@ import {runWorker} from '/scripts/workers/shared';
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'gwh-manager');
+  const logWriter = getLogger(netscript, 'hack-worker');
   logWriter.writeLine('Hack Targets Worker');
   logWriter.writeLine(`Local Host : ${netscript.getHostname()}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
-  runWorker(netscript, logWriter, netscript.hack);
+  await runWorker(netscript, logWriter, netscript.hack);
   logWriter.writeLine(SECTION_DIVIDER);
 }

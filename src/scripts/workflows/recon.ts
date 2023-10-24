@@ -14,6 +14,7 @@ interface ServerDetails {
   growRate: number;
   growTime: number;
   weakenTime: number;
+  score?: number;
 }
 
 interface MeanScoreValues {
@@ -88,6 +89,47 @@ function scanWideNetwork(
   }
 
   return availableHosts;
+}
+
+function findServersForRam(
+  netscript: NS,
+  requiredTotalRam: number,
+  requiredMinRam: number,
+  includeHome = true
+) {
+  if (requiredTotalRam < 1) {
+    return [];
+  }
+
+  const rootedHostsWithRam = scanWideNetwork(
+    netscript,
+    includeHome,
+    true,
+    true
+  );
+  const singleServerWithRam = rootedHostsWithRam.find(
+    hostname => getAvailableRam(netscript, hostname) >= requiredTotalRam
+  );
+  if (singleServerWithRam) {
+    return [singleServerWithRam];
+  }
+
+  let satisfiedRam = 0;
+  const serversWithRam = new Array<string>();
+  for (
+    let serverCounter = 0;
+    serverCounter < rootedHostsWithRam.length &&
+    satisfiedRam < requiredTotalRam;
+    serverCounter++
+  ) {
+    const hostname = rootedHostsWithRam[serverCounter];
+    const currentServerRam = getAvailableRam(netscript, hostname);
+    if (currentServerRam >= requiredMinRam) {
+      serversWithRam.push(hostname);
+      satisfiedRam += currentServerRam;
+    }
+  }
+  return serversWithRam;
 }
 
 function getMeanScoreValues(targetsAnalysis: ServerDetails[]): MeanScoreValues {
@@ -184,7 +226,7 @@ function scoreHost(
     weakenTime: 1,
   }
 ) {
-  return (
+  targetDetails.score =
     weightScoreValues.hackLevel *
       getStandardValue(
         targetDetails.hackLevel,
@@ -220,8 +262,8 @@ function scoreHost(
         targetDetails.weakenTime,
         meanScoreValues.weakenTime,
         deviationScoreValues.weakenTime
-      )
-  );
+      );
+  return targetDetails.score;
 }
 
 function sortOptimalTargetHosts(
@@ -302,7 +344,7 @@ function maxScriptThreads(
   return maxThreads;
 }
 
-function analyzeServer(netscript: NS, hostname: string) {
+function analyzeHost(netscript: NS, hostname: string) {
   const result: ServerDetails = {
     hostname: hostname,
     securityLevel: netscript.getServerSecurityLevel(hostname),
@@ -310,11 +352,11 @@ function analyzeServer(netscript: NS, hostname: string) {
     availableFunds: netscript.getServerMoneyAvailable(hostname),
     maxFunds: netscript.getServerMaxMoney(hostname),
     requiredPorts: netscript.getServerNumPortsRequired(hostname),
-    hackLevel: netscript.getServerRequiredHackingLevel(hostname),
-    hackTime: netscript.getHackTime(hostname),
+    weakenTime: netscript.getWeakenTime(hostname),
     growRate: netscript.getServerGrowth(hostname),
     growTime: netscript.getGrowTime(hostname),
-    weakenTime: netscript.getWeakenTime(hostname),
+    hackLevel: netscript.getServerRequiredHackingLevel(hostname),
+    hackTime: netscript.getHackTime(hostname),
   };
   return result;
 }
@@ -324,10 +366,11 @@ export {
   WeightScoreValues,
   scanLocalNetwork,
   scanWideNetwork,
+  findServersForRam,
   scoreHost,
   sortOptimalTargetHosts,
   getAvailableRam,
   canRunScript,
   maxScriptThreads,
-  analyzeServer,
+  analyzeHost,
 };

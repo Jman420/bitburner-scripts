@@ -1,6 +1,6 @@
 import {NS} from '@ns';
 
-import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
+import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {CmdArgsSchema, HOME_SERVER_NAME} from '/scripts/common/shared';

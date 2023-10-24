@@ -1,8 +1,10 @@
 type CmdArgsSchema = [string, string | number | boolean | string[]][];
 
 const SCRIPTS_PATH = '/scripts';
-const CMD_ARG_PREFIX = '--';
 const HOME_SERVER_NAME = 'home';
+
+const CMD_ARG_PREFIX = '--';
+const CMD_ARG_TARGETS_CSV = 'targetsCsv';
 
 function getCmdArgFlag(cmdArgName: string) {
   return `${CMD_ARG_PREFIX}${cmdArgName}`;
@@ -19,8 +21,9 @@ function removeEmptyString(value: string) {
 export {
   CmdArgsSchema,
   SCRIPTS_PATH,
-  CMD_ARG_PREFIX,
   HOME_SERVER_NAME,
+  CMD_ARG_PREFIX,
+  CMD_ARG_TARGETS_CSV,
   getCmdArgFlag,
   randomIntWithinRange,
   removeEmptyString,

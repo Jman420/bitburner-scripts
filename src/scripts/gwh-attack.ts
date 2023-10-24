@@ -1,29 +1,24 @@
 import {NS} from '@ns';
 
 import {
+  CMD_ARG_TARGETS_CSV,
   CmdArgsSchema,
   SCRIPTS_PATH,
   removeEmptyString,
 } from '/scripts/common/shared';
 
-import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
+import {Logger, getLogger} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {infiniteLoop} from '/scripts/workflows/execution';
-import {scanLocalNetwork, analyzeServer} from '/scripts/workflows/recon';
+import {scanLocalNetwork, analyzeHost} from '/scripts/workflows/recon';
 import {growWeakenHack} from '/scripts/workflows/attack';
 
-import {COMMON_PACKAGE} from '/scripts/common/package';
-import {LOGGING_PACKAGE} from '/scripts/logging/package';
 import {WORKFLOWS_PACKAGE} from '/scripts/workflows/package';
 
 const ATTACK_SCRIPT = `${SCRIPTS_PATH}/gwh-attack.js`;
-const PAYLOAD_PACKAGE = [ATTACK_SCRIPT]
-  .concat(COMMON_PACKAGE)
-  .concat(LOGGING_PACKAGE)
-  .concat(WORKFLOWS_PACKAGE);
+const PAYLOAD_PACKAGE = [ATTACK_SCRIPT].concat(WORKFLOWS_PACKAGE);
 
-const CMD_ARG_TARGETS_CSV = 'targetsCsv';
 const CMD_ARG_SECURITY_LIMIT_MULTIPLIER = 'securityLimitMultiplier';
 const CMD_ARGS_FUNDS_LIMIT_MULTIPLIER = 'fundsLimitMultiplier';
 const CMD_ARGS_SCHEMA: CmdArgsSchema = [
@@ -46,20 +41,8 @@ async function attackNetwork(
 
   for (const hostname of targetHosts) {
     logWriter.writeLine(ENTRY_DIVIDER);
-    logWriter.writeLine('Getting Player Level...');
-    const playerLevel = netscript.getHackingLevel();
-
     logWriter.writeLine(`Analyzing server : ${hostname}`);
-    const serverDetails = analyzeServer(netscript, hostname);
-    logWriter.writeLine(`  Player Level : ${playerLevel}`);
-    logWriter.writeLine(`  Security Level : ${serverDetails.securityLevel}`);
-    logWriter.writeLine(
-      `  Min Security Level : ${serverDetails.minSecurityLevel}`
-    );
-    logWriter.writeLine(`  Ports Required : ${serverDetails.requiredPorts}`);
-    logWriter.writeLine(`  Hack Level : ${serverDetails.hackLevel}`);
-    logWriter.writeLine(`  Maximum Funds : ${serverDetails.maxFunds}`);
-    logWriter.writeLine(`  Available Funds : ${serverDetails.availableFunds}`);
+    const serverDetails = analyzeHost(netscript, hostname);
 
     logWriter.writeLine('  Grow-Weaken-Hack Attacking Server...');
     await growWeakenHack(
@@ -73,7 +56,7 @@ async function attackNetwork(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'gwh-attack', LoggerMode.CONSOLE);
+  const logWriter = getLogger(netscript, 'gwh-attack');
   logWriter.writeLine('Local Network Grow-Weaken-Hack Attack');
   logWriter.writeLine(`Local Host : ${netscript.getHostname()}`);
   logWriter.writeLine(SECTION_DIVIDER);
@@ -105,7 +88,6 @@ export async function main(netscript: NS) {
 export {
   ATTACK_SCRIPT,
   PAYLOAD_PACKAGE,
-  CMD_ARG_TARGETS_CSV,
   CMD_ARG_SECURITY_LIMIT_MULTIPLIER,
   CMD_ARGS_FUNDS_LIMIT_MULTIPLIER,
 };

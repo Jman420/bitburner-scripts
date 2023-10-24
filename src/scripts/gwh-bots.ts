@@ -1,6 +1,6 @@
 import {NS} from '@ns';
 
-import {CmdArgsSchema} from '/scripts/common/shared';
+import {CmdArgsSchema, CMD_ARG_TARGETS_CSV} from '/scripts/common/shared';
 
 import {getLogger, LoggerMode} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
@@ -11,7 +11,6 @@ import {copyFiles, runScript} from '/scripts/workflows/propagation';
 import {
   ATTACK_SCRIPT,
   PAYLOAD_PACKAGE,
-  CMD_ARG_TARGETS_CSV,
   CMD_ARG_SECURITY_LIMIT_MULTIPLIER,
   CMD_ARGS_FUNDS_LIMIT_MULTIPLIER,
 } from '/scripts/gwh-attack';
@@ -61,6 +60,7 @@ export async function main(netscript: NS) {
         netscript,
         ATTACK_SCRIPT,
         hostname,
+        0,
         true,
         CMD_ARG_TARGETS_CSV,
         targetHosts.join(','),
