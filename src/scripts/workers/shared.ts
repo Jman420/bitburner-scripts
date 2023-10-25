@@ -6,8 +6,7 @@ import {Logger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {GrowWeakenHackFunction, runGWH} from '/scripts/workflows/execution';
-
-import {CMD_ARG_TARGETS_CSV} from '/scripts/common/shared';
+import { CMD_ARG_TARGETS_CSV } from '/scripts/workflows/cmd-args';
 
 const CMD_ARG_DELAY = 'delay';
 const CMD_ARGS_SCHEMA: CmdArgsSchema = [

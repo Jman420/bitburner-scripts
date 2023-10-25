@@ -1,9 +1,9 @@
 import {NS} from '@ns';
 
-import {CmdArgsSchema} from '/scripts/common/shared';
-
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
+import { CmdArgsSchema } from '/scripts/common/shared';
+import { parseCmdFlags } from '/scripts/workflows/cmd-args';
 
 const CMD_ARG_PLAINTEXT = 'plaintext';
 const CMD_ARG_SHIFT = 'shift';
@@ -23,7 +23,7 @@ export async function main(netscript: NS) {
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Parsing command line arguments...');
-  const cmdArgs = netscript.flags(CMD_ARGS_SCHEMA);
+  const cmdArgs = parseCmdFlags(netscript, CMD_ARGS_SCHEMA);
   const plaintext = cmdArgs.plaintext.valueOf() as string;
   let alphaShift = cmdArgs.shift.valueOf() as number;
 

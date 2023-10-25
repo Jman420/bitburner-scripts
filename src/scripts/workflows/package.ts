@@ -7,6 +7,7 @@ const WORKFLOWS_PACKAGE = COMMON_PACKAGE.concat(
   LOGGING_PACKAGE.concat([
     `${PATH}/package.js`,
     `${PATH}/attack.js`,
+    `${PATH}/cmd-args.js`,
     `${PATH}/escalation.js`,
     `${PATH}/execution.js`,
     `${PATH}/orchestration.js`,

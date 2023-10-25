@@ -3,8 +3,8 @@ import {NS} from '@ns';
 import {ServerDetails, analyzeHost} from '/scripts/workflows/recon';
 import {runWorkerScript, waitForScripts} from '/scripts/workflows/execution';
 
-import {CMD_ARG_TARGETS_CSV, getCmdArgFlag} from '/scripts/common/shared';
 import {WORKERS_PACKAGE} from '/scripts/workers/package';
+import { CMD_ARG_TARGETS_CSV, getCmdArgFlag } from '/scripts/workflows/cmd-args';
 
 const WEAKEN_WORKER_SCRIPT = '/scripts/workers/weaken.js';
 const GROW_WORKER_SCRIPT = '/scripts/workers/grow.js';

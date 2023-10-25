@@ -1,8 +1,6 @@
 import {NS} from '@ns';
 
 import {
-  CMD_ARG_TARGETS_CSV,
-  CmdArgsSchema,
   SCRIPTS_PATH,
   removeEmptyString,
 } from '/scripts/common/shared';
@@ -15,6 +13,7 @@ import {scanLocalNetwork, analyzeHost} from '/scripts/workflows/recon';
 import {growWeakenHack} from '/scripts/workflows/attack';
 
 import {WORKFLOWS_PACKAGE} from '/scripts/workflows/package';
+import { CMD_ARG_TARGETS_CSV, CmdArgsSchema, parseCmdFlags } from '/scripts/workflows/cmd-args';
 
 const ATTACK_SCRIPT = `${SCRIPTS_PATH}/gwh-attack.js`;
 const PAYLOAD_PACKAGE = [ATTACK_SCRIPT].concat(WORKFLOWS_PACKAGE);
@@ -62,7 +61,7 @@ export async function main(netscript: NS) {
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Parsing command line arguments...');
-  const cmdArgs = netscript.flags(CMD_ARGS_SCHEMA);
+  const cmdArgs = parseCmdFlags(netscript, CMD_ARGS_SCHEMA);
   const targetHostsCsv = cmdArgs.targetsCsv.valueOf() as string;
   const targetHosts = targetHostsCsv.split(',').filter(removeEmptyString);
   const securityLimitMultiplier =

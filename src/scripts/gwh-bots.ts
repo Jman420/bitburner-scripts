@@ -1,7 +1,5 @@
 import {NS} from '@ns';
 
-import {CmdArgsSchema, CMD_ARG_TARGETS_CSV} from '/scripts/common/shared';
-
 import {getLogger, LoggerMode} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
@@ -14,6 +12,7 @@ import {
   CMD_ARG_SECURITY_LIMIT_MULTIPLIER,
   CMD_ARGS_FUNDS_LIMIT_MULTIPLIER,
 } from '/scripts/gwh-attack';
+import { CMD_ARG_TARGETS_CSV, CmdArgsSchema, parseCmdFlags } from '/scripts/workflows/cmd-args';
 
 const CMD_ARG_INCLUDE_HOME = 'includeHome';
 const CMD_ARGS_SCHEMA: CmdArgsSchema = [
@@ -30,7 +29,7 @@ export async function main(netscript: NS) {
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Parsing command line arguments...');
-  const cmdArgs = netscript.flags(CMD_ARGS_SCHEMA);
+  const cmdArgs = parseCmdFlags(netscript, CMD_ARGS_SCHEMA);
   const includeHome = cmdArgs.includeHome.valueOf() as boolean;
   const targetHostsCsv = cmdArgs.targetsCsv.valueOf() as string;
   const targetHosts = targetHostsCsv.split(',');

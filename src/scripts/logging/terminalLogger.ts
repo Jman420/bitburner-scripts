@@ -10,7 +10,7 @@ class TerminalLogger {
   }
 
   public writeLine(msg: string) {
-    this.netscript.tprint(`${this.moduleName} - ${msg}`);
+    this.netscript.tprint(`${msg}`);
   }
 }
 

@@ -3,7 +3,7 @@ import {NS} from '@ns';
 import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER, convertMillisecToTime} from '/scripts/logging/logOutput';
 
-import {CmdArgsSchema, removeEmptyString} from '/scripts/common/shared';
+import {removeEmptyString} from '/scripts/common/shared';
 
 import {
   WeightScoreValues,
@@ -13,8 +13,8 @@ import {
 } from '/scripts/workflows/recon';
 import {infiniteLoop} from '/scripts/workflows/execution';
 import {growHost, hackHost, weakenHost} from '/scripts/workflows/orchestration';
+import { CMD_ARG_TARGETS_CSV, CmdArgsSchema, parseCmdFlags } from '/scripts/workflows/cmd-args';
 
-const CMD_ARG_TARGETS_CSV = 'targetsCsv';
 const CMD_ARG_HACK_PERCENT = 'hackPercent';
 const CMD_ARG_ONLY_OPTIMAL = 'onlyOptimal';
 const CMD_ARG_FUNDS_LIMIT_WEIGHT = 'fundsLimitWeight';
@@ -116,7 +116,7 @@ export async function main(netscript: NS) {
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Parsing command line arguments...');
-  const cmdArgs = netscript.flags(CMD_ARGS_SCHEMA);
+  const cmdArgs = parseCmdFlags(netscript, CMD_ARGS_SCHEMA);
   const targetHostsCsv = cmdArgs.targetsCsv.valueOf() as string;
   const targetHosts = targetHostsCsv.split(',').filter(removeEmptyString);
   const hackPercent = cmdArgs.hackPercent.valueOf() as number;

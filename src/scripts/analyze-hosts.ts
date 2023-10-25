@@ -3,8 +3,9 @@ import {NS} from '@ns';
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
-import {CmdArgsSchema} from '/scripts/common/shared';
 import {analyzeHost} from '/scripts/workflows/recon';
+import { CmdArgsSchema } from '/scripts/common/shared';
+import { parseCmdFlags } from '/scripts/workflows/cmd-args';
 
 const CMD_ARG_TARGETS_CSV = 'targetsCsv';
 const CMD_ARGS_SCHEMA: CmdArgsSchema = [[CMD_ARG_TARGETS_CSV, '']];
@@ -16,7 +17,7 @@ export async function main(netscript: NS) {
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Parsing command line arguments...');
-  const cmdArgs = netscript.flags(CMD_ARGS_SCHEMA);
+  const cmdArgs = parseCmdFlags(netscript, CMD_ARGS_SCHEMA);
   const targetHostsCsv = cmdArgs.targetsCsv.valueOf() as string;
   const targetHosts = targetHostsCsv.split(',');
 

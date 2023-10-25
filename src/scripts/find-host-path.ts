@@ -5,6 +5,7 @@ import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {CmdArgsSchema, HOME_SERVER_NAME} from '/scripts/common/shared';
 import {scanLocalNetwork} from '/scripts/workflows/recon';
+import { parseCmdFlags } from '/scripts/workflows/cmd-args';
 
 const CMD_ARG_TARGET = 'target';
 const CMD_ARGS_SCHEMA: CmdArgsSchema = [[CMD_ARG_TARGET, '']];
@@ -41,7 +42,7 @@ export async function main(netscript: NS) {
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Parsing command line arguments...');
-  const cmdArgs = netscript.flags(CMD_ARGS_SCHEMA);
+  const cmdArgs = parseCmdFlags(netscript, CMD_ARGS_SCHEMA);
   const targetHost = cmdArgs.target.valueOf() as string;
 
   logWriter.writeLine(`Target Host : ${targetHost}`);

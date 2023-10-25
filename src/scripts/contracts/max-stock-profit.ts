@@ -1,9 +1,10 @@
 import {NS} from '@ns';
 
-import {CmdArgsSchema, removeEmptyString} from '/scripts/common/shared';
+import {removeEmptyString} from '/scripts/common/shared';
 
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
+import { CmdArgsSchema, parseCmdFlags } from '/scripts/workflows/cmd-args';
 
 const CMD_ARG_MAX_TRANSACTIONS = 'maxTransactions';
 const CMD_ARG_STOCK_PRICES_CSV = 'stockPricesCsv';
@@ -23,7 +24,7 @@ export async function main(netscript: NS) {
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Parsing command line arguments...');
-  const cmdArgs = netscript.flags(CMD_ARGS_SCHEMA);
+  const cmdArgs = parseCmdFlags(netscript, CMD_ARGS_SCHEMA);
   const maxTransactions = cmdArgs.maxTransactions.valueOf() as number;
   const stockPricesCsv = cmdArgs.stockPricesCsv.valueOf() as string;
   const stockPrices = stockPricesCsv

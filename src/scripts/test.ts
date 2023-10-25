@@ -1,6 +1,6 @@
-import {NS} from '@ns';
+import {AutocompleteData, NS} from '@ns';
 
-export function autocomplete(data, args) {
+export function autocomplete(data: AutocompleteData, args: string[]) {
   console.log('pong');
   return ['why', 'dont', 'this', 'work'];
 }
