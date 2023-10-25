@@ -1,14 +1,20 @@
-import {NS} from '@ns';
+import {AutocompleteData, NS} from '@ns';
 
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {analyzeHost} from '/scripts/workflows/recon';
-import { CmdArgsSchema } from '/scripts/common/shared';
-import { parseCmdFlags } from '/scripts/workflows/cmd-args';
+import {
+  CMD_FLAG_TARGETS,
+  CmdArgsSchema,
+  getCmdFlag,
+  getLastCmdFlag,
+  getSchemaFlags,
+  parseCmdFlags,
+} from '/scripts/workflows/cmd-args';
 
-const CMD_ARG_TARGETS_CSV = 'targetsCsv';
-const CMD_ARGS_SCHEMA: CmdArgsSchema = [[CMD_ARG_TARGETS_CSV, '']];
+const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_TARGETS, []]];
+const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
@@ -17,9 +23,8 @@ export async function main(netscript: NS) {
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Parsing command line arguments...');
-  const cmdArgs = parseCmdFlags(netscript, CMD_ARGS_SCHEMA);
-  const targetHostsCsv = cmdArgs.targetsCsv.valueOf() as string;
-  const targetHosts = targetHostsCsv.split(',');
+  const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
+  const targetHosts = cmdArgs[CMD_FLAG_TARGETS].valueOf() as string[];
 
   logWriter.writeLine(`Target Hosts : ${targetHosts}`);
   logWriter.writeLine(SECTION_DIVIDER);
@@ -40,4 +45,13 @@ export async function main(netscript: NS) {
     logWriter.writeLine(`Hack Time : ${hostDetails.hackTime}`);
     logWriter.writeLine(ENTRY_DIVIDER);
   }
+}
+
+export function autocomplete(data: AutocompleteData, args: string[]) {
+  const lastCmdFlag = getLastCmdFlag(args);
+  if (lastCmdFlag === getCmdFlag(CMD_FLAG_TARGETS)) {
+    return data.servers;
+  }
+
+  return CMD_FLAGS;
 }

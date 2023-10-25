@@ -1,6 +1,6 @@
 import {NS} from '@ns';
 
-import {CmdArgsSchema} from '/scripts/common/shared';
+import {CmdArgsSchema} from '/scripts/workflows/cmd-args';
 
 const LOG_WINDOW_CHAR_WIDTH = 50;
 const SECTION_DIVIDER = '*'.repeat(LOG_WINDOW_CHAR_WIDTH);
@@ -12,11 +12,11 @@ function convertMillisecToTime(duration: number) {
   const minutes = Math.floor((duration / (1000 * 60)) % 60);
   const hours = Math.floor((duration / (1000 * 60 * 60)) % 24);
 
-  const hoursStr = (hours < 10) ? `0${hours}` : `${hours}`;
-  const minutesStr = (minutes < 10) ? `0${minutes}` : `${minutes}`;
-  const secondsStr = (seconds < 10) ? "0" + seconds : seconds;
+  const hoursStr = hours < 10 ? `0${hours}` : `${hours}`;
+  const minutesStr = minutes < 10 ? `0${minutes}` : `${minutes}`;
+  const secondsStr = seconds < 10 ? '0' + seconds : seconds;
 
-  return hoursStr + ":" + minutesStr + ":" + secondsStr + "." + milliseconds;
+  return hoursStr + ':' + minutesStr + ':' + secondsStr + '.' + milliseconds;
 }
 
 function logScriptHelp(

@@ -1,17 +1,22 @@
-import {NS} from '@ns';
+import {AutocompleteData, NS} from '@ns';
 
 import {removeEmptyString} from '/scripts/common/shared';
 
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
-import { CmdArgsSchema, parseCmdFlags } from '/scripts/workflows/cmd-args';
+import {
+  CmdArgsSchema,
+  getSchemaFlags,
+  parseCmdFlags,
+} from '/scripts/workflows/cmd-args';
 
-const CMD_ARG_MAX_TRANSACTIONS = 'maxTransactions';
-const CMD_ARG_STOCK_PRICES_CSV = 'stockPricesCsv';
-const CMD_ARGS_SCHEMA: CmdArgsSchema = [
-  [CMD_ARG_MAX_TRANSACTIONS, 0],
-  [CMD_ARG_STOCK_PRICES_CSV, ''],
+const CMD_FLAG_MAX_TRANSACTIONS = 'maxTransactions';
+const CMD_FLAG_STOCK_PRICES_CSV = 'stockPricesCsv';
+const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
+  [CMD_FLAG_MAX_TRANSACTIONS, 0],
+  [CMD_FLAG_STOCK_PRICES_CSV, ''],
 ];
+const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
@@ -24,7 +29,7 @@ export async function main(netscript: NS) {
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Parsing command line arguments...');
-  const cmdArgs = parseCmdFlags(netscript, CMD_ARGS_SCHEMA);
+  const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
   const maxTransactions = cmdArgs.maxTransactions.valueOf() as number;
   const stockPricesCsv = cmdArgs.stockPricesCsv.valueOf() as string;
   const stockPrices = stockPricesCsv
@@ -58,4 +63,9 @@ export async function main(netscript: NS) {
   }
   logWriter.writeLine(SECTION_DIVIDER);
   logWriter.writeLine(`Max Profit : ${totalProfit}`);
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+export function autocomplete(data: AutocompleteData, args: string[]) {
+  return CMD_FLAGS;
 }

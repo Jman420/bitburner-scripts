@@ -5,6 +5,7 @@ import {copyFiles, runScript} from '/scripts/workflows/propagation';
 import {findServersForRam, getAvailableRam} from '/scripts/workflows/recon';
 
 type GrowWeakenHackFunction = (host: string) => Promise<number>;
+/* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 type LoopableFunction = (...args: any[]) => Promise<void>;
 
 const MIN_LOOP_DELAY_MILLISEC = 1;
@@ -22,6 +23,7 @@ function runWorkerScript(
   workerPackage: string[],
   requiredThreads = 1,
   includeHome = false,
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   ...scriptArgs: any[]
 ) {
   requiredThreads = Math.ceil(requiredThreads);
@@ -95,6 +97,7 @@ async function delayedInfiniteLoop(
   netscript: NS,
   delay: number,
   loopFunction: LoopableFunction,
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   ...funcArgs: any[]
 ) {
   /* eslint-disable-next-line no-constant-condition */
@@ -107,6 +110,7 @@ async function delayedInfiniteLoop(
 async function infiniteLoop(
   netscript: NS,
   loopFunction: LoopableFunction,
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   ...funcArgs: any[]
 ) {
   const delay = randomIntWithinRange(

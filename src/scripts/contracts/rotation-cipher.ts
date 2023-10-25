@@ -1,16 +1,20 @@
-import {NS} from '@ns';
+import {AutocompleteData, NS} from '@ns';
 
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
-import { CmdArgsSchema } from '/scripts/common/shared';
-import { parseCmdFlags } from '/scripts/workflows/cmd-args';
+import {
+  CmdArgsSchema,
+  getSchemaFlags,
+  parseCmdFlags,
+} from '/scripts/workflows/cmd-args';
 
-const CMD_ARG_PLAINTEXT = 'plaintext';
-const CMD_ARG_SHIFT = 'shift';
-const CMD_ARGS_SCHEMA: CmdArgsSchema = [
-  [CMD_ARG_PLAINTEXT, ''],
-  [CMD_ARG_SHIFT, 0],
+const CMD_FLAG_PLAINTEXT = 'plaintext';
+const CMD_FLAG_SHIFT = 'shift';
+const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
+  [CMD_FLAG_PLAINTEXT, ''],
+  [CMD_FLAG_SHIFT, 0],
 ];
+const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
@@ -23,7 +27,7 @@ export async function main(netscript: NS) {
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Parsing command line arguments...');
-  const cmdArgs = parseCmdFlags(netscript, CMD_ARGS_SCHEMA);
+  const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
   const plaintext = cmdArgs.plaintext.valueOf() as string;
   let alphaShift = cmdArgs.shift.valueOf() as number;
 
@@ -52,4 +56,9 @@ export async function main(netscript: NS) {
     ciphertext += char;
   }
   logWriter.writeLine(`Ciphertext : ${ciphertext}`);
+}
+
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
+export function autocomplete(data: AutocompleteData, args: string[]) {
+  return CMD_FLAGS;
 }

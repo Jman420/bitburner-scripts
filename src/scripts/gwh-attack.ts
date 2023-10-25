@@ -1,9 +1,6 @@
-import {NS} from '@ns';
+import {AutocompleteData, NS} from '@ns';
 
-import {
-  SCRIPTS_PATH,
-  removeEmptyString,
-} from '/scripts/common/shared';
+import {SCRIPTS_PATH} from '/scripts/common/shared';
 
 import {Logger, getLogger} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
@@ -13,18 +10,27 @@ import {scanLocalNetwork, analyzeHost} from '/scripts/workflows/recon';
 import {growWeakenHack} from '/scripts/workflows/attack';
 
 import {WORKFLOWS_PACKAGE} from '/scripts/workflows/package';
-import { CMD_ARG_TARGETS_CSV, CmdArgsSchema, parseCmdFlags } from '/scripts/workflows/cmd-args';
+import {
+  CMD_FLAG_TARGETS,
+  CmdArgsSchema,
+  PERCENT_AUTOCOMPLETE,
+  getCmdFlag,
+  getLastCmdFlag,
+  getSchemaFlags,
+  parseCmdFlags,
+} from '/scripts/workflows/cmd-args';
 
 const ATTACK_SCRIPT = `${SCRIPTS_PATH}/gwh-attack.js`;
 const PAYLOAD_PACKAGE = [ATTACK_SCRIPT].concat(WORKFLOWS_PACKAGE);
 
-const CMD_ARG_SECURITY_LIMIT_MULTIPLIER = 'securityLimitMultiplier';
-const CMD_ARGS_FUNDS_LIMIT_MULTIPLIER = 'fundsLimitMultiplier';
-const CMD_ARGS_SCHEMA: CmdArgsSchema = [
-  [CMD_ARG_TARGETS_CSV, ''],
-  [CMD_ARG_SECURITY_LIMIT_MULTIPLIER, 1],
-  [CMD_ARGS_FUNDS_LIMIT_MULTIPLIER, 1],
+const CMD_FLAG_SECURITY_LIMIT_MULTIPLIER = 'securityLimitMultiplier';
+const CMD_FLAG_FUNDS_LIMIT_MULTIPLIER = 'fundsLimitMultiplier';
+const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
+  [CMD_FLAG_SECURITY_LIMIT_MULTIPLIER, 1],
+  [CMD_FLAG_FUNDS_LIMIT_MULTIPLIER, 1],
+  [CMD_FLAG_TARGETS, []],
 ];
+const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 async function attackNetwork(
   netscript: NS,
@@ -54,23 +60,25 @@ async function attackNetwork(
 }
 
 /** @param {NS} netscript */
-export async function main(netscript: NS) {
+async function main(netscript: NS) {
   const logWriter = getLogger(netscript, 'gwh-attack');
   logWriter.writeLine('Local Network Grow-Weaken-Hack Attack');
   logWriter.writeLine(`Local Host : ${netscript.getHostname()}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Parsing command line arguments...');
-  const cmdArgs = parseCmdFlags(netscript, CMD_ARGS_SCHEMA);
-  const targetHostsCsv = cmdArgs.targetsCsv.valueOf() as string;
-  const targetHosts = targetHostsCsv.split(',').filter(removeEmptyString);
-  const securityLimitMultiplier =
-    cmdArgs.securityLimitMultiplier.valueOf() as number;
-  const fundsLimitMultiplier = cmdArgs.fundsLimitMultiplier.valueOf() as number;
+  const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
+  const securityLimitMultiplier = cmdArgs[
+    CMD_FLAG_SECURITY_LIMIT_MULTIPLIER
+  ].valueOf() as number;
+  const fundsLimitMultiplier = cmdArgs[
+    CMD_FLAG_FUNDS_LIMIT_MULTIPLIER
+  ].valueOf() as number;
+  const targetHosts = cmdArgs[CMD_FLAG_TARGETS].valueOf() as string[];
 
-  logWriter.writeLine(`Target Hosts : ${targetHosts}`);
   logWriter.writeLine(`Security Limit Multiplier : ${securityLimitMultiplier}`);
   logWriter.writeLine(`Funds Limit Multiplier : ${fundsLimitMultiplier}`);
+  logWriter.writeLine(`Target Hosts : ${targetHosts}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
   await infiniteLoop(
@@ -84,9 +92,26 @@ export async function main(netscript: NS) {
   );
 }
 
+function autocomplete(data: AutocompleteData, args: string[]) {
+  const lastCmdFlag = getLastCmdFlag(args);
+  if (
+    lastCmdFlag === getCmdFlag(CMD_FLAG_FUNDS_LIMIT_MULTIPLIER) ||
+    lastCmdFlag === getCmdFlag(CMD_FLAG_SECURITY_LIMIT_MULTIPLIER)
+  ) {
+    return PERCENT_AUTOCOMPLETE;
+  }
+  if (lastCmdFlag === getCmdFlag(CMD_FLAG_TARGETS)) {
+    return data.servers;
+  }
+
+  return CMD_FLAGS;
+}
+
 export {
   ATTACK_SCRIPT,
   PAYLOAD_PACKAGE,
-  CMD_ARG_SECURITY_LIMIT_MULTIPLIER,
-  CMD_ARGS_FUNDS_LIMIT_MULTIPLIER,
+  CMD_FLAG_SECURITY_LIMIT_MULTIPLIER,
+  CMD_FLAG_FUNDS_LIMIT_MULTIPLIER,
+  main,
+  autocomplete,
 };

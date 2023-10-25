@@ -1,4 +1,4 @@
-import {NS} from '@ns';
+import {AutocompleteData, NS} from '@ns';
 
 import {getLogger, LoggerMode} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
@@ -9,18 +9,28 @@ import {copyFiles, runScript} from '/scripts/workflows/propagation';
 import {
   ATTACK_SCRIPT,
   PAYLOAD_PACKAGE,
-  CMD_ARG_SECURITY_LIMIT_MULTIPLIER,
-  CMD_ARGS_FUNDS_LIMIT_MULTIPLIER,
+  CMD_FLAG_SECURITY_LIMIT_MULTIPLIER,
+  CMD_FLAG_FUNDS_LIMIT_MULTIPLIER,
 } from '/scripts/gwh-attack';
-import { CMD_ARG_TARGETS_CSV, CmdArgsSchema, parseCmdFlags } from '/scripts/workflows/cmd-args';
+import {
+  BOOLEAN_AUTOCOMPLETE,
+  CMD_FLAG_TARGETS,
+  CmdArgsSchema,
+  getCmdFlag,
+  getSchemaFlags,
+  PERCENT_AUTOCOMPLETE,
+  parseCmdFlags,
+  getLastCmdFlag,
+} from '/scripts/workflows/cmd-args';
 
-const CMD_ARG_INCLUDE_HOME = 'includeHome';
-const CMD_ARGS_SCHEMA: CmdArgsSchema = [
-  [CMD_ARG_INCLUDE_HOME, false],
-  [CMD_ARG_TARGETS_CSV, ''],
-  [CMD_ARG_SECURITY_LIMIT_MULTIPLIER, 1],
-  [CMD_ARGS_FUNDS_LIMIT_MULTIPLIER, 1],
+const CMD_FLAG_INCLUDE_HOME = 'includeHome';
+const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
+  [CMD_FLAG_INCLUDE_HOME, false],
+  [CMD_FLAG_SECURITY_LIMIT_MULTIPLIER, 1],
+  [CMD_FLAG_FUNDS_LIMIT_MULTIPLIER, 1],
+  [CMD_FLAG_TARGETS, []],
 ];
+const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
@@ -29,18 +39,20 @@ export async function main(netscript: NS) {
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Parsing command line arguments...');
-  const cmdArgs = parseCmdFlags(netscript, CMD_ARGS_SCHEMA);
-  const includeHome = cmdArgs.includeHome.valueOf() as boolean;
-  const targetHostsCsv = cmdArgs.targetsCsv.valueOf() as string;
-  const targetHosts = targetHostsCsv.split(',');
-  const securityLimitMultiplier =
-    cmdArgs.securityLimitMultiplier.valueOf() as number;
-  const fundsLimitMultiplier = cmdArgs.fundsLimitMultiplier.valueOf() as number;
+  const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
+  const includeHome = cmdArgs[CMD_FLAG_INCLUDE_HOME].valueOf() as boolean;
+  const securityLimitMultiplier = cmdArgs[
+    CMD_FLAG_SECURITY_LIMIT_MULTIPLIER
+  ].valueOf() as number;
+  const fundsLimitMultiplier = cmdArgs[
+    CMD_FLAG_FUNDS_LIMIT_MULTIPLIER
+  ].valueOf() as number;
+  const targetHosts = cmdArgs[CMD_FLAG_TARGETS].valueOf() as string[];
 
   logWriter.writeLine(`Include Home : ${includeHome}`);
-  logWriter.writeLine(`Attack Target Hosts : ${targetHosts}`);
   logWriter.writeLine(`Security Limit Multiplier : ${securityLimitMultiplier}`);
   logWriter.writeLine(`Funds Limit Multiplier : ${fundsLimitMultiplier}`);
+  logWriter.writeLine(`Attack Target Hosts : ${targetHosts}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Getting all rooted hosts...');
@@ -61,11 +73,11 @@ export async function main(netscript: NS) {
         hostname,
         0,
         true,
-        CMD_ARG_TARGETS_CSV,
+        CMD_FLAG_TARGETS,
         targetHosts.join(','),
-        CMD_ARG_SECURITY_LIMIT_MULTIPLIER,
+        CMD_FLAG_SECURITY_LIMIT_MULTIPLIER,
         securityLimitMultiplier,
-        CMD_ARGS_FUNDS_LIMIT_MULTIPLIER,
+        CMD_FLAG_FUNDS_LIMIT_MULTIPLIER,
         fundsLimitMultiplier
       )
     ) {
@@ -75,4 +87,22 @@ export async function main(netscript: NS) {
     }
   }
   logWriter.writeLine(SECTION_DIVIDER);
+}
+
+export function autocomplete(data: AutocompleteData, args: string[]) {
+  const lastCmdFlag = getLastCmdFlag(args);
+  if (lastCmdFlag === getCmdFlag(CMD_FLAG_INCLUDE_HOME)) {
+    return BOOLEAN_AUTOCOMPLETE;
+  }
+  if (
+    lastCmdFlag === getCmdFlag(CMD_FLAG_FUNDS_LIMIT_MULTIPLIER) ||
+    lastCmdFlag === getCmdFlag(CMD_FLAG_SECURITY_LIMIT_MULTIPLIER)
+  ) {
+    return PERCENT_AUTOCOMPLETE;
+  }
+  if (lastCmdFlag === getCmdFlag(CMD_FLAG_TARGETS)) {
+    return data.servers;
+  }
+
+  return CMD_FLAGS;
 }

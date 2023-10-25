@@ -1,14 +1,21 @@
-import {NS} from '@ns';
+import {AutocompleteData, NS} from '@ns';
 
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
-import {CmdArgsSchema, HOME_SERVER_NAME} from '/scripts/common/shared';
+import {HOME_SERVER_NAME} from '/scripts/common/shared';
 import {scanLocalNetwork} from '/scripts/workflows/recon';
-import { parseCmdFlags } from '/scripts/workflows/cmd-args';
+import {
+  CMD_FLAG_TARGETS,
+  CmdArgsSchema,
+  getCmdFlag,
+  getLastCmdFlag,
+  getSchemaFlags,
+  parseCmdFlags,
+} from '/scripts/workflows/cmd-args';
 
-const CMD_ARG_TARGET = 'target';
-const CMD_ARGS_SCHEMA: CmdArgsSchema = [[CMD_ARG_TARGET, '']];
+const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_TARGETS, []]];
+const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 function findHostPath(
   netscript: NS,
@@ -42,17 +49,28 @@ export async function main(netscript: NS) {
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Parsing command line arguments...');
-  const cmdArgs = parseCmdFlags(netscript, CMD_ARGS_SCHEMA);
-  const targetHost = cmdArgs.target.valueOf() as string;
+  const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
+  const targetHosts = cmdArgs[CMD_FLAG_TARGETS].valueOf() as string[];
 
-  logWriter.writeLine(`Target Host : ${targetHost}`);
+  logWriter.writeLine(`Target Hosts : ${targetHosts}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
-  logWriter.writeLine(`Finding path to host named ${targetHost}...`);
-  const hostPath = findHostPath(netscript, HOME_SERVER_NAME, targetHost);
-  if (hostPath) {
-    logWriter.writeLine(`Path found : ${hostPath.join(' -> ')}`);
-  } else {
-    logWriter.writeLine('Path to host not found.');
+  for (const hostname of targetHosts) {
+    logWriter.writeLine(`Finding path to host named ${hostname}...`);
+    const hostPath = findHostPath(netscript, HOME_SERVER_NAME, hostname);
+    if (hostPath) {
+      logWriter.writeLine(`Path found : ${hostPath.join(' -> ')}`);
+    } else {
+      logWriter.writeLine('Path to host not found.');
+    }
   }
+}
+
+export function autocomplete(data: AutocompleteData, args: string[]) {
+  const lastCmdFlag = getLastCmdFlag(args);
+  if (lastCmdFlag === getCmdFlag(CMD_FLAG_TARGETS)) {
+    return data.servers;
+  }
+
+  return CMD_FLAGS;
 }

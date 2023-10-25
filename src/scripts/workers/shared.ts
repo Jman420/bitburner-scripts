@@ -1,17 +1,16 @@
 import {NS} from '@ns';
 
-import {CmdArgsSchema} from '/scripts/common/shared';
-
 import {Logger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {GrowWeakenHackFunction, runGWH} from '/scripts/workflows/execution';
-import { CMD_ARG_TARGETS_CSV } from '/scripts/workflows/cmd-args';
+import {CmdArgsSchema, parseCmdFlags} from '/scripts/workflows/cmd-args';
 
-const CMD_ARG_DELAY = 'delay';
-const CMD_ARGS_SCHEMA: CmdArgsSchema = [
-  [CMD_ARG_TARGETS_CSV, ''],
-  [CMD_ARG_DELAY, 0],
+const CMD_FLAG_DELAY = 'delay';
+const CMD_FLAG_TARGETS_CSV = 'targetsCsv';
+const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
+  [CMD_FLAG_DELAY, 0],
+  [CMD_FLAG_TARGETS_CSV, ''],
 ];
 
 async function runWorker(
@@ -20,10 +19,10 @@ async function runWorker(
   gwhFunc: GrowWeakenHackFunction
 ) {
   logWriter.writeLine('Parsing command line arguments...');
-  const cmdArgs = netscript.flags(CMD_ARGS_SCHEMA);
-  const targetHostsCsv = cmdArgs.targetsCsv.valueOf() as string;
+  const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
+  const delay = cmdArgs[CMD_FLAG_DELAY].valueOf() as number;
+  const targetHostsCsv = cmdArgs[CMD_FLAG_TARGETS_CSV].valueOf() as string;
   const targetHosts = targetHostsCsv.split(',');
-  const delay = cmdArgs.delay.valueOf() as number;
 
   logWriter.writeLine(`Target Hosts : ${targetHosts}`);
   logWriter.writeLine(`Delay : ${delay}`);
@@ -34,4 +33,4 @@ async function runWorker(
   logWriter.writeLine(`Worker activity complete : ${gwhFunc.name}`);
 }
 
-export {CMD_ARG_DELAY, CMD_ARGS_SCHEMA, runWorker};
+export {CMD_FLAG_DELAY, CMD_FLAG_TARGETS_CSV, CMD_FLAGS_SCHEMA, runWorker};

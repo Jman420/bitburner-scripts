@@ -1,20 +1,41 @@
-import { NS } from "@ns";
+import {NS} from '@ns';
 
 type CmdFlagsEntry = [string, string | number | boolean | string[]];
 type CmdArgsSchema = CmdFlagsEntry[];
 
-const CMD_ARG_PREFIX = '--';
-const CMD_ARG_HELP = 'help';
-const CMD_ARG_TARGETS_CSV = 'targetsCsv';
-const CMD_ARGS_HELP_ENTRY: CmdFlagsEntry = [CMD_ARG_HELP, false];
+const CMD_FLAG_PREFIX = '--';
+const CMD_FLAG_HELP = 'help';
+const CMD_FLAG_TARGETS = 'targets';
+const CMD_FLAGS_HELP_ENTRY: CmdFlagsEntry = [CMD_FLAG_HELP, false];
+const PERCENT_AUTOCOMPLETE = ['1', '0.75', '0.5', '0.25'];
+const BOOLEAN_AUTOCOMPLETE = ['true', 'false'];
 
 function getCmdFlag(cmdFlagName: string) {
-  return `${CMD_ARG_PREFIX}${cmdFlagName}`;
+  return `${CMD_FLAG_PREFIX}${cmdFlagName}`;
+}
+
+function getSchemaFlags(cmdArgsSchema: CmdArgsSchema) {
+  return cmdArgsSchema.map(value => getCmdFlag(value[0]));
+}
+
+function getLastCmdFlag(cmdArgs: string[]) {
+  for (
+    let entryCounter = cmdArgs.length - 1;
+    entryCounter >= 0;
+    entryCounter--
+  ) {
+    const argsEntry = cmdArgs[entryCounter];
+    if (argsEntry.includes(CMD_FLAG_PREFIX)) {
+      return argsEntry;
+    }
+  }
+
+  return undefined;
 }
 
 function injectHelpFlag(cmdArgsSchema: CmdArgsSchema) {
-  if (cmdArgsSchema.indexOf(CMD_ARGS_HELP_ENTRY) < 0) {
-    cmdArgsSchema.push(CMD_ARGS_HELP_ENTRY);
+  if (cmdArgsSchema.indexOf(CMD_FLAGS_HELP_ENTRY) < 0) {
+    cmdArgsSchema.push(CMD_FLAGS_HELP_ENTRY);
   }
   return cmdArgsSchema;
 }
@@ -30,10 +51,7 @@ function parseCmdFlags(netscript: NS, cmdArgsSchema: CmdArgsSchema) {
   return cmdArgs;
 }
 
-function printCmdFlags(
-  netscript: NS,
-  cmdArgsSchema: CmdArgsSchema = []
-) {
+function printCmdFlags(netscript: NS, cmdArgsSchema: CmdArgsSchema = []) {
   if (cmdArgsSchema.length > 0) {
     netscript.tprint('Script Command Line Flags');
     for (const entry of cmdArgsSchema) {
@@ -42,4 +60,19 @@ function printCmdFlags(
   }
 }
 
-export {CmdFlagsEntry, CmdArgsSchema, CMD_ARG_PREFIX, CMD_ARG_HELP, CMD_ARG_TARGETS_CSV, CMD_ARGS_HELP_ENTRY, getCmdFlag as getCmdArgFlag, injectHelpFlag as getCmdFlagsSchema, parseCmdFlags, printCmdFlags};
+export {
+  CmdFlagsEntry,
+  CmdArgsSchema,
+  CMD_FLAG_PREFIX,
+  CMD_FLAG_HELP,
+  CMD_FLAG_TARGETS,
+  CMD_FLAGS_HELP_ENTRY,
+  PERCENT_AUTOCOMPLETE,
+  BOOLEAN_AUTOCOMPLETE,
+  getCmdFlag,
+  getSchemaFlags,
+  getLastCmdFlag,
+  injectHelpFlag,
+  parseCmdFlags,
+  printCmdFlags,
+};

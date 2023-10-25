@@ -1,5 +1,3 @@
-type CmdArgsSchema = [string, string | number | boolean | string[]][];
-
 const SCRIPTS_PATH = '/scripts';
 const HOME_SERVER_NAME = 'home';
 
@@ -12,7 +10,6 @@ function removeEmptyString(value: string) {
 }
 
 export {
-  CmdArgsSchema,
   SCRIPTS_PATH,
   HOME_SERVER_NAME,
   randomIntWithinRange,

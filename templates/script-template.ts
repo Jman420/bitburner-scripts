@@ -1,9 +1,12 @@
-import {NS} from '@ns';
+import {AutocompleteData, NS} from '@ns';
 
-import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
-import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
+import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
   const logWriter = getLogger(netscript, 'script-template', LoggerMode.TERMINAL);
+}
+
+export function autocomplete(data: AutocompleteData, args: string[]) {
+
 }

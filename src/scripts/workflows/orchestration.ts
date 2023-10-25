@@ -4,7 +4,8 @@ import {ServerDetails, analyzeHost} from '/scripts/workflows/recon';
 import {runWorkerScript, waitForScripts} from '/scripts/workflows/execution';
 
 import {WORKERS_PACKAGE} from '/scripts/workers/package';
-import { CMD_ARG_TARGETS_CSV, getCmdArgFlag } from '/scripts/workflows/cmd-args';
+import {getCmdFlag} from '/scripts/workflows/cmd-args';
+import {CMD_FLAG_TARGETS_CSV} from '/scripts/workers/shared';
 
 const WEAKEN_WORKER_SCRIPT = '/scripts/workers/weaken.js';
 const GROW_WORKER_SCRIPT = '/scripts/workers/grow.js';
@@ -29,7 +30,7 @@ async function weakenHost(
       WORKERS_PACKAGE,
       requiredThreads,
       includeHomeAttacker,
-      getCmdArgFlag(CMD_ARG_TARGETS_CSV),
+      getCmdFlag(CMD_FLAG_TARGETS_CSV),
       hostDetails.hostname
     );
     await waitForScripts(netscript, scriptPids);
@@ -60,7 +61,7 @@ async function growHost(
       WORKERS_PACKAGE,
       requiredThreads,
       includeHomeAttacker,
-      getCmdArgFlag(CMD_ARG_TARGETS_CSV),
+      getCmdFlag(CMD_FLAG_TARGETS_CSV),
       hostDetails.hostname
     );
     await waitForScripts(netscript, scriptPids);
@@ -87,7 +88,7 @@ async function hackHost(
     WORKERS_PACKAGE,
     requiredThreads,
     includeHomeAttacker,
-    getCmdArgFlag(CMD_ARG_TARGETS_CSV),
+    getCmdFlag(CMD_FLAG_TARGETS_CSV),
     hostDetails.hostname
   );
   await waitForScripts(netscript, scriptPids);
