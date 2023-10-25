@@ -62,16 +62,8 @@ async function attackTargets(
     logWriter.writeLine(
       'No target hosts provided.  Getting all rooted host targets...'
     );
-    targetHosts = scanWideNetwork(netscript, false, true);
+    targetHosts = scanWideNetwork(netscript, false, true, false, true);
   }
-  logWriter.writeLine('Filtering target hosts to hackable hosts...');
-  targetHosts.filter(
-    value =>
-      netscript.getServerRequiredHackingLevel(value) <=
-        netscript.getHackingLevel() &&
-      netscript.getServerMaxMoney(value) > 0 &&
-      netscript.getServerGrowth(value) > 0
-  );
   logWriter.writeLine('Sorting target hosts by optimality...');
   let targetsAnalysis = targetHosts.map(value => analyzeHost(netscript, value));
   sortOptimalTargetHosts(targetsAnalysis, weightScoreValues);
