@@ -75,8 +75,10 @@ function scanWideNetwork(
       .filter(
         host =>
           (!rootOnly || (rootOnly && netscript.hasRootAccess(host))) &&
-          (!requireRam || (requireRam && netscript.getServerMaxRam(host) > 0)) &&
-          (!requireFunds || (requireFunds && netscript.getServerMaxMoney(host) > 0))
+          (!requireRam ||
+            (requireRam && netscript.getServerMaxRam(host) > 0)) &&
+          (!requireFunds ||
+            (requireFunds && netscript.getServerMaxMoney(host) > 0))
       )
       .forEach(host =>
         !availableHosts.includes(host) ? availableHosts.push(host) : undefined
@@ -94,34 +96,25 @@ function findServersForRam(
   netscript: NS,
   requiredTotalRam: number,
   requiredMinRam: number,
-  includeHome = true
+  includeHome = true,
+  targetHosts?: string[]
 ) {
   if (requiredTotalRam < 1) {
     return [];
   }
 
-  const rootedHostsWithRam = scanWideNetwork(
-    netscript,
-    includeHome,
-    true,
-    true
-  );
-  const singleServerWithRam = rootedHostsWithRam.find(
-    hostname => getAvailableRam(netscript, hostname) >= requiredTotalRam
-  );
-  if (singleServerWithRam) {
-    return [singleServerWithRam];
+  if (!targetHosts) {
+    targetHosts = scanWideNetwork(netscript, includeHome, true, true);
   }
 
   let satisfiedRam = 0;
   const serversWithRam = new Array<string>();
   for (
     let serverCounter = 0;
-    serverCounter < rootedHostsWithRam.length &&
-    satisfiedRam < requiredTotalRam;
+    serverCounter < targetHosts.length && satisfiedRam < requiredTotalRam;
     serverCounter++
   ) {
-    const hostname = rootedHostsWithRam[serverCounter];
+    const hostname = targetHosts[serverCounter];
     const currentServerRam = getAvailableRam(netscript, hostname);
     if (currentServerRam >= requiredMinRam) {
       serversWithRam.push(hostname);
