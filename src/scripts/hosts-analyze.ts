@@ -3,7 +3,7 @@ import {AutocompleteData, NS} from '@ns';
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
-import {analyzeHost} from '/scripts/workflows/recon';
+import {analyzeHost, getAvailableRam} from '/scripts/workflows/recon';
 import {
   CMD_FLAG_TARGETS,
   CmdArgsSchema,
@@ -18,7 +18,7 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'analyze-hosts', LoggerMode.TERMINAL);
+  const logWriter = getLogger(netscript, 'hosts-analyze', LoggerMode.TERMINAL);
   logWriter.writeLine('Analyze Hosts');
   logWriter.writeLine(SECTION_DIVIDER);
 
@@ -33,6 +33,10 @@ export async function main(netscript: NS) {
     const hostDetails = analyzeHost(netscript, hostname);
 
     logWriter.writeLine(`Hostname : ${hostDetails.hostname}`);
+    logWriter.writeLine(`Max Ram : ${netscript.getServerMaxRam(hostname)} GB`);
+    logWriter.writeLine(
+      `Available Ram : ${getAvailableRam(netscript, hostname)} GB`
+    );
     logWriter.writeLine(`Security Level : ${hostDetails.securityLevel}`);
     logWriter.writeLine(`Min Security Level : ${hostDetails.minSecurityLevel}`);
     logWriter.writeLine(`Available Funds : ${hostDetails.availableFunds}`);

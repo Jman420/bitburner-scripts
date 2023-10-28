@@ -6,7 +6,7 @@ import {findServersForRam, getAvailableRam} from '/scripts/workflows/recon';
 
 type GrowWeakenHackFunction = (host: string) => Promise<number>;
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-type LoopableFunction = (...args: any[]) => Promise<void>;
+type LoopableFunction = (...args: any[]) => Promise<void> | void;
 
 const MIN_LOOP_DELAY_MILLISEC = 1;
 const MAX_LOOP_DELAY_MILLISEC = 100;

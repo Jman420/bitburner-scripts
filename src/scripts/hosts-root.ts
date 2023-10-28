@@ -4,7 +4,7 @@ import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {scanWideNetwork} from '/scripts/workflows/recon';
-import {installBackdoor} from '/scripts/workflows/escalation';
+import {getRootTools, obtainRoot} from '/scripts/workflows/escalation';
 
 import {
   CMD_FLAG_TARGETS,
@@ -20,12 +20,8 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(
-    netscript,
-    'backdoor-all-hosts',
-    LoggerMode.TERMINAL
-  );
-  logWriter.writeLine('Backdoor All Available Hosts');
+  const logWriter = getLogger(netscript, 'hosts-root', LoggerMode.TERMINAL);
+  logWriter.writeLine('Root All Available Hosts');
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Parsing command line arguments...');
@@ -37,26 +33,24 @@ export async function main(netscript: NS) {
 
   if (targetHosts.length < 1) {
     logWriter.writeLine(
-      'No target hosts provided.  Getting all backdoorable hosts...'
+      'No target hosts provided.  Getting all rootable hosts...'
     );
     const availableHosts = scanWideNetwork(netscript, false, false);
-    const playerLevel = netscript.getHackingLevel();
+    const rootTools = getRootTools(netscript);
     targetHosts = availableHosts.filter(
       host =>
         !netscript.hasRootAccess(host) &&
-        netscript.getServerRequiredHackingLevel(host) <= playerLevel
+        netscript.getServerNumPortsRequired(host) <= rootTools.length
     );
-    logWriter.writeLine(`Found ${targetHosts.length} backdoorable hosts...`);
+    logWriter.writeLine(`Found ${targetHosts.length} rootable hosts...`);
     logWriter.writeLine(SECTION_DIVIDER);
   }
 
   for (const hostname of targetHosts) {
-    logWriter.writeLine(`Installing backdoor on ${hostname}`);
-    installBackdoor(netscript, hostname);
+    logWriter.writeLine(`Obtaining root on ${hostname}`);
+    obtainRoot(netscript, hostname);
   }
-  logWriter.writeLine(
-    'Successfully installed backdoor on all backdoorable hosts.'
-  );
+  logWriter.writeLine('Successfully obtained root on all rootable hosts.');
 }
 
 export function autocomplete(data: AutocompleteData, args: string[]) {

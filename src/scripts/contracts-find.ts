@@ -6,7 +6,7 @@ import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'find-contracts', LoggerMode.TERMINAL);
+  const logWriter = getLogger(netscript, 'contracts-find', LoggerMode.TERMINAL);
   logWriter.writeLine('Find Coding Contracts');
   logWriter.writeLine(SECTION_DIVIDER);
 

@@ -6,16 +6,20 @@ type CmdArgsSchema = CmdFlagsEntry[];
 const CMD_FLAG_PREFIX = '--';
 const CMD_FLAG_HELP = 'help';
 const CMD_FLAG_TARGETS = 'targets';
+const CMD_FLAG_INCLUDE_HOME = 'includeHome';
 const CMD_FLAGS_HELP_ENTRY: CmdFlagsEntry = [CMD_FLAG_HELP, false];
 const PERCENT_AUTOCOMPLETE = ['1', '0.75', '0.5', '0.25'];
 const BOOLEAN_AUTOCOMPLETE = ['true', 'false'];
+const POWER_2_AUTOCOMPLETE = ['2', '4', '8', '16', '32', '64'];
 
 function getCmdFlag(cmdFlagName: string) {
   return `${CMD_FLAG_PREFIX}${cmdFlagName}`;
 }
 
 function getSchemaFlags(cmdArgsSchema: CmdArgsSchema) {
-  return cmdArgsSchema.map(value => getCmdFlag(value[0]));
+  const result = cmdArgsSchema.map(value => getCmdFlag(value[0]));
+  result.push(getCmdFlag(CMD_FLAG_HELP));
+  return result;
 }
 
 function getLastCmdFlag(cmdArgs: string[]) {
@@ -66,9 +70,11 @@ export {
   CMD_FLAG_PREFIX,
   CMD_FLAG_HELP,
   CMD_FLAG_TARGETS,
+  CMD_FLAG_INCLUDE_HOME,
   CMD_FLAGS_HELP_ENTRY,
   PERCENT_AUTOCOMPLETE,
   BOOLEAN_AUTOCOMPLETE,
+  POWER_2_AUTOCOMPLETE,
   getCmdFlag,
   getSchemaFlags,
   getLastCmdFlag,

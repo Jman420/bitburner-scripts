@@ -1,4 +1,9 @@
+import {NS} from '@ns';
+
 type PurchaseFunction = (hostname: string, ram: number) => boolean | string;
+
+const CMD_FLAG_NAME_PREFIX = 'namePrefix';
+const DEFAULT_NODE_NAME_PREFIX = 'server-node';
 
 interface ServerFarmOrder {
   hostname: string;
@@ -23,4 +28,31 @@ function nearestPowerOf2(value: number) {
   return Math.pow(2, power + 1);
 }
 
-export {ServerFarmOrder, nearestPowerOf2};
+function getNodeCount(netscript: NS) {
+  return netscript.getPurchasedServers().length;
+}
+
+function getNodeUpgradeOrder(netscript: NS, hostname: string): ServerFarmOrder {
+  const currentServerRam = netscript.getServerMaxRam(hostname);
+  const upgradedServerRam = nearestPowerOf2(currentServerRam + 1);
+  const upgradeCost = netscript.getPurchasedServerUpgradeCost(
+    hostname,
+    upgradedServerRam
+  );
+
+  return {
+    hostname: hostname,
+    ramAmount: upgradedServerRam,
+    cost: upgradeCost,
+    purchaseFunc: netscript.upgradePurchasedServer,
+  };
+}
+
+export {
+  ServerFarmOrder,
+  CMD_FLAG_NAME_PREFIX,
+  DEFAULT_NODE_NAME_PREFIX,
+  nearestPowerOf2,
+  getNodeCount,
+  getNodeUpgradeOrder,
+};

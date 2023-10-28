@@ -27,7 +27,7 @@ function initializeUpgradeOrders(hacknetApi: Hacknet) {
   return upgradeOrders;
 }
 
-async function manageOrdersAndPurchases(
+function manageOrdersAndPurchases(
   netscript: NS,
   upgradeOrders: Array<HacknetOrder>,
   logWriter: Logger

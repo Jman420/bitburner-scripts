@@ -44,7 +44,7 @@ function findHostPath(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'find-host-path', LoggerMode.TERMINAL);
+  const logWriter = getLogger(netscript, 'hosts-path', LoggerMode.TERMINAL);
   logWriter.writeLine('Find Path to Host');
   logWriter.writeLine(SECTION_DIVIDER);
 

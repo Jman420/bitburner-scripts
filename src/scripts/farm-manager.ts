@@ -1,187 +1,154 @@
 import {AutocompleteData, NS} from '@ns';
 
-import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
-import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
+import {Logger, getLogger} from '/scripts/logging/loggerManager';
+import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {
-  BOOLEAN_AUTOCOMPLETE,
   CmdArgsSchema,
+  POWER_2_AUTOCOMPLETE,
   getCmdFlag,
   getLastCmdFlag,
   getSchemaFlags,
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
+import {
+  CMD_FLAG_NAME_PREFIX,
+  DEFAULT_NODE_NAME_PREFIX,
+  ServerFarmOrder,
+  getNodeCount,
+  getNodeUpgradeOrder,
+  nearestPowerOf2,
+} from '/scripts/workflows/server-farm';
+import {delayedInfiniteLoop} from '/scripts/workflows/execution';
 
-import {findServersForRam, getAvailableRam} from '/scripts/workflows/recon';
-import {ServerFarmOrder, nearestPowerOf2} from '/scripts/workflows/server-farm';
-
-const CMD_FLAG_AMOUNT = 'amount';
-const CMD_FLAG_RAM_EXPONENT = 'ramExponent';
-const CMD_FLAG_NAME_PREFIX = 'namePrefix';
-const CMD_FLAG_EXCLUDE_FARM = 'excludeFarm';
+const CMD_FLAG_MIN_RAM = 'minimumRam';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
-  [CMD_FLAG_AMOUNT, 0],
-  [CMD_FLAG_RAM_EXPONENT, 0],
-  [CMD_FLAG_NAME_PREFIX, 'server-node'],
-  [CMD_FLAG_EXCLUDE_FARM, false],
+  [CMD_FLAG_MIN_RAM, 2],
+  [CMD_FLAG_NAME_PREFIX, DEFAULT_NODE_NAME_PREFIX],
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const LOOP_DELAY_MILLISEC = 5000;
 
+function sortUpgradeOrders(upgradeOrders: Array<ServerFarmOrder>) {
+  upgradeOrders.sort((order1, order2) => order1.cost - order2.cost);
+}
+
+function initializeUpgradeOrders(netscript: NS) {
+  const upgradeOrders = new Array<ServerFarmOrder>();
+  const farmNodes = netscript.getPurchasedServers();
+  for (const hostname of farmNodes) {
+    upgradeOrders.push(getNodeUpgradeOrder(netscript, hostname));
+  }
+  sortUpgradeOrders(upgradeOrders);
+  return upgradeOrders;
+}
+
+function manageOrdersAndPurchases(
+  netscript: NS,
+  logWriter: Logger,
+  upgradeOrders: Array<ServerFarmOrder>,
+  namePrefix: string,
+  minRamOrder = 2
+) {
+  logWriter.writeLine('Checking Server Farm Purchase Node Order...');
+  const nodeCost = netscript.getPurchasedServerCost(minRamOrder);
+  if (
+    getNodeCount(netscript) < netscript.getPurchasedServerLimit() &&
+    (!upgradeOrders.length || nodeCost < upgradeOrders[0].cost) &&
+    nodeCost <= netscript.getPlayer().money
+  ) {
+    logWriter.writeLine(`Purchasing new Server Farm Node for $${nodeCost}...`);
+    const hostname = netscript.purchaseServer(namePrefix, minRamOrder);
+    logWriter.writeLine(
+      `Successfully purchased new Server Farm Node with index : ${hostname}`
+    );
+
+    logWriter.writeLine(
+      `Adding new Server Farm Node ${hostname} Upgrade Orders...`
+    );
+    const nodeUpgradeOrder = getNodeUpgradeOrder(netscript, hostname);
+    upgradeOrders.unshift(nodeUpgradeOrder);
+    logWriter.writeLine(
+      `Successfully added Server Farm Node ${hostname} Upgrade Orders.`
+    );
+  }
+
+  logWriter.writeLine(
+    `Checking ${upgradeOrders.length} Server Farm Upgrade Orders...`
+  );
+  while (
+    upgradeOrders.length > 0 &&
+    upgradeOrders[0].cost <= netscript.getPlayer().money
+  ) {
+    const orderDetails = upgradeOrders.shift();
+    if (!orderDetails) {
+      break;
+    }
+
+    logWriter.writeLine(
+      `Purchasing ${orderDetails.ramAmount}GB RAM upgrade for node ${orderDetails.hostname} for $${orderDetails.cost}...`
+    );
+    orderDetails.purchaseFunc(orderDetails.hostname, orderDetails.ramAmount);
+    logWriter.writeLine(
+      `Successfully purchased ${orderDetails.ramAmount}GB RAM upgrade for node ${orderDetails.hostname}`
+    );
+
+    logWriter.writeLine(
+      `Updating upgrade cost for server farm node ${orderDetails.hostname}...`
+    );
+    upgradeOrders.push(getNodeUpgradeOrder(netscript, orderDetails.hostname));
+    sortUpgradeOrders(upgradeOrders);
+    logWriter.writeLine(
+      `Successfully updated upgrade cost for server farm node ${orderDetails.hostname}`
+    );
+  }
+  logWriter.writeLine(ENTRY_DIVIDER);
+}
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'farm-manager', LoggerMode.TERMINAL);
-  logWriter.writeLine('Server Farm Manager');
+  const logWriter = getLogger(netscript, 'farm-manager');
+  logWriter.writeLine('Server Farm Purchase Manager');
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
-  const serverAmount = cmdArgs[CMD_FLAG_AMOUNT].valueOf() as number;
-  const ramExponent = cmdArgs[CMD_FLAG_RAM_EXPONENT].valueOf() as number;
-  const ramRequired = 2 ** ramExponent;
+  const minRamRequested = cmdArgs[CMD_FLAG_MIN_RAM].valueOf() as number;
+  const minRamOrder = nearestPowerOf2(minRamRequested);
   const namePrefix = cmdArgs[CMD_FLAG_NAME_PREFIX].valueOf() as string;
-  const excludeFarm = cmdArgs[CMD_FLAG_EXCLUDE_FARM].valueOf() as boolean;
 
-  logWriter.writeLine(`Server Amount : ${serverAmount}`);
-  logWriter.writeLine(`Ram Exponent : ${ramExponent}`);
-  logWriter.writeLine(`Ram Required : ${ramRequired}`);
+  logWriter.writeLine(`Minimum Ram Requested : ${minRamRequested}`);
+  logWriter.writeLine(`Minimum Ram Order : ${minRamOrder}`);
   logWriter.writeLine(`Name Prefix : ${namePrefix}`);
-  logWriter.writeLine(`Exclude Farm : ${excludeFarm}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
-  if (serverAmount < 1) {
-    logWriter.writeLine(
-      `${CMD_FLAG_AMOUNT} command flag must be a positive number greater than 0.`
-    );
-    return;
-  }
-  if (ramExponent < 1 || ramExponent > 20) {
-    logWriter.writeLine(
-      `${CMD_FLAG_RAM_EXPONENT} command flag must be a positive number where 0 < x < 20.`
-    );
-    return;
-  }
-
-  const serverFarmHosts = netscript.getPurchasedServers();
-  if (!excludeFarm) {
-    logWriter.writeLine(
-      `Checking server farm for ${serverAmount} servers with ${ramRequired}GB of RAM available...`
-    );
-    const farmHostsWithRam = findServersForRam(
-      netscript,
-      ramRequired,
-      ramRequired,
-      false,
-      serverFarmHosts
-    );
-    if (farmHostsWithRam.length >= serverAmount) {
-      logWriter.writeLine(
-        'Provided requirements are satisfied in current server farm :'
-      );
-      for (const hostname of farmHostsWithRam) {
-        logWriter.writeLine(
-          `  ${hostname} : ${getAvailableRam(netscript, hostname)}`
-        );
-      }
-      return;
-    }
-  }
-
+  logWriter.writeLine('Initializing Server Farm Upgrade Orders...');
+  const upgradeOrders = initializeUpgradeOrders(netscript);
   logWriter.writeLine(
-    `Determining cheapest purchase path for ${serverAmount} servers with ${ramRequired}GB of RAM...`
+    `Found ${upgradeOrders.length} available Server Farm Upgrades.`
   );
-  const newServerCost = netscript.getPurchasedServerCost(ramRequired);
+  logWriter.writeLine(ENTRY_DIVIDER);
 
-  logWriter.writeLine('  Checking server farm for upgrade paths...');
-  const purchaseOrders = new Array<ServerFarmOrder>();
-  for (const hostname of serverFarmHosts) {
-    const maxRam = netscript.getServerMaxRam(hostname);
-    const availableRam = getAvailableRam(netscript, hostname);
-    const requiredRamUpgrade = nearestPowerOf2(
-      maxRam + ramRequired - availableRam
-    );
-    const upgradeCost = netscript.getPurchasedServerUpgradeCost(
-      hostname,
-      requiredRamUpgrade
-    );
-    if (upgradeCost < newServerCost) {
-      purchaseOrders.push({
-        hostname: hostname,
-        ramAmount: requiredRamUpgrade,
-        cost: upgradeCost,
-        purchaseFunc: netscript.upgradePurchasedServer,
-      });
-    }
-  }
-  purchaseOrders.sort((order1, order2) => order1.cost - order2.cost);
-  logWriter.writeLine(`  Found ${purchaseOrders.length} server farm upgrades.`);
-
-  logWriter.writeLine('  Determining available server purchases...');
-  const requiredServers = serverAmount - purchaseOrders.length;
-  const availableServers = netscript.getPurchasedServerLimit();
-  for (
-    let serverCounter = 0;
-    serverCounter < requiredServers && serverCounter < availableServers;
-    serverCounter++
-  ) {
-    purchaseOrders.push({
-      hostname: namePrefix,
-      ramAmount: ramRequired,
-      cost: newServerCost,
-      purchaseFunc: netscript.purchaseServer,
-    });
-  }
-  logWriter.writeLine(
-    `  Found ${purchaseOrders.length} server farm purchases.`
-  );
-  logWriter.writeLine(SECTION_DIVIDER);
-
-  if (serverAmount > purchaseOrders.length) {
-    logWriter.writeLine(
-      'Server farm is unable to satisfy the required resources.'
-    );
-    logWriter.writeLine(
-      `Server farm is missing ${
-        serverAmount - purchaseOrders.length
-      } servers with ${ramRequired}GB of RAM.`
-    );
-    return;
-  }
-
-  logWriter.writeLine(
-    `Purchasing ${purchaseOrders.length} server farm orders...`
-  );
-  while (purchaseOrders.length > 0) {
-    if (purchaseOrders[0].cost <= netscript.getPlayer().money) {
-      const upgradeOrder = purchaseOrders.shift();
-      if (!upgradeOrder) {
-        break;
-      }
-
-      netscript.upgradePurchasedServer(
-        upgradeOrder?.hostname,
-        upgradeOrder?.ramAmount
-      );
-    } else {
-      await netscript.sleep(LOOP_DELAY_MILLISEC);
-    }
-  }
-  logWriter.writeLine(
-    `Server farm has satisfied the requested ${serverAmount} servers with ${ramRequired}GB of RAM!`
+  await delayedInfiniteLoop(
+    netscript,
+    LOOP_DELAY_MILLISEC,
+    manageOrdersAndPurchases,
+    netscript,
+    logWriter,
+    upgradeOrders,
+    namePrefix,
+    minRamOrder
   );
 }
 
 export function autocomplete(data: AutocompleteData, args: string[]) {
   const lastCmdFlag = getLastCmdFlag(args);
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_AMOUNT)) {
-    return ['1', '2', '3', '5', '10', '15', '25'];
+  if (lastCmdFlag === getCmdFlag(CMD_FLAG_MIN_RAM)) {
+    return POWER_2_AUTOCOMPLETE;
   }
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_RAM_EXPONENT)) {
-    return ['1', '2', '3', '5', '10', '15', '20'];
-  }
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_EXCLUDE_FARM)) {
-    return BOOLEAN_AUTOCOMPLETE;
+  if (lastCmdFlag === getCmdFlag(CMD_FLAG_NAME_PREFIX)) {
+    return [];
   }
   return CMD_FLAGS;
 }
