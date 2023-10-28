@@ -4,10 +4,9 @@ import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {
-  ChallengeSolution,
   CodingContract,
   findContracts,
-  getContractSolutionFunc,
+  getContractSolver,
 } from '/scripts/workflows/contracts';
 
 import {
@@ -60,16 +59,11 @@ export async function main(netscript: NS) {
 
   logWriter.writeLine('Attemping to solve coding contracts...');
   for (const contract of codingContacts) {
-    const solutionFunc = getContractSolutionFunc(contract);
+    const contractSolver = getContractSolver(contract);
     let solutionResult = 'skipped';
-    if (solutionFunc) {
-      let solution: ChallengeSolution;
-      if (Array.isArray(contract.data)) {
-        solution = solutionFunc(...contract.data);
-      } else {
-        solution = solutionFunc(contract.data);
-      }
-
+    if (contractSolver) {
+      const challengeInput = contractSolver.parseInputFunc(contract.data);
+      const solution = contractSolver.solveFunc(...challengeInput);
       solutionResult = netscript.codingcontract.attempt(
         solution,
         contract.filename,
