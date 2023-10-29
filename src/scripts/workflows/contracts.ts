@@ -10,6 +10,7 @@ import {
 import {
   getTotalPaths,
   getTotalPathsObsticles,
+  minPathTriangle,
 } from '/scripts/workflows/contracts/path-finding';
 import {maxProfit} from '/scripts/workflows/contracts/stock-trading';
 
@@ -69,6 +70,10 @@ const CONTRACT_SOLUTION_MAP = new Map<string, ContractSolver>([
   [
     'Algorithmic Stock Trader IV',
     new ContractSolver(maxProfit, data => [data[1], data[0]]),
+  ],
+  [
+    'Minimum Path Sum in a Triangle',
+    new ContractSolver(minPathTriangle, data => [data]),
   ],
 ]);
 

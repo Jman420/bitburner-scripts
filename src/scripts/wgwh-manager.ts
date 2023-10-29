@@ -28,13 +28,13 @@ import {
 
 const CMD_FLAG_CONTINUOUS_ATTACK = 'continuousAttack';
 const CMD_FLAG_INCLUDE_HOME = 'includeHome';
-const CMD_FLAG_ONLY_OPTIMAL = 'optimalOnly';
+const CMD_FLAG_OPTIMAL_ONLY = 'optimalOnly';
 const CMD_FLAG_HACK_PERCENT = 'hackPercent';
 const CMD_FLAG_FUNDS_LIMIT_WEIGHT = 'fundsLimitWeight';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_CONTINUOUS_ATTACK, true],
   [CMD_FLAG_INCLUDE_HOME, false],
-  [CMD_FLAG_ONLY_OPTIMAL, false],
+  [CMD_FLAG_OPTIMAL_ONLY, 0],
   [CMD_FLAG_HACK_PERCENT, 0.75],
   [CMD_FLAG_FUNDS_LIMIT_WEIGHT, 1],
   [CMD_FLAG_TARGETS, ''],
@@ -46,7 +46,7 @@ async function attackTargets(
   logWriter: Logger,
   targetHosts: string[],
   hackPercent = 0.75,
-  optimalOnly = false,
+  optimalOnlyCount = 0,
   includeHomeAttacker = false,
   fundsLimitWeight = 1,
   weightScoreValues: WeightScoreValues = {
@@ -69,9 +69,11 @@ async function attackTargets(
   sortOptimalTargetHosts(targetsAnalysis, weightScoreValues);
   logWriter.writeLine(`Sorted ${targetsAnalysis.length} target hosts.`);
 
-  if (optimalOnly) {
-    logWriter.writeLine('Isolating most optimal target host...');
-    targetsAnalysis = targetsAnalysis.slice(0, 1);
+  if (optimalOnlyCount > 0) {
+    logWriter.writeLine(
+      `Isolating top ${optimalOnlyCount} most optimal targets...`
+    );
+    targetsAnalysis = targetsAnalysis.slice(0, optimalOnlyCount);
   }
 
   logWriter.writeLine(`Attacking ${targetsAnalysis.length} targets...`);
@@ -135,7 +137,7 @@ export async function main(netscript: NS) {
   const includeHomeAttacker = cmdArgs[
     CMD_FLAG_INCLUDE_HOME
   ].valueOf() as boolean;
-  const optimalOnly = cmdArgs[CMD_FLAG_ONLY_OPTIMAL].valueOf() as boolean;
+  const optimalOnlyCount = cmdArgs[CMD_FLAG_OPTIMAL_ONLY].valueOf() as number;
   const hackPercent = cmdArgs[CMD_FLAG_HACK_PERCENT].valueOf() as number;
   const fundsLimitWeight = cmdArgs[
     CMD_FLAG_FUNDS_LIMIT_WEIGHT
@@ -144,7 +146,7 @@ export async function main(netscript: NS) {
 
   logWriter.writeLine(`Continuous Attack : ${continuousAttack}`);
   logWriter.writeLine(`Include Home Attacker : ${includeHomeAttacker}`);
-  logWriter.writeLine(`Optimal Only : ${optimalOnly}`);
+  logWriter.writeLine(`Optimal Only : ${optimalOnlyCount}`);
   logWriter.writeLine(`Hack Percent : ${hackPercent}`);
   logWriter.writeLine(`Funds Limit Weight : ${fundsLimitWeight}`);
   logWriter.writeLine(`Target Hosts : ${targetHosts}`);
@@ -158,7 +160,7 @@ export async function main(netscript: NS) {
       logWriter,
       targetHosts,
       hackPercent,
-      optimalOnly,
+      optimalOnlyCount,
       includeHomeAttacker,
       fundsLimitWeight
     );
@@ -168,7 +170,7 @@ export async function main(netscript: NS) {
       logWriter,
       targetHosts,
       hackPercent,
-      optimalOnly,
+      optimalOnlyCount,
       includeHomeAttacker,
       fundsLimitWeight
     );
@@ -183,8 +185,8 @@ export function autocomplete(data: AutocompleteData, args: string[]) {
   if (lastCmdFlag === getCmdFlag(CMD_FLAG_INCLUDE_HOME)) {
     return BOOLEAN_AUTOCOMPLETE;
   }
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_ONLY_OPTIMAL)) {
-    return BOOLEAN_AUTOCOMPLETE;
+  if (lastCmdFlag === getCmdFlag(CMD_FLAG_OPTIMAL_ONLY)) {
+    return ['1', '2', '3', '5', '10', '15'];
   }
   if (lastCmdFlag === getCmdFlag(CMD_FLAG_HACK_PERCENT)) {
     return PERCENT_AUTOCOMPLETE;

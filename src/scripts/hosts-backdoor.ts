@@ -39,7 +39,7 @@ export async function main(netscript: NS) {
     const playerLevel = netscript.getHackingLevel();
     targetHosts = availableHosts.filter(
       host =>
-        !netscript.hasRootAccess(host) &&
+        !(netscript.getServer(host).backdoorInstalled ?? true) &&
         netscript.getServerRequiredHackingLevel(host) <= playerLevel
     );
     logWriter.writeLine(`Found ${targetHosts.length} backdoorable hosts...`);

@@ -1,6 +1,9 @@
 {
   "name": "jman-bitburner-scripts",
   "version": "1.0.0",
+  "engines":{
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "watch:transpile": "tsc -w --preserveWatchOutput",
     "watch:local": "node sync/watch.js",

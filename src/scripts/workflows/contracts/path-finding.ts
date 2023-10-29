@@ -36,4 +36,36 @@ function getTotalPathsObsticles(grid: number[][]) {
   return pathingGrid[totalRows - 1][totalColumns - 1];
 }
 
-export {getTotalPaths, getTotalPathsObsticles};
+function minPathTriangle(triangel: number[][]) {
+  let pathValues = [triangel[0][0]];
+  for (let rowCount = 1; rowCount < triangel.length; rowCount++) {
+    const rowLength = triangel[rowCount].length;
+    const rowSums = new Array<number>();
+
+    // Handle zero column index
+    let currentValue = triangel[rowCount][0];
+    let leftSum = 0;
+    let rightSum = pathValues[0];
+    rowSums.push(rightSum + currentValue);
+
+    for (let columnCount = 1; columnCount < rowLength - 1; columnCount++) {
+      currentValue = triangel[rowCount][columnCount];
+      leftSum = pathValues[columnCount - 1];
+      rightSum = pathValues[columnCount];
+
+      rowSums.push(Math.min(leftSum + currentValue, rightSum + currentValue));
+    }
+
+    // Handle rowLength column index
+    currentValue = triangel[rowCount][rowLength - 1];
+    leftSum = pathValues[pathValues.length - 1];
+    rightSum = 0;
+    rowSums.push(leftSum + currentValue);
+
+    pathValues = rowSums;
+  }
+
+  return Math.min(...pathValues);
+}
+
+export {getTotalPaths, getTotalPathsObsticles, minPathTriangle};
