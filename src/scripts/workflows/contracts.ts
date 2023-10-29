@@ -11,6 +11,7 @@ import {
   getTotalPaths,
   getTotalPathsObsticles,
 } from '/scripts/workflows/contracts/path-finding';
+import {maxProfit} from '/scripts/workflows/contracts/stock-trading';
 
 type ParseInputFunction = (data: CodingContractData) => any[];
 type SolutionFunction = (...args: any) => string | number;
@@ -56,6 +57,19 @@ const CONTRACT_SOLUTION_MAP = new Map<string, ContractSolver>([
     new ContractSolver(getTotalPaths, data => [...data]),
   ],
   ['Unique Paths in a Grid II', new ContractSolver(getTotalPathsObsticles)],
+  [
+    'Algorithmic Stock Trader I',
+    new ContractSolver(maxProfit, data => [data, 1]),
+  ],
+  ['Algorithmic Stock Trader II', new ContractSolver(maxProfit)],
+  [
+    'Algorithmic Stock Trader III',
+    new ContractSolver(maxProfit, data => [data, 2]),
+  ],
+  [
+    'Algorithmic Stock Trader IV',
+    new ContractSolver(maxProfit, data => [data[1], data[0]]),
+  ],
 ]);
 
 function findContracts(
@@ -93,6 +107,7 @@ export {
   CodingContract,
   SolutionFunction,
   ChallengeSolution,
+  CONTRACT_FILE_EXTENSION,
   CONTRACT_SOLUTION_MAP,
   rotationCipher,
   decimalToHammingBinary,

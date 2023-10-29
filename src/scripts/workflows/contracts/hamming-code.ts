@@ -10,7 +10,9 @@ function decimalToHammingBinary(decimal: number) {
   }
 
   // Copy data into Hamming array
-  const hammingArray = new Array<number>(dataArray.length + parityBitsRequired + 1);
+  const hammingArray = new Array<number>(
+    dataArray.length + parityBitsRequired + 1
+  );
   let hammingIndexCounter = 0;
   for (const dataBit of dataArray) {
     // Parity bits are in indexes at powers of 2
