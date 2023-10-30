@@ -20,6 +20,7 @@ import {
   lzDecompression,
   rleCompression,
 } from '/scripts/workflows/contracts/compression';
+import {largestPrimeFactor} from '/scripts/workflows/contracts/math';
 
 type ParseInputFunction = (data: CodingContractData) => any[];
 type SolutionFunction = (...args: any) => string | number;
@@ -48,6 +49,10 @@ class ContractSolver {
 
 const CONTRACT_FILE_EXTENSION = '.cct';
 const CONTRACT_SOLUTION_MAP = new Map<string, ContractSolver>([
+  [
+    'Find Largest Prime Factor',
+    new ContractSolver(largestPrimeFactor, data => [data]),
+  ],
   [
     'Algorithmic Stock Trader I',
     new ContractSolver(maxProfit, data => [data, 1]),
