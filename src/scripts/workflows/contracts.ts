@@ -16,7 +16,10 @@ import {
   minPathTriangle,
 } from '/scripts/workflows/contracts/path-finding';
 import {maxProfit} from '/scripts/workflows/contracts/stock-trading';
-import { lzDecompression, rleCompression } from '/scripts/workflows/contracts/compression';
+import {
+  lzDecompression,
+  rleCompression,
+} from '/scripts/workflows/contracts/compression';
 
 type ParseInputFunction = (data: CodingContractData) => any[];
 type SolutionFunction = (...args: any) => string | number;
@@ -75,8 +78,14 @@ const CONTRACT_SOLUTION_MAP = new Map<string, ContractSolver>([
     'HammingCodes: Encoded Binary to Integer',
     new ContractSolver(hammingBinaryToDecimal),
   ],
-  ['Compression I: RLE Compression', new ContractSolver(rleCompression, data => [data])],
-  ['Compression II: LZ Decompression', new ContractSolver(lzDecompression, data => [data])],
+  [
+    'Compression I: RLE Compression',
+    new ContractSolver(rleCompression, data => [data]),
+  ],
+  [
+    'Compression II: LZ Decompression',
+    new ContractSolver(lzDecompression, data => [data]),
+  ],
   [
     'Encryption I: Caesar Cipher',
     new ContractSolver(caesarCipher, data => [...data]),
@@ -85,7 +94,6 @@ const CONTRACT_SOLUTION_MAP = new Map<string, ContractSolver>([
     'Encryption II: Vigenère Cipher',
     new ContractSolver(vigenereCipher, data => [...data]),
   ],
-  
 ]);
 
 function findContracts(

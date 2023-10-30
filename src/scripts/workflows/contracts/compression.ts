@@ -7,8 +7,7 @@ function rleCompression(plaintext: string) {
     const currentChar = plaintext[charCounter];
     if (currentChar === prevChar && repeatCount < 9) {
       repeatCount++;
-    }
-    else {
+    } else {
       result += `${repeatCount}${prevChar}`;
       prevChar = currentChar;
       repeatCount = 1;
@@ -42,7 +41,11 @@ function lzDecompression(compressedData: string) {
     if (chunkLength > 0) {
       const offset = parseInt(compressedData[charCounter]);
       charCounter++;
-      for (let repeatCounter = 0; repeatCounter < chunkLength; repeatCounter++) {
+      for (
+        let repeatCounter = 0;
+        repeatCounter < chunkLength;
+        repeatCounter++
+      ) {
         result += result[result.length - offset];
       }
     }
