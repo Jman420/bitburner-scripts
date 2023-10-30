@@ -16,6 +16,7 @@ import {
   minPathTriangle,
 } from '/scripts/workflows/contracts/path-finding';
 import {maxProfit} from '/scripts/workflows/contracts/stock-trading';
+import { lzDecompression, rleCompression } from '/scripts/workflows/contracts/compression';
 
 type ParseInputFunction = (data: CodingContractData) => any[];
 type SolutionFunction = (...args: any) => string | number;
@@ -45,31 +46,6 @@ class ContractSolver {
 const CONTRACT_FILE_EXTENSION = '.cct';
 const CONTRACT_SOLUTION_MAP = new Map<string, ContractSolver>([
   [
-    'Encryption I: Caesar Cipher',
-    new ContractSolver(caesarCipher, data => [...data]),
-  ],
-  [
-    'Encryption II: Vigenère Cipher',
-    new ContractSolver(vigenereCipher, data => [...data]),
-  ],
-  [
-    'HammingCodes: Integer to Encoded Binary',
-    new ContractSolver(decimalToHammingBinary),
-  ],
-  [
-    'HammingCodes: Encoded Binary to Integer',
-    new ContractSolver(hammingBinaryToDecimal),
-  ],
-  [
-    'Unique Paths in a Grid I',
-    new ContractSolver(getTotalPaths, data => [...data]),
-  ],
-  ['Unique Paths in a Grid II', new ContractSolver(getTotalPathsObsticles)],
-  [
-    'Minimum Path Sum in a Triangle',
-    new ContractSolver(minPathTriangle, data => [data]),
-  ],
-  [
     'Algorithmic Stock Trader I',
     new ContractSolver(maxProfit, data => [data, 1]),
   ],
@@ -82,6 +58,34 @@ const CONTRACT_SOLUTION_MAP = new Map<string, ContractSolver>([
     'Algorithmic Stock Trader IV',
     new ContractSolver(maxProfit, data => [data[1], data[0]]),
   ],
+  [
+    'Minimum Path Sum in a Triangle',
+    new ContractSolver(minPathTriangle, data => [data]),
+  ],
+  [
+    'Unique Paths in a Grid I',
+    new ContractSolver(getTotalPaths, data => [...data]),
+  ],
+  ['Unique Paths in a Grid II', new ContractSolver(getTotalPathsObsticles)],
+  [
+    'HammingCodes: Integer to Encoded Binary',
+    new ContractSolver(decimalToHammingBinary),
+  ],
+  [
+    'HammingCodes: Encoded Binary to Integer',
+    new ContractSolver(hammingBinaryToDecimal),
+  ],
+  ['Compression I: RLE Compression', new ContractSolver(rleCompression, data => [data])],
+  ['Compression II: LZ Decompression', new ContractSolver(lzDecompression, data => [data])],
+  [
+    'Encryption I: Caesar Cipher',
+    new ContractSolver(caesarCipher, data => [...data]),
+  ],
+  [
+    'Encryption II: Vigenère Cipher',
+    new ContractSolver(vigenereCipher, data => [...data]),
+  ],
+  
 ]);
 
 function findContracts(
