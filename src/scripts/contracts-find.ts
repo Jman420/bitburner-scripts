@@ -14,7 +14,11 @@ export async function main(netscript: NS) {
   for (const hostname of availableHosts) {
     const challengeFiles = netscript.ls(hostname, '.cct');
     for (const challengePath of challengeFiles) {
-      logWriter.writeLine(`${hostname} - ${challengePath}`);
+      const contractType = netscript.codingcontract.getContractType(
+        challengePath,
+        hostname
+      );
+      logWriter.writeLine(`${hostname} - ${challengePath} : ${contractType}`);
     }
   }
 }

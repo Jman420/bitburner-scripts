@@ -2,7 +2,10 @@ import {CodingContractData, NS} from '@ns';
 
 import {scanWideNetwork} from '/scripts/workflows/recon';
 
-import {rotationCipher} from '/scripts/workflows/contracts/rotation-cipher';
+import {
+  caesarCipher,
+  vigenereCipher,
+} from '/scripts/workflows/contracts/encryption';
 import {
   decimalToHammingBinary,
   hammingBinaryToDecimal,
@@ -43,7 +46,11 @@ const CONTRACT_FILE_EXTENSION = '.cct';
 const CONTRACT_SOLUTION_MAP = new Map<string, ContractSolver>([
   [
     'Encryption I: Caesar Cipher',
-    new ContractSolver(rotationCipher, data => [...data]),
+    new ContractSolver(caesarCipher, data => [...data]),
+  ],
+  [
+    'Encryption II: Vigenère Cipher',
+    new ContractSolver(vigenereCipher, data => [...data]),
   ],
   [
     'HammingCodes: Integer to Encoded Binary',
@@ -59,6 +66,10 @@ const CONTRACT_SOLUTION_MAP = new Map<string, ContractSolver>([
   ],
   ['Unique Paths in a Grid II', new ContractSolver(getTotalPathsObsticles)],
   [
+    'Minimum Path Sum in a Triangle',
+    new ContractSolver(minPathTriangle, data => [data]),
+  ],
+  [
     'Algorithmic Stock Trader I',
     new ContractSolver(maxProfit, data => [data, 1]),
   ],
@@ -70,10 +81,6 @@ const CONTRACT_SOLUTION_MAP = new Map<string, ContractSolver>([
   [
     'Algorithmic Stock Trader IV',
     new ContractSolver(maxProfit, data => [data[1], data[0]]),
-  ],
-  [
-    'Minimum Path Sum in a Triangle',
-    new ContractSolver(minPathTriangle, data => [data]),
   ],
 ]);
 
@@ -114,9 +121,6 @@ export {
   ChallengeSolution,
   CONTRACT_FILE_EXTENSION,
   CONTRACT_SOLUTION_MAP,
-  rotationCipher,
-  decimalToHammingBinary,
-  hammingBinaryToDecimal,
   findContracts,
   getContractSolver,
 };

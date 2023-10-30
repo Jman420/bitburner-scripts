@@ -36,6 +36,8 @@ function getTotalPathsObsticles(grid: number[][]) {
   return pathingGrid[totalRows - 1][totalColumns - 1];
 }
 
+// Note : The algorithm using Math.min() instead of calculating all paths can be easily broken by baiting the algorithm into going down an isolated path which is cheap in the beginning but expensive later on.
+//  Improve this algorithm by calculating all paths in the triangle... figure out how to calculate the inner pathValue references
 function minPathTriangle(triangel: number[][]) {
   let pathValues = [triangel[0][0]];
   for (let rowCount = 1; rowCount < triangel.length; rowCount++) {
