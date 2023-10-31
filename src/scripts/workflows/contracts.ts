@@ -11,6 +11,7 @@ import {
   hammingBinaryToDecimal,
 } from '/scripts/workflows/contracts/hamming-code';
 import {
+  arrayJumpGame,
   getTotalPaths,
   getTotalPathsObsticles,
   minPathTriangle,
@@ -20,7 +21,11 @@ import {
   lzDecompression,
   rleCompression,
 } from '/scripts/workflows/contracts/compression';
-import {largestPrimeFactor} from '/scripts/workflows/contracts/math';
+import {
+  largestPrimeFactor,
+  mergeOverlappingItervals,
+  totalWaysToSum,
+} from '/scripts/workflows/contracts/math';
 
 type ParseInputFunction = (data: CodingContractData) => any[];
 type SolutionFunction = (...args: any) => string | number;
@@ -51,7 +56,18 @@ const CONTRACT_FILE_EXTENSION = '.cct';
 const CONTRACT_SOLUTION_MAP = new Map<string, ContractSolver>([
   [
     'Find Largest Prime Factor',
-    new ContractSolver(largestPrimeFactor, data => [data]),
+    new ContractSolver(largestPrimeFactor),
+  ],
+  ['Total Ways to Sum', new ContractSolver(totalWaysToSum, data => [data, [...Array(data).keys()].slice(1)])],
+  ['Total Ways to Sum II', new ContractSolver(totalWaysToSum, data => data)],
+  [
+    'Array Jumping Game',
+    new ContractSolver(data => (arrayJumpGame(data) > 0 ? 1 : 0)),
+  ],
+  ['Array Jumping Game II', new ContractSolver(arrayJumpGame)],
+  [
+    'Merge Overlapping Intervals',
+    new ContractSolver(mergeOverlappingItervals),
   ],
   [
     'Algorithmic Stock Trader I',
@@ -68,7 +84,7 @@ const CONTRACT_SOLUTION_MAP = new Map<string, ContractSolver>([
   ],
   [
     'Minimum Path Sum in a Triangle',
-    new ContractSolver(minPathTriangle, data => [data]),
+    new ContractSolver(minPathTriangle),
   ],
   [
     'Unique Paths in a Grid I',
@@ -85,11 +101,11 @@ const CONTRACT_SOLUTION_MAP = new Map<string, ContractSolver>([
   ],
   [
     'Compression I: RLE Compression',
-    new ContractSolver(rleCompression, data => [data]),
+    new ContractSolver(rleCompression),
   ],
   [
     'Compression II: LZ Decompression',
-    new ContractSolver(lzDecompression, data => [data]),
+    new ContractSolver(lzDecompression),
   ],
   [
     'Encryption I: Caesar Cipher',

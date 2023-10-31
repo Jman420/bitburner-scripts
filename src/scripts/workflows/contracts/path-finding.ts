@@ -70,4 +70,35 @@ function minPathTriangle(triangel: number[][]) {
   return Math.min(...pathValues);
 }
 
-export {getTotalPaths, getTotalPathsObsticles, minPathTriangle};
+function arrayJumpGame(array: number[]) {
+  let result = 0;
+  let jumpReach = 0;
+  let lastIndex = -1;
+
+  while (jumpReach < array.length - 1) {
+    let nextJump = -1;
+    for (
+      let indexCounter = jumpReach;
+      indexCounter > lastIndex;
+      indexCounter--
+    ) {
+      const possibleJump = indexCounter + array[indexCounter];
+      if (possibleJump > jumpReach) {
+        jumpReach = possibleJump;
+        nextJump = indexCounter;
+      }
+    }
+
+    if (nextJump === -1) {
+      result = 0;
+      break;
+    }
+
+    lastIndex = nextJump;
+    result++;
+  }
+
+  return result;
+}
+
+export {getTotalPaths, getTotalPathsObsticles, minPathTriangle, arrayJumpGame};
