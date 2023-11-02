@@ -101,4 +101,72 @@ function arrayJumpGame(array: number[]) {
   return result;
 }
 
-export {getTotalPaths, getTotalPathsObsticles, minPathTriangle, arrayJumpGame};
+function spiralizeMatrix(matrix: number[][]) {
+  const result = new Array<number>();
+
+  let topRowIndex = 0;
+  let rightColumnIndex = matrix[0].length - 1;
+  let bottomRowIndex = matrix.length - 1;
+  let leftColumnIndex = 0;
+
+  /* eslint-disable-next-line no-constant-condition */
+  while (true) {
+    for (
+      let columnCounter = leftColumnIndex;
+      columnCounter <= rightColumnIndex;
+      columnCounter++
+    ) {
+      result.push(matrix[topRowIndex][columnCounter]);
+    }
+    topRowIndex++;
+    if (topRowIndex > bottomRowIndex) {
+      break;
+    }
+
+    for (
+      let rowCounter = topRowIndex;
+      rowCounter <= bottomRowIndex;
+      rowCounter++
+    ) {
+      result.push(matrix[rowCounter][rightColumnIndex]);
+    }
+    rightColumnIndex--;
+    if (rightColumnIndex < leftColumnIndex) {
+      break;
+    }
+
+    for (
+      let columnCounter = rightColumnIndex;
+      columnCounter >= leftColumnIndex;
+      columnCounter--
+    ) {
+      result.push(matrix[bottomRowIndex][columnCounter]);
+    }
+    bottomRowIndex--;
+    if (bottomRowIndex < topRowIndex) {
+      break;
+    }
+
+    for (
+      let rowCounter = bottomRowIndex;
+      rowCounter >= topRowIndex;
+      rowCounter--
+    ) {
+      result.push(matrix[rowCounter][leftColumnIndex]);
+    }
+    leftColumnIndex++;
+    if (leftColumnIndex > rightColumnIndex) {
+      break;
+    }
+  }
+
+  return JSON.stringify(result);
+}
+
+export {
+  getTotalPaths,
+  getTotalPathsObsticles,
+  minPathTriangle,
+  arrayJumpGame,
+  spiralizeMatrix,
+};

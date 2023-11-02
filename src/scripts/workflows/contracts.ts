@@ -15,6 +15,7 @@ import {
   getTotalPaths,
   getTotalPathsObsticles,
   minPathTriangle,
+  spiralizeMatrix,
 } from '/scripts/workflows/contracts/path-finding';
 import {maxProfit} from '/scripts/workflows/contracts/stock-trading';
 import {
@@ -22,10 +23,13 @@ import {
   rleCompression,
 } from '/scripts/workflows/contracts/compression';
 import {
+  findValidExpressions,
   largestPrimeFactor,
   mergeOverlappingItervals,
+  subarrayMaxSum,
   totalWaysToSum,
 } from '/scripts/workflows/contracts/math';
+import {generateIpAddresses} from '/scripts/workflows/contracts/ip-addresses';
 
 type ParseInputFunction = (data: CodingContractData) => any[];
 type SolutionFunction = (...args: any) => string | number;
@@ -54,21 +58,24 @@ class ContractSolver {
 
 const CONTRACT_FILE_EXTENSION = '.cct';
 const CONTRACT_SOLUTION_MAP = new Map<string, ContractSolver>([
+  ['Find Largest Prime Factor', new ContractSolver(largestPrimeFactor)],
+  ['Subarray with Maximum Sum', new ContractSolver(subarrayMaxSum)],
   [
-    'Find Largest Prime Factor',
-    new ContractSolver(largestPrimeFactor),
+    'Total Ways to Sum',
+    new ContractSolver(totalWaysToSum, data => [
+      data,
+      [...Array(data).keys()].slice(1),
+    ]),
   ],
-  ['Total Ways to Sum', new ContractSolver(totalWaysToSum, data => [data, [...Array(data).keys()].slice(1)])],
   ['Total Ways to Sum II', new ContractSolver(totalWaysToSum, data => data)],
+  ['Spiralize Matrix', new ContractSolver(spiralizeMatrix)],
   [
     'Array Jumping Game',
     new ContractSolver(data => (arrayJumpGame(data) > 0 ? 1 : 0)),
   ],
   ['Array Jumping Game II', new ContractSolver(arrayJumpGame)],
-  [
-    'Merge Overlapping Intervals',
-    new ContractSolver(mergeOverlappingItervals),
-  ],
+  ['Merge Overlapping Intervals', new ContractSolver(mergeOverlappingItervals)],
+  ['Generate IP Addresses', new ContractSolver(generateIpAddresses)],
   [
     'Algorithmic Stock Trader I',
     new ContractSolver(maxProfit, data => [data, 1]),
@@ -82,15 +89,24 @@ const CONTRACT_SOLUTION_MAP = new Map<string, ContractSolver>([
     'Algorithmic Stock Trader IV',
     new ContractSolver(maxProfit, data => [data[1], data[0]]),
   ],
-  [
-    'Minimum Path Sum in a Triangle',
-    new ContractSolver(minPathTriangle),
-  ],
+  ['Minimum Path Sum in a Triangle', new ContractSolver(minPathTriangle)],
   [
     'Unique Paths in a Grid I',
     new ContractSolver(getTotalPaths, data => [...data]),
   ],
   ['Unique Paths in a Grid II', new ContractSolver(getTotalPathsObsticles)],
+  [
+    'Find All Valid Math Expressions',
+    new ContractSolver(findValidExpressions, data => [
+      data[0],
+      data[1],
+      0,
+      '',
+      0,
+      0,
+      [],
+    ]),
+  ],
   [
     'HammingCodes: Integer to Encoded Binary',
     new ContractSolver(decimalToHammingBinary),
@@ -99,14 +115,8 @@ const CONTRACT_SOLUTION_MAP = new Map<string, ContractSolver>([
     'HammingCodes: Encoded Binary to Integer',
     new ContractSolver(hammingBinaryToDecimal),
   ],
-  [
-    'Compression I: RLE Compression',
-    new ContractSolver(rleCompression),
-  ],
-  [
-    'Compression II: LZ Decompression',
-    new ContractSolver(lzDecompression),
-  ],
+  ['Compression I: RLE Compression', new ContractSolver(rleCompression)],
+  ['Compression II: LZ Decompression', new ContractSolver(lzDecompression)],
   [
     'Encryption I: Caesar Cipher',
     new ContractSolver(caesarCipher, data => [...data]),

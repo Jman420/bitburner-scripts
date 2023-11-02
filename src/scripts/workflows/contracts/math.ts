@@ -43,8 +43,98 @@ function totalWaysToSum(target: number, addends: number[]) {
       results[addend] += results[addend - addends[addendCounter]];
     }
   }
-  
+
   return results[target];
 }
 
-export {largestPrimeFactor, mergeOverlappingItervals, totalWaysToSum};
+function subarrayMaxSum(values: number[]) {
+  const sums = values.slice();
+  for (let valueCounter = 1; valueCounter < sums.length; valueCounter++) {
+    sums[valueCounter] = Math.max(
+      sums[valueCounter],
+      sums[valueCounter] + sums[valueCounter - 1]
+    );
+  }
+
+  return Math.max(...sums);
+}
+
+function findValidExpressions(
+  values: string,
+  target: number,
+  valuesPosition: number,
+  expression: string,
+  expressionValue: number,
+  multipliedCarry: number,
+  results: string[]
+) {
+  if (valuesPosition >= values.length) {
+    if (expressionValue === target) {
+      results.push(expression);
+    }
+    return JSON.stringify(results);
+  }
+
+  for (
+    let valueCounter = valuesPosition;
+    valueCounter < values.length;
+    valueCounter++
+  ) {
+    if (valueCounter !== valuesPosition && values[valuesPosition] === '0') {
+      break;
+    }
+
+    const currentValue = parseInt(
+      values.substring(valuesPosition, valueCounter + 1)
+    );
+    if (valuesPosition === 0) {
+      findValidExpressions(
+        values,
+        target,
+        valueCounter + 1,
+        `${expression}${currentValue}`,
+        currentValue,
+        currentValue,
+        results
+      );
+    } else {
+      findValidExpressions(
+        values,
+        target,
+        valueCounter + 1,
+        `${expression}+${currentValue}`,
+        expressionValue + currentValue,
+        currentValue,
+        results
+      );
+      findValidExpressions(
+        values,
+        target,
+        valueCounter + 1,
+        `${expression}-${currentValue}`,
+        expressionValue - currentValue,
+        -currentValue,
+        results
+      );
+      findValidExpressions(
+        values,
+        target,
+        valueCounter + 1,
+        `${expression}*${currentValue}`,
+        expressionValue - multipliedCarry + multipliedCarry * currentValue,
+        multipliedCarry * currentValue,
+        results
+      );
+    }
+  }
+
+  return JSON.stringify(results);
+}
+
+export {
+  largestPrimeFactor,
+  mergeOverlappingItervals,
+  totalWaysToSum,
+  subarrayMaxSum,
+  findValidExpressions,
+};

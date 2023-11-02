@@ -46,9 +46,15 @@ export async function main(netscript: NS) {
   );
   sortOptimalTargetHosts(targetsAnalysis);
 
-  for (let targetCounter = 0; targetCounter < targetsAnalysis.length; targetCounter++) {
+  for (
+    let targetCounter = 0;
+    targetCounter < targetsAnalysis.length;
+    targetCounter++
+  ) {
     const targetDetails = targetsAnalysis[targetCounter];
-    logWriter.writeLine(`${targetCounter} - ${targetDetails.hostname} : ${targetDetails.score}`);
+    logWriter.writeLine(
+      `${targetCounter} - ${targetDetails.hostname} : ${targetDetails.score}`
+    );
     if (includeDetails) {
       logWriter.writeLine('  Details To Be Added!');
       // TODO (JMG) : Add Scoring Details
