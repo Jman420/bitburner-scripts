@@ -36,7 +36,6 @@ interface DeviationScoreValues {
 }
 
 interface WeightScoreValues {
-  hackLevel: number;
   hackTime: number;
   maxFunds: number;
   growRate: number;
@@ -210,7 +209,6 @@ function scoreHost(
   meanScoreValues: MeanScoreValues,
   deviationScoreValues: DeviationScoreValues,
   weightScoreValues: WeightScoreValues = {
-    hackLevel: 1,
     hackTime: 1,
     maxFunds: 1,
     growRate: 1,
@@ -219,12 +217,6 @@ function scoreHost(
   }
 ) {
   targetDetails.score =
-    weightScoreValues.hackLevel *
-      getStandardValue(
-        targetDetails.hackLevel,
-        meanScoreValues.hackLevel,
-        deviationScoreValues.hackLevel
-      ) +
     weightScoreValues.hackTime *
       getStandardValue(
         targetDetails.hackTime,
@@ -261,7 +253,6 @@ function scoreHost(
 function sortOptimalTargetHosts(
   targetsAnalysis: ServerDetails[],
   weightScoreValues: WeightScoreValues = {
-    hackLevel: 1,
     hackTime: 1,
     maxFunds: 1,
     growRate: 1,

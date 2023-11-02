@@ -50,7 +50,6 @@ async function attackTargets(
   includeHomeAttacker = false,
   fundsLimitWeight = 1,
   weightScoreValues: WeightScoreValues = {
-    hackLevel: 1,
     hackTime: 1,
     maxFunds: 1,
     growRate: 1,

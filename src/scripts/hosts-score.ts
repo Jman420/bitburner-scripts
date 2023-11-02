@@ -1,7 +1,10 @@
 import {AutocompleteData, NS} from '@ns';
 
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
-import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
+import {
+  SECTION_DIVIDER,
+  convertMillisecToTime,
+} from '/scripts/logging/logOutput';
 
 import {
   BOOLEAN_AUTOCOMPLETE,
@@ -56,8 +59,17 @@ export async function main(netscript: NS) {
       `${targetCounter} - ${targetDetails.hostname} : ${targetDetails.score}`
     );
     if (includeDetails) {
-      logWriter.writeLine('  Details To Be Added!');
-      // TODO (JMG) : Add Scoring Details
+      logWriter.writeLine(`  Max Funds : ${targetDetails.maxFunds}`);
+      logWriter.writeLine(
+        `  Weaken Time : ${convertMillisecToTime(targetDetails.weakenTime)}`
+      );
+      logWriter.writeLine(
+        `  Grow Time : ${convertMillisecToTime(targetDetails.growTime)}`
+      );
+      logWriter.writeLine(`  Grow Rate : ${targetDetails.growRate}`);
+      logWriter.writeLine(
+        `  Hack Time : ${convertMillisecToTime(targetDetails.hackTime)}`
+      );
     }
   }
 }
