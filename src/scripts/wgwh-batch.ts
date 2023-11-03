@@ -1,19 +1,8 @@
 import {AutocompleteData, NS} from '@ns';
 
 import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
-import {
-  ENTRY_DIVIDER,
-  SECTION_DIVIDER,
-  convertMillisecToTime,
-} from '/scripts/logging/logOutput';
+import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
-import {analyzeHost, scanWideNetwork} from '/scripts/workflows/recon';
-import {
-  WeightScoreValues,
-  sortOptimalTargetHosts,
-} from '/scripts/workflows/scoring';
-import {infiniteLoop} from '/scripts/workflows/execution';
-import {growHost, hackHost, weakenHost} from '/scripts/workflows/orchestration';
 import {
   BOOLEAN_AUTOCOMPLETE,
   CMD_FLAG_TARGETS,
@@ -24,6 +13,12 @@ import {
   getSchemaFlags,
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
+import {infiniteLoop} from '/scripts/workflows/execution';
+import {analyzeHost, scanWideNetwork} from '/scripts/workflows/recon';
+import {
+  WeightScoreValues,
+  sortOptimalTargetHosts,
+} from '/scripts/workflows/scoring';
 
 const CMD_FLAG_CONTINUOUS_ATTACK = 'continuousAttack';
 const CMD_FLAG_INCLUDE_HOME = 'includeHome';
@@ -81,51 +76,22 @@ async function attackTargets(
     targetCounter < targetsAnalysis.length;
     targetCounter++
   ) {
-    let hostDetails = targetsAnalysis[targetCounter];
-
-    logWriter.writeLine(ENTRY_DIVIDER);
-    logWriter.writeLine(`Target Host : ${hostDetails.hostname}`);
-    logWriter.writeLine(
-      `  Weakening Host for Growth (~${convertMillisecToTime(
-        hostDetails.weakenTime
-      )})...`
-    );
-    hostDetails = await weakenHost(netscript, hostDetails, includeHomeAttacker);
-    logWriter.writeLine(
-      `  Growing Host (~${convertMillisecToTime(hostDetails.growTime)})...`
-    );
-    hostDetails = await growHost(
-      netscript,
-      hostDetails,
-      includeHomeAttacker,
-      fundsLimitWeight
-    );
-    logWriter.writeLine(
-      `  Weakening Host for Hack (~${convertMillisecToTime(
-        hostDetails.weakenTime
-      )})...`
-    );
-    hostDetails = await weakenHost(netscript, hostDetails, includeHomeAttacker);
-    logWriter.writeLine(
-      `  Hacking Host (~${convertMillisecToTime(hostDetails.hackTime)})...`
-    );
-    const hackResults = await hackHost(
-      netscript,
-      hostDetails,
-      hackPercent,
-      includeHomeAttacker
-    );
-    logWriter.writeLine(`  Hacked Funds : $${hackResults.hackedFunds}`);
-
-    targetsAnalysis[targetCounter] = hackResults.hostDetails;
+    // Determine Total Ram needed to fully attack the server (add a constant buffer amount to be safe)
+    // Determine if Total Ram can be satisfied by accessible servers (max ram) ; if not then skip
+    // Determine if Total Ram can be satisifed with available ram on servers ; if not then wait until Total Ram is available
+    // Calculate necessary delays for weaken, grow, weaken & hack batches
+    // Execute scripts with appropriate delays
   }
-  logWriter.writeLine(SECTION_DIVIDER);
 }
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'wgwh-manager', LoggerMode.TERMINAL);
-  logWriter.writeLine('WeakenGrowWeakenHack Attack Manager');
+  const logWriter = getLogger(
+    netscript,
+    'script-template',
+    LoggerMode.TERMINAL
+  );
+  logWriter.writeLine('SCRIPT TEMPLATE');
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Parsing command line arguments...');

@@ -97,4 +97,11 @@ async function hackHost(
   return {hostDetails: hostDetails, hackedFunds: targetHackFunds};
 }
 
-export {weakenHost, growHost, hackHost};
+export {
+  WEAKEN_WORKER_SCRIPT,
+  GROW_WORKER_SCRIPT,
+  HACK_WORKER_SCRIPT,
+  weakenHost,
+  growHost,
+  hackHost,
+};

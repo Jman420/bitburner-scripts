@@ -1,8 +1,13 @@
 import {NS} from '@ns';
 
 import {randomIntWithinRange} from '/scripts/common/shared';
-import {copyFiles, runScript} from '/scripts/workflows/propagation';
-import {findServersForRam, getAvailableRam} from '/scripts/workflows/recon';
+import {copyFiles} from '/scripts/workflows/propagation';
+import {
+  canRunScript,
+  findServersForRam,
+  getAvailableRam,
+  maxScriptThreads,
+} from '/scripts/workflows/recon';
 
 type GrowWeakenHackFunction = (host: string) => Promise<number>;
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -15,6 +20,28 @@ function getRequiredRam(netscript: NS, scriptPath: string, threadCount = 1) {
   const scriptRam = netscript.getScriptRam(scriptPath);
   const requiredRam = scriptRam * threadCount;
   return requiredRam;
+}
+
+function runScript(
+  netscript: NS,
+  scriptName: string,
+  hostname: string,
+  threadCount = 1,
+  maxThreads = false,
+  ...args: (string | number | boolean)[]
+) {
+  if (netscript.isRunning(scriptName, hostname)) {
+    return -1;
+  }
+
+  if (!canRunScript(netscript, hostname, scriptName)) {
+    return -1;
+  }
+
+  threadCount = maxThreads
+    ? maxScriptThreads(netscript, hostname, scriptName, false)
+    : threadCount;
+  return netscript.exec(scriptName, hostname, threadCount, ...args);
 }
 
 function runWorkerScript(
@@ -126,6 +153,7 @@ export {
   MIN_LOOP_DELAY_MILLISEC,
   MAX_LOOP_DELAY_MILLISEC,
   getRequiredRam,
+  runScript,
   runWorkerScript,
   waitForScripts,
   runGWH,

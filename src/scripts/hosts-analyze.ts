@@ -1,7 +1,11 @@
 import {AutocompleteData, NS} from '@ns';
 
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
-import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
+import {
+  ENTRY_DIVIDER,
+  SECTION_DIVIDER,
+  convertMillisecToTime,
+} from '/scripts/logging/logOutput';
 
 import {analyzeHost, getAvailableRam} from '/scripts/workflows/recon';
 import {
@@ -42,11 +46,17 @@ export async function main(netscript: NS) {
     logWriter.writeLine(`Available Funds : ${hostDetails.availableFunds}`);
     logWriter.writeLine(`Maximum Funds : ${hostDetails.maxFunds}`);
     logWriter.writeLine(`Ports Required : ${hostDetails.requiredPorts}`);
-    logWriter.writeLine(`Weaken Time: ${hostDetails.weakenTime}`);
+    logWriter.writeLine(
+      `Weaken Time: ${convertMillisecToTime(hostDetails.weakenTime)}`
+    );
     logWriter.writeLine(`Grow Rate : ${hostDetails.growRate}`);
-    logWriter.writeLine(`Grow Time : ${hostDetails.growTime}`);
+    logWriter.writeLine(
+      `Grow Time : ${convertMillisecToTime(hostDetails.growTime)}`
+    );
     logWriter.writeLine(`Hack Level : ${hostDetails.hackLevel}`);
-    logWriter.writeLine(`Hack Time : ${hostDetails.hackTime}`);
+    logWriter.writeLine(
+      `Hack Time : ${convertMillisecToTime(hostDetails.hackTime)}`
+    );
     logWriter.writeLine(ENTRY_DIVIDER);
   }
 }

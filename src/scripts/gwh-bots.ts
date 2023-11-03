@@ -4,7 +4,8 @@ import {getLogger, LoggerMode} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {scanWideNetwork} from '/scripts/workflows/recon';
-import {copyFiles, runScript} from '/scripts/workflows/propagation';
+import {copyFiles} from '/scripts/workflows/propagation';
+import {runScript} from '/scripts/workflows/execution';
 
 import {
   ATTACK_SCRIPT,
@@ -12,6 +13,7 @@ import {
   CMD_FLAG_SECURITY_LIMIT_MULTIPLIER,
   CMD_FLAG_FUNDS_LIMIT_MULTIPLIER,
 } from '/scripts/gwh-attack';
+
 import {
   BOOLEAN_AUTOCOMPLETE,
   CMD_FLAG_TARGETS,
