@@ -72,7 +72,7 @@ function findValidExpressions(
     if (expressionValue === target) {
       results.push(expression);
     }
-    return JSON.stringify(results);
+    return results;
   }
 
   for (
@@ -128,7 +128,7 @@ function findValidExpressions(
     }
   }
 
-  return JSON.stringify(results);
+  return results;
 }
 
 export {

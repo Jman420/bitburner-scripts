@@ -30,6 +30,7 @@ import {
   totalWaysToSum,
 } from '/scripts/workflows/contracts/math';
 import {generateIpAddresses} from '/scripts/workflows/contracts/ip-addresses';
+import {sanitizeParenthesis} from '/scripts/workflows/contracts/sanitization';
 
 type ParseInputFunction = (data: CodingContractData) => any[];
 type SolutionFunction = (...args: any) => string | number;
@@ -95,17 +96,12 @@ const CONTRACT_SOLUTION_MAP = new Map<string, ContractSolver>([
     new ContractSolver(getTotalPaths, data => [...data]),
   ],
   ['Unique Paths in a Grid II', new ContractSolver(getTotalPathsObsticles)],
+  // ['Sanitize Parentheses in Expression', new ContractSolver(sanitizeParenthesis)],
   [
     'Find All Valid Math Expressions',
-    new ContractSolver(findValidExpressions, data => [
-      data[0],
-      data[1],
-      0,
-      '',
-      0,
-      0,
-      [],
-    ]),
+    new ContractSolver(data =>
+      JSON.stringify(findValidExpressions(data[0], data[1], 0, '', 0, 0, []))
+    ),
   ],
   [
     'HammingCodes: Integer to Encoded Binary',
