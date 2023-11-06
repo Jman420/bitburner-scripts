@@ -1,6 +1,7 @@
 import {NS} from '@ns';
 
 import {randomIntWithinRange} from '/scripts/common/shared';
+
 import {copyFiles} from '/scripts/workflows/propagation';
 import {
   canRunScript,
@@ -9,12 +10,16 @@ import {
   maxScriptThreads,
 } from '/scripts/workflows/recon';
 
+import {EventListener} from '/scripts/comms/event-comms';
+import {ExitEvent} from '/scripts/comms/messages/exit-event';
+
 type GrowWeakenHackFunction = (host: string) => Promise<number>;
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 type LoopableFunction = (...args: any[]) => Promise<void> | void;
 
 const MIN_LOOP_DELAY_MILLISEC = 1;
 const MAX_LOOP_DELAY_MILLISEC = 100;
+const EVENT_LOOP_DELAY = 500;
 
 function getRequiredRam(netscript: NS, scriptPath: string, threadCount = 1) {
   const scriptRam = netscript.getScriptRam(scriptPath);
@@ -147,6 +152,15 @@ async function infiniteLoop(
   await delayedInfiniteLoop(netscript, delay, loopFunction, ...funcArgs);
 }
 
+async function eventLoop(netscript: NS, eventListener: EventListener) {
+  let exitFlag = false;
+  eventListener.addListeners(ExitEvent, () => (exitFlag = true));
+
+  while (!exitFlag) {
+    await netscript.sleep(EVENT_LOOP_DELAY);
+  }
+}
+
 export {
   GrowWeakenHackFunction,
   LoopableFunction,
@@ -159,4 +173,5 @@ export {
   runGWH,
   delayedInfiniteLoop,
   infiniteLoop,
+  eventLoop,
 };

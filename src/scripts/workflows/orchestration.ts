@@ -6,7 +6,8 @@ import {runWorkerScript, waitForScripts} from '/scripts/workflows/execution';
 import {WORKERS_PACKAGE} from '/scripts/workers/package';
 import {getCmdFlag} from '/scripts/workflows/cmd-args';
 import {CMD_FLAG_TARGETS_CSV} from '/scripts/workers/shared';
-import {sendEvent} from '../comms/event-comms';
+
+import {sendEvent} from '/scripts/comms/event-comms';
 import {WeakenEvent, WeakenStatus} from '/scripts/comms/messages/weaken-event';
 import {GrowEvent, GrowStatus} from '/scripts/comms/messages/grow-event';
 import {HackEvent, HackStatus} from '/scripts/comms/messages/hack-event';
