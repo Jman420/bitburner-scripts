@@ -57,7 +57,7 @@ function scanWideNetwork(
       (!requireFunds || (requireFunds && netscript.getServerMaxMoney(host) > 0))
   );
   if (includeHome) {
-    availableHosts.push(HOME_SERVER_NAME);
+    availableHosts.unshift(HOME_SERVER_NAME);
   }
 
   return availableHosts;

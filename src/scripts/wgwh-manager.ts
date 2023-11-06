@@ -31,7 +31,7 @@ const CMD_FLAG_OPTIMAL_ONLY = 'optimalOnly';
 const CMD_FLAG_HACK_PERCENT = 'hackPercent';
 const CMD_FLAG_FUNDS_LIMIT_WEIGHT = 'fundsLimitWeight';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
-  [CMD_FLAG_CONTINUOUS_ATTACK, true],
+  [CMD_FLAG_CONTINUOUS_ATTACK, false],
   [CMD_FLAG_INCLUDE_HOME, false],
   [CMD_FLAG_OPTIMAL_ONLY, 0],
   [CMD_FLAG_HACK_PERCENT, 0.75],
@@ -82,6 +82,7 @@ async function attackTargets(
     targetCounter++
   ) {
     let hostDetails = targetsAnalysis[targetCounter];
+    hostDetails = analyzeHost(netscript, hostDetails.hostname); // Re-analyze host since Player may have leveled up since previous analysis
 
     logWriter.writeLine(ENTRY_DIVIDER);
     logWriter.writeLine(`Target Host : ${hostDetails.hostname}`);
@@ -115,7 +116,11 @@ async function attackTargets(
       hackPercent,
       includeHomeAttacker
     );
-    logWriter.writeLine(`  Hacked Funds : $${hackResults.hackedFunds}`);
+    logWriter.writeLine(
+      `  Hacked Funds : $${netscript.formatNumber(
+        hackResults.hackedFunds
+      )} ? $${hackResults.hackedFunds}`
+    );
 
     targetsAnalysis[targetCounter] = hackResults.hostDetails;
   }

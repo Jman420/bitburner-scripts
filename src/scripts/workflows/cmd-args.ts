@@ -28,7 +28,7 @@ function getLastCmdFlag(cmdArgs: string[]) {
     entryCounter >= 0;
     entryCounter--
   ) {
-    const argsEntry = cmdArgs[entryCounter];
+    const argsEntry = String(cmdArgs[entryCounter]);
     if (argsEntry.includes(CMD_FLAG_PREFIX)) {
       return argsEntry;
     }

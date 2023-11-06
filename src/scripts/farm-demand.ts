@@ -158,15 +158,12 @@ export async function main(netscript: NS) {
   );
   while (purchaseOrders.length > 0) {
     if (purchaseOrders[0].cost <= netscript.getPlayer().money) {
-      const upgradeOrder = purchaseOrders.shift();
-      if (!upgradeOrder) {
+      const serverOrder = purchaseOrders.shift();
+      if (!serverOrder) {
         break;
       }
 
-      netscript.upgradePurchasedServer(
-        upgradeOrder?.hostname,
-        upgradeOrder?.ramAmount
-      );
+      serverOrder.purchaseFunc(serverOrder.hostname, serverOrder.ramAmount);
     } else {
       await netscript.sleep(LOOP_DELAY_MILLISEC);
     }

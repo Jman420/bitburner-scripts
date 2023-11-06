@@ -7,7 +7,6 @@ import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {infiniteLoop} from '/scripts/workflows/execution';
 import {scanLocalNetwork, analyzeHost} from '/scripts/workflows/recon';
-import {growWeakenHack} from '/scripts/workflows/attack';
 
 import {WORKFLOWS_PACKAGE} from '/scripts/workflows/package';
 import {
@@ -50,12 +49,33 @@ async function attackNetwork(
     const serverDetails = analyzeHost(netscript, hostname);
 
     logWriter.writeLine('  Grow-Weaken-Hack Attacking Server...');
-    await growWeakenHack(
-      netscript,
-      serverDetails,
-      securityLimitMultiplier,
-      fundsLimitMultiplier
-    );
+    const playerLevel = netscript.getHackingLevel();
+    const serverName = serverDetails.hostname;
+
+    if (serverDetails.availableFunds < serverDetails.maxFunds) {
+      logWriter.writeLine('  Growing server...');
+      await netscript.grow(serverName);
+      serverDetails.availableFunds =
+        netscript.getServerMoneyAvailable(serverName);
+    }
+    if (serverDetails.securityLevel > serverDetails.minSecurityLevel) {
+      logWriter.writeLine('  Weakening server...');
+      await netscript.weaken(serverName);
+      serverDetails.securityLevel =
+        netscript.getServerSecurityLevel(serverName);
+    }
+
+    if (
+      serverDetails.hackLevel <= playerLevel &&
+      serverDetails.securityLevel <=
+        serverDetails.minSecurityLevel * securityLimitMultiplier &&
+      serverDetails.availableFunds >=
+        serverDetails.maxFunds * fundsLimitMultiplier
+    ) {
+      logWriter.writeLine('  Hacking server...');
+      const hackAmount = await netscript.hack(serverName);
+      logWriter.writeLine(`  Hacked server for : $${hackAmount}`);
+    }
   }
 }
 

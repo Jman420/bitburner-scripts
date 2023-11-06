@@ -35,11 +35,13 @@ export async function main(netscript: NS) {
 
   for (const hostname of targetHosts) {
     const hostDetails = analyzeHost(netscript, hostname);
+    const hostMaxRam = netscript.getServerMaxRam(hostname);
+    const hostAvailableRam = getAvailableRam(netscript, hostname);
 
     logWriter.writeLine(`Hostname : ${hostDetails.hostname}`);
-    logWriter.writeLine(`Max Ram : ${netscript.getServerMaxRam(hostname)} GB`);
+    logWriter.writeLine(`Max Ram : ${netscript.formatRam(hostMaxRam)}`);
     logWriter.writeLine(
-      `Available Ram : ${getAvailableRam(netscript, hostname)} GB`
+      `Available Ram : ${netscript.formatRam(hostAvailableRam)}`
     );
     logWriter.writeLine(`Security Level : ${hostDetails.securityLevel}`);
     logWriter.writeLine(`Min Security Level : ${hostDetails.minSecurityLevel}`);

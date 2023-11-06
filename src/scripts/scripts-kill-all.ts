@@ -14,7 +14,7 @@ import {
 } from '/scripts/workflows/cmd-args';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
-const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_INCLUDE_HOME, true]];
+const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_INCLUDE_HOME, false]];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 /** @param {NS} netscript */
