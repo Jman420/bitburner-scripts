@@ -95,10 +95,28 @@ function findServersForRam(
   return serversWithRam;
 }
 
+function getTotalMaxRam(netscript: NS, targetHosts: string[]) {
+  if (targetHosts.length < 1) {
+    targetHosts = scanWideNetwork(netscript, true, true, true, false);
+  }
+
+  let result = 0;
+  for (const hostname of targetHosts) {
+    result += netscript.getServerMaxRam(hostname);
+  }
+  return result;
+}
+
 function getAvailableRam(netscript: NS, hostname: string) {
   return (
     netscript.getServerMaxRam(hostname) - netscript.getServerUsedRam(hostname)
   );
+}
+
+function getTotalAvailableRam(netscript: NS, targetHosts: string[]) {
+  return targetHosts
+    .map(hostname => getAvailableRam(netscript, hostname))
+    .reduce((aggregateValue, currentValue) => (aggregateValue += currentValue));
 }
 
 function canRunScript(
@@ -161,7 +179,9 @@ export {
   scanLocalNetwork,
   scanWideNetwork,
   findServersForRam,
+  getTotalMaxRam,
   getAvailableRam,
+  getTotalAvailableRam,
   canRunScript,
   maxScriptThreads,
   analyzeHost,
