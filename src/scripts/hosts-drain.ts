@@ -43,7 +43,7 @@ export async function main(netscript: NS) {
     logWriter.writeLine(
       'No target hosts provided.  Scanning wide network for targets...'
     );
-    targetHosts = scanWideNetwork(netscript, false, true, false, true);
+    targetHosts = scanWideNetwork(netscript, false, true, false, true, true);
   }
 
   logWriter.writeLine(

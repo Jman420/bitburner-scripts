@@ -45,8 +45,12 @@ export async function main(netscript: NS) {
     );
     logWriter.writeLine(`Security Level : ${hostDetails.securityLevel}`);
     logWriter.writeLine(`Min Security Level : ${hostDetails.minSecurityLevel}`);
-    logWriter.writeLine(`Available Funds : ${hostDetails.availableFunds}`);
-    logWriter.writeLine(`Maximum Funds : ${hostDetails.maxFunds}`);
+    logWriter.writeLine(
+      `Available Funds : ${netscript.formatNumber(hostDetails.availableFunds)}`
+    );
+    logWriter.writeLine(
+      `Maximum Funds : ${netscript.formatNumber(hostDetails.maxFunds)}`
+    );
     logWriter.writeLine(`Ports Required : ${hostDetails.requiredPorts}`);
     logWriter.writeLine(
       `Weaken Time: ${convertMillisecToTime(hostDetails.weakenTime)}`

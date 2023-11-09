@@ -116,7 +116,8 @@ async function hackHost(
 ) {
   sendEvent(new HackEvent(hostDetails.hostname, HackStatus.IN_PROGRESS));
 
-  const targetHackFunds = hostDetails.availableFunds * hackPercent;
+  const prehackFunds = hostDetails.availableFunds;
+  const targetHackFunds = prehackFunds * hackPercent;
   const requiredThreads = hackThreadsRequired(
     netscript,
     hostDetails.hostname,
@@ -135,7 +136,10 @@ async function hackHost(
 
   sendEvent(new HackEvent(hostDetails.hostname, HackStatus.COMPLETE));
   hostDetails = analyzeHost(netscript, hostDetails.hostname);
-  return {hostDetails: hostDetails, hackedFunds: targetHackFunds};
+  return {
+    hostDetails: hostDetails,
+    hackedFunds: prehackFunds - hostDetails.availableFunds,
+  };
 }
 
 export {

@@ -90,7 +90,9 @@ export async function main(netscript: NS) {
       `${targetCounter} - ${targetDetails.hostname} : ${targetDetails.score}`
     );
     if (includeDetails) {
-      logWriter.writeLine(`  Max Funds : ${targetDetails.maxFunds}`);
+      logWriter.writeLine(
+        `  Max Funds : ${netscript.formatNumber(targetDetails.maxFunds)}`
+      );
       logWriter.writeLine(
         `  Weaken Time : ${convertMillisecToTime(targetDetails.weakenTime)}`
       );

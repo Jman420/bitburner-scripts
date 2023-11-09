@@ -39,7 +39,9 @@ function scanWideNetwork(
   includeHome = false,
   rootOnly = false,
   requireRam = false,
-  requireFunds = false
+  requireFunds = false,
+  canHack = false,
+  hackChanceLimit = 0.75
 ) {
   let availableHosts = [HOME_SERVER_NAME];
   for (const hostname of availableHosts) {
@@ -54,7 +56,13 @@ function scanWideNetwork(
     host =>
       (!rootOnly || (rootOnly && netscript.hasRootAccess(host))) &&
       (!requireRam || (requireRam && netscript.getServerMaxRam(host) > 0)) &&
-      (!requireFunds || (requireFunds && netscript.getServerMaxMoney(host) > 0))
+      (!requireFunds ||
+        (requireFunds && netscript.getServerMaxMoney(host) > 0)) &&
+      (!canHack ||
+        (canHack &&
+          netscript.getServerRequiredHackingLevel(host) <=
+            netscript.getHackingLevel() &&
+          netscript.hackAnalyzeChance(host) >= hackChanceLimit))
   );
   if (includeHome) {
     availableHosts.unshift(HOME_SERVER_NAME);

@@ -36,7 +36,7 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_OPTIMAL_ONLY, 0],
   [CMD_FLAG_HACK_PERCENT, 0.75],
   [CMD_FLAG_FUNDS_LIMIT_WEIGHT, 1],
-  [CMD_FLAG_TARGETS, ''],
+  [CMD_FLAG_TARGETS, []],
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
@@ -61,7 +61,7 @@ async function attackTargets(
     logWriter.writeLine(
       'No target hosts provided.  Getting all rooted host targets...'
     );
-    targetHosts = scanWideNetwork(netscript, false, true, false, true);
+    targetHosts = scanWideNetwork(netscript, false, true, false, true, true);
   }
   logWriter.writeLine('Sorting target hosts by optimality...');
   let targetsAnalysis = targetHosts.map(value => analyzeHost(netscript, value));
@@ -119,7 +119,7 @@ async function attackTargets(
     logWriter.writeLine(
       `  Hacked Funds : $${netscript.formatNumber(
         hackResults.hackedFunds
-      )} ? $${hackResults.hackedFunds}`
+      )} / $${hostDetails.maxFunds}`
     );
 
     targetsAnalysis[targetCounter] = hackResults.hostDetails;

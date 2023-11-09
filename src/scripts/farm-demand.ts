@@ -49,7 +49,7 @@ export async function main(netscript: NS) {
 
   logWriter.writeLine(`Server Amount : ${serverAmount}`);
   logWriter.writeLine(`Ram Exponent : ${ramExponent}`);
-  logWriter.writeLine(`Ram Required : ${ramRequired}`);
+  logWriter.writeLine(`Ram Required : ${netscript.formatRam(ramRequired)}`);
   logWriter.writeLine(`Name Prefix : ${namePrefix}`);
   logWriter.writeLine(`Exclude Farm : ${excludeFarm}`);
   logWriter.writeLine(SECTION_DIVIDER);
@@ -70,7 +70,9 @@ export async function main(netscript: NS) {
   const serverFarmHosts = netscript.getPurchasedServers();
   if (!excludeFarm) {
     logWriter.writeLine(
-      `Checking server farm for ${serverAmount} servers with ${ramRequired}GB of RAM available...`
+      `Checking server farm for ${serverAmount} servers with ${netscript.formatRam(
+        ramRequired
+      )} of RAM available...`
     );
     const farmHostsWithRam = findServersForRam(
       netscript,
@@ -85,7 +87,9 @@ export async function main(netscript: NS) {
       );
       for (const hostname of farmHostsWithRam) {
         logWriter.writeLine(
-          `  ${hostname} : ${getAvailableRam(netscript, hostname)}`
+          `  ${hostname} : ${netscript.formatRam(
+            getAvailableRam(netscript, hostname)
+          )}`
         );
       }
       return;
@@ -93,7 +97,9 @@ export async function main(netscript: NS) {
   }
 
   logWriter.writeLine(
-    `Determining cheapest purchase path for ${serverAmount} servers with ${ramRequired}GB of RAM...`
+    `Determining cheapest purchase path for ${serverAmount} servers with ${netscript.formatRam(
+      ramRequired
+    )} of RAM...`
   );
   const newServerCost = netscript.getPurchasedServerCost(ramRequired);
 
@@ -148,7 +154,7 @@ export async function main(netscript: NS) {
     logWriter.writeLine(
       `Server farm is missing ${
         serverAmount - purchaseOrders.length
-      } servers with ${ramRequired}GB of RAM.`
+      } servers with ${netscript.formatRam(ramRequired)} of RAM.`
     );
     return;
   }
@@ -169,7 +175,9 @@ export async function main(netscript: NS) {
     }
   }
   logWriter.writeLine(
-    `Server farm has satisfied the requested ${serverAmount} servers with ${ramRequired}GB of RAM!`
+    `Server farm has satisfied the requested ${serverAmount} servers with ${netscript.formatRam(
+      ramRequired
+    )} of RAM!`
   );
 }
 

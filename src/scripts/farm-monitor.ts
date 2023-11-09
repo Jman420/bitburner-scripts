@@ -1,7 +1,7 @@
 import {NS} from '@ns';
 
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
-import {SECTION_DIVIDER, getRamAmount} from '/scripts/logging/logOutput';
+import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {getAvailableRam} from '/scripts/workflows/recon';
 
@@ -16,7 +16,9 @@ export async function main(netscript: NS) {
     const availableRam = getAvailableRam(netscript, hostname);
     const maxRam = netscript.getServerMaxRam(hostname);
     logWriter.writeLine(
-      `${hostname} (${getRamAmount(availableRam)} / ${getRamAmount(maxRam)})`
+      `${hostname} (${netscript.formatRam(
+        availableRam
+      )} / ${netscript.formatRam(maxRam)})`
     );
   }
   logWriter.writeLine(SECTION_DIVIDER);
