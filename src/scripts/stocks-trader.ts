@@ -12,128 +12,245 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
+import {HOME_SERVER_NAME} from '/scripts/common/shared';
+
 import {eventLoop, runScript} from '/scripts/workflows/execution';
 import {
+  COMMISSION,
   FIFTY_PERCENT,
-  STOCK_FORECAST_4SIGMA_SCRIPT,
-  STOCK_FORECAST_HISTORY_SCRIPT,
+  PurchaseTransaction,
+  STOCKS_TICKER_4SIGMA_SCRIPT,
+  STOCKS_TICKER_HISTORY_SCRIPT,
+  SaleTransaction,
+  TransactionPosition,
   buyStock,
-  getAllStockListings,
   sellStock,
 } from '/scripts/workflows/stocks';
 
-import {EventListener} from '/scripts/comms/event-comms';
-import {StocksUpdatedEvent} from '/scripts/comms/messages/stocks-updated-event';
-import {HOME_SERVER_NAME} from '/scripts/common/shared';
+import {EventListener, sendEvent} from '/scripts/comms/event-comms';
+import {StocksTickerEvent} from '/scripts/comms/events/stocks-ticker-event';
+import {StocksSoldEvent} from '/scripts/comms/events/stocks-sold-event';
+import {StocksPurchasedEvent} from '/scripts/comms/events/stocks-purchased-event';
+import {StockListingsResponse} from '/scripts/comms/events/stocks-listing-response';
+import {StockListingsRequest} from '/scripts/comms/events/stocks-listing-request';
 
-const CMD_FLAG_FUNDS_LIMIT = 'fundsLimit';
+type TradeStocksFunc = (
+  fundsLimit: number,
+  eventData: StocksTickerEvent
+) => void;
+
+const CMD_FLAG_FUNDS_SAFETY_LIMIT = 'fundsSafetyLimit';
 const CMD_FLAG_ENABLE_SHORT_SALES = 'enableShort';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
-  [CMD_FLAG_FUNDS_LIMIT, 0.75],
+  [CMD_FLAG_FUNDS_SAFETY_LIMIT, 0.25],
   [CMD_FLAG_ENABLE_SHORT_SALES, false],
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const SUBSCRIBER_NAME = 'stocks-trader';
-const PURCHASE_FORECAST_MARGIN = 0.05;
+const PURCHASE_FORECAST_MARGIN = 0.1;
 
 function tradeStocks(
   netscript: NS,
   logWriter: Logger,
+  shortEnabled: boolean,
   fundsLimit: number,
-  shortEnabled = false,
-  eventData?: StocksUpdatedEvent
+  eventData: StocksTickerEvent
 ) {
-  const updatedSymbols = eventData?.updatedStockSymbols ?? [];
-  logWriter.writeLine(
-    `Received Stock Listings Updated Event with ${updatedSymbols.length} updated listings`
-  );
-  if (updatedSymbols.length < 1) {
-    logWriter.writeLine(
-      'No symbols included in event data.  Skipping trading logic.'
-    );
-    logWriter.writeLine(SECTION_DIVIDER);
+  const stockListings = eventData.stockListings ?? [];
+  if (stockListings.length < 1) {
     return;
   }
 
-  logWriter.writeLine('  Retrieving updated stock listings...');
-  const stockListings = getAllStockListings()
-    .filter(stockListing => updatedSymbols.includes(stockListing.symbol))
-    .sort((stockA, stockB) => stockB.forecastScore - stockA.forecastScore);
-
-  logWriter.writeLine('  Handling sell transactions...');
+  // Handle Sales Transactions
   let totalSaleProfits = 0;
-  const soldStocks = new Array<string>();
+  const soldStocks = new Array<SaleTransaction>();
   for (const stockDetails of stockListings) {
     if (
       stockDetails.position.longShares > 0 &&
-      stockDetails.forecast > FIFTY_PERCENT
+      stockDetails.forecast <= FIFTY_PERCENT
     ) {
-      totalSaleProfits += sellStock(
-        stockDetails.symbol,
-        stockDetails.position.longShares,
-        stockDetails.position.longPrice,
-        netscript.stock.sellStock
-      );
-      soldStocks.push(stockDetails.symbol);
+      const saleTransaction: SaleTransaction = {
+        symbol: stockDetails.symbol,
+        position: TransactionPosition.LONG,
+        profit: sellStock(
+          stockDetails.symbol,
+          stockDetails.position.longShares,
+          stockDetails.position.longPrice,
+          netscript.stock.sellStock
+        ),
+      };
+      totalSaleProfits += saleTransaction.profit;
+      soldStocks.push(saleTransaction);
     } else if (
       stockDetails.position.shortShares > 0 &&
-      stockDetails.forecast < FIFTY_PERCENT
+      stockDetails.forecast >= FIFTY_PERCENT
     ) {
-      totalSaleProfits += sellStock(
-        stockDetails.symbol,
-        stockDetails.position.shortShares,
-        stockDetails.position.shortPrice,
-        netscript.stock.sellShort
-      );
-      soldStocks.push(stockDetails.symbol);
+      const saleTransaction: SaleTransaction = {
+        symbol: stockDetails.symbol,
+        position: TransactionPosition.SHORT,
+        profit: sellStock(
+          stockDetails.symbol,
+          stockDetails.position.shortShares,
+          stockDetails.position.shortPrice,
+          netscript.stock.sellShort
+        ),
+      };
+      totalSaleProfits += saleTransaction.profit;
+      soldStocks.push(saleTransaction);
     }
   }
-  logWriter.writeLine(
-    `  Sold ${soldStocks.length} stocks for $${netscript.formatNumber(
-      totalSaleProfits
-    )} profit`
-  );
 
-  logWriter.writeLine('  Handling purchase transactions...');
+  // Handle Purchase Transactions
   let playerMoney = netscript.getServerMoneyAvailable(HOME_SERVER_NAME);
   let totalPurchaseCosts = 0;
-  const purchasedStocks = new Array<string>();
+  const purchasedStocks = new Array<PurchaseTransaction>();
   for (
     let stockCounter = 0;
-    stockCounter < stockListings.length && playerMoney > fundsLimit;
+    stockCounter < stockListings.length &&
+    playerMoney > fundsLimit + COMMISSION;
     stockCounter++
   ) {
+    const availableFunds = playerMoney - fundsLimit;
     const stockDetails = stockListings[stockCounter];
-    if (stockDetails.forecast > FIFTY_PERCENT + PURCHASE_FORECAST_MARGIN) {
-      totalPurchaseCosts += buyStock(
-        stockDetails.symbol,
-        stockDetails.askPrice,
-        stockDetails.maxShares,
-        playerMoney,
-        netscript.stock.buyStock
-      );
-      purchasedStocks.push(stockDetails.symbol);
-    } else if (
-      stockDetails.forecast < FIFTY_PERCENT - PURCHASE_FORECAST_MARGIN &&
-      shortEnabled
+    if (
+      stockDetails.forecast > FIFTY_PERCENT + PURCHASE_FORECAST_MARGIN &&
+      stockDetails.askPrice + COMMISSION < availableFunds
     ) {
-      totalPurchaseCosts += buyStock(
-        stockDetails.symbol,
-        stockDetails.bidPrice,
-        stockDetails.maxShares,
-        playerMoney,
-        netscript.stock.buyShort
-      );
-      purchasedStocks.push(stockDetails.symbol);
+      const purchaseTransaction: PurchaseTransaction = {
+        symbol: stockDetails.symbol,
+        position: TransactionPosition.LONG,
+        cost: buyStock(
+          stockDetails.symbol,
+          stockDetails.askPrice,
+          stockDetails.maxShares,
+          availableFunds,
+          netscript.stock.buyStock
+        ),
+      };
+
+      if (purchaseTransaction.cost > 0) {
+        totalPurchaseCosts += purchaseTransaction.cost;
+        purchasedStocks.push(purchaseTransaction);
+      }
+    } else if (
+      shortEnabled &&
+      stockDetails.forecast < FIFTY_PERCENT - PURCHASE_FORECAST_MARGIN &&
+      stockDetails.bidPrice + COMMISSION < availableFunds
+    ) {
+      const purchaseTransaction: PurchaseTransaction = {
+        symbol: stockDetails.symbol,
+        position: TransactionPosition.LONG,
+        cost: buyStock(
+          stockDetails.symbol,
+          stockDetails.bidPrice,
+          stockDetails.maxShares,
+          availableFunds,
+          netscript.stock.buyShort
+        ),
+      };
+
+      if (purchaseTransaction.cost > 0) {
+        totalPurchaseCosts += purchaseTransaction.cost;
+        purchasedStocks.push(purchaseTransaction);
+      }
     }
 
     playerMoney = netscript.getServerMoneyAvailable(HOME_SERVER_NAME);
   }
+
+  // Output Transaction Detail
+  if (soldStocks.length + purchasedStocks.length > 0) {
+    logWriter.writeLine(
+      `Received Stock Listings Updated Event with ${stockListings.length} updated listings`
+    );
+    if (soldStocks.length > 0) {
+      logWriter.writeLine(
+        `  Sold ${soldStocks.length} stocks for $${netscript.formatNumber(
+          totalSaleProfits
+        )} profit`
+      );
+      sendEvent(new StocksSoldEvent(soldStocks));
+    }
+    if (purchasedStocks.length > 0) {
+      logWriter.writeLine(
+        `  Purchased ${
+          purchasedStocks.length
+        } stocks for $${netscript.formatNumber(totalPurchaseCosts)} cost`
+      );
+      sendEvent(new StocksPurchasedEvent(purchasedStocks));
+    }
+    logWriter.writeLine(SECTION_DIVIDER);
+  }
+}
+
+function setupStockTrader(
+  netscript: NS,
+  eventListener: EventListener,
+  logWriter: Logger,
+  fundsLimitPercent: number,
+  tradeStocksFunc: TradeStocksFunc,
+  eventData: StockListingsResponse
+) {
+  eventListener.removeListeners(
+    StockListingsResponse,
+    setupStockTrader.bind(
+      undefined,
+      netscript,
+      eventListener,
+      logWriter,
+      fundsLimitPercent,
+      tradeStocksFunc
+    )
+  );
+
   logWriter.writeLine(
-    `  Purchased ${purchasedStocks.length} stocks for $${netscript.formatNumber(
-      totalPurchaseCosts
-    )} cost`
+    'Selling all stock positions for accurate funds limit calculation...'
+  );
+  let totalProfit = 0;
+  for (const stockListing of eventData.stockListings ?? []) {
+    if (stockListing.position.longShares > 0) {
+      totalProfit += sellStock(
+        stockListing.symbol,
+        stockListing.position.longShares,
+        stockListing.position.longPrice,
+        netscript.stock.sellStock
+      );
+    }
+    if (stockListing.position.shortShares > 0) {
+      totalProfit += sellStock(
+        stockListing.symbol,
+        stockListing.position.shortShares,
+        stockListing.position.shortPrice,
+        netscript.stock.sellShort
+      );
+    }
+  }
+  logWriter.writeLine(
+    `All stock positions sold for $${netscript.formatNumber(
+      totalProfit
+    )} profit`
+  );
+
+  const fundsLimit =
+    netscript.getServerMoneyAvailable(HOME_SERVER_NAME) * fundsLimitPercent;
+  if (fundsLimit <= COMMISSION) {
+    logWriter.writeLine(
+      `Funds limit must be greater than transaction commission amount ($${netscript.formatNumber(
+        COMMISSION
+      )}) : $${netscript.formatNumber(fundsLimit)}`
+    );
+    netscript.exit();
+  }
+
+  eventListener.addListeners(
+    StocksTickerEvent,
+    tradeStocksFunc.bind(undefined, fundsLimit)
+  );
+  logWriter.writeLine(
+    `Stock trader setup successfully with funds limit : $${netscript.formatNumber(
+      fundsLimit
+    )}`
   );
   logWriter.writeLine(SECTION_DIVIDER);
 }
@@ -141,19 +258,22 @@ function tradeStocks(
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
   const logWriter = getLogger(netscript, 'stocks-trader', LoggerMode.TERMINAL);
-  logWriter.writeLine('Stock Market Grow-Hack Manager');
+  logWriter.writeLine('Stock Market Trade Manager');
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
-  const fundsLimitPercent = cmdArgs[CMD_FLAG_FUNDS_LIMIT].valueOf() as number;
+  const fundsLimitPercent = cmdArgs[
+    CMD_FLAG_FUNDS_SAFETY_LIMIT
+  ].valueOf() as number;
   const shortEnabled = cmdArgs[
     CMD_FLAG_ENABLE_SHORT_SALES
   ].valueOf() as boolean;
 
   logWriter.writeLine(
-    `Funds Limit Percent : ${netscript.formatPercent(fundsLimitPercent)}`
+    `Funds Safety Limit Percent : ${netscript.formatPercent(fundsLimitPercent)}`
   );
+  logWriter.writeLine(`Enable Short Sales : ${shortEnabled}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
   if (!netscript.stock.hasWSEAccount() || !netscript.stock.hasTIXAPIAccess()) {
@@ -165,24 +285,23 @@ export async function main(netscript: NS) {
 
   let stockForecastPid = -1;
   if (
-    !netscript.isRunning(STOCK_FORECAST_HISTORY_SCRIPT) &&
-    !netscript.isRunning(STOCK_FORECAST_4SIGMA_SCRIPT)
+    !netscript.isRunning(STOCKS_TICKER_HISTORY_SCRIPT) &&
+    !netscript.isRunning(STOCKS_TICKER_4SIGMA_SCRIPT)
   ) {
     if (netscript.stock.has4SDataTIXAPI()) {
       stockForecastPid = runScript(
         netscript,
-        STOCK_FORECAST_4SIGMA_SCRIPT,
+        STOCKS_TICKER_4SIGMA_SCRIPT,
         netscript.getHostname()
       );
     } else {
       stockForecastPid = runScript(
         netscript,
-        STOCK_FORECAST_HISTORY_SCRIPT,
+        STOCKS_TICKER_HISTORY_SCRIPT,
         netscript.getHostname()
       );
     }
   }
-
   if (!stockForecastPid) {
     logWriter.writeLine(
       'Failed to find or execute a Stock Forecasting script!'
@@ -190,19 +309,33 @@ export async function main(netscript: NS) {
     return;
   }
 
-  const fundsLimit =
-    netscript.getServerMoneyAvailable(HOME_SERVER_NAME) * fundsLimitPercent;
   const eventListener = new EventListener(netscript, SUBSCRIBER_NAME);
-  eventListener.addListeners(
-    StocksUpdatedEvent,
-    tradeStocks.bind(undefined, netscript, logWriter, fundsLimit, shortEnabled)
+
+  // Setup event listener chain to sell all existing positions to get accurate funds limit
+  const tradeStocksFunc = tradeStocks.bind(
+    undefined,
+    netscript,
+    logWriter,
+    shortEnabled
   );
-  eventLoop(netscript, eventListener);
+  const sellAllPositionsFunc = setupStockTrader.bind(
+    undefined,
+    netscript,
+    eventListener,
+    logWriter,
+    fundsLimitPercent,
+    tradeStocksFunc
+  );
+  eventListener.addListeners(StockListingsResponse, sellAllPositionsFunc);
+  await netscript.asleep(100);
+  sendEvent(new StockListingsRequest(SUBSCRIBER_NAME));
+
+  await eventLoop(netscript, eventListener);
 }
 
 export function autocomplete(data: AutocompleteData, args: string[]) {
   const lastCmdFlag = getLastCmdFlag(args);
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_FUNDS_LIMIT)) {
+  if (lastCmdFlag === getCmdFlag(CMD_FLAG_FUNDS_SAFETY_LIMIT)) {
     return PERCENT_AUTOCOMPLETE;
   }
   return CMD_FLAGS;

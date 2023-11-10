@@ -1,4 +1,11 @@
+import {NS} from '@ns';
+
 type BuySellStockFunction = (symbol: string, shares: number) => number;
+
+enum TransactionPosition {
+  LONG,
+  SHORT,
+}
 
 interface StockPosition {
   longShares: number;
@@ -18,23 +25,49 @@ interface StockListing {
   position: StockPosition;
 }
 
-const STOCK_FORECAST_HISTORY_SCRIPT = '/scripts/stocks-forecast-history.js';
-const STOCK_FORECAST_4SIGMA_SCRIPT = '/scripts/stocks-forecast-4sigma.js';
+interface SaleTransaction {
+  symbol: string;
+  position: TransactionPosition;
+  profit: number;
+}
+
+interface PurchaseTransaction {
+  symbol: string;
+  position: TransactionPosition;
+  cost: number;
+}
+
+const STOCKS_TICKER_HISTORY_SCRIPT = '/scripts/stocks-ticker-history.js';
+const STOCKS_TICKER_4SIGMA_SCRIPT = '/scripts/stocks-ticker-4sigma.js';
 
 const FIFTY_PERCENT = 0.5;
 const COMMISSION = 100000;
-const STOCK_LISTING_MAP = new Map<string, StockListing>();
 
-function getAllStockListings() {
-  return Array.from(STOCK_LISTING_MAP.values());
+function getPosition(netscript: NS, symbol: string) {
+  const [longShares, longPrice, shortShares, shortPrice] =
+    netscript.stock.getPosition(symbol);
+  const result: StockPosition = {
+    longShares: longShares,
+    longPrice: longPrice,
+    shortShares: shortShares,
+    shortPrice: shortPrice,
+  };
+  return result;
 }
 
-function getStockListing(symbol: string) {
-  return STOCK_LISTING_MAP.get(symbol);
-}
-
-function updateStockListing(stockListing: StockListing) {
-  STOCK_LISTING_MAP.set(stockListing.symbol, stockListing);
+function buyStock(
+  symbol: string,
+  price: number,
+  maxShares: number,
+  playerMoney: number,
+  buyStockFunc: BuySellStockFunction
+) {
+  const shares = Math.min(
+    Math.floor((playerMoney - COMMISSION) / price),
+    maxShares
+  );
+  const purchasePrice = buyStockFunc(symbol, shares);
+  return purchasePrice * shares;
 }
 
 function sellStock(
@@ -49,32 +82,17 @@ function sellStock(
   return saleTotal - saleCost;
 }
 
-function buyStock(
-  symbol: string,
-  price: number,
-  maxShares: number,
-  playerMoney: number,
-  buyStockFunc: BuySellStockFunction
-) {
-  const shares = Math.min(
-    Math.floor(playerMoney - COMMISSION / price),
-    maxShares
-  );
-  const purchasePrice = buyStockFunc(symbol, shares);
-  return purchasePrice * shares;
-}
-
 export {
+  TransactionPosition,
   StockPosition,
   StockListing,
-  STOCK_FORECAST_HISTORY_SCRIPT,
-  STOCK_FORECAST_4SIGMA_SCRIPT,
+  SaleTransaction,
+  PurchaseTransaction,
+  STOCKS_TICKER_HISTORY_SCRIPT,
+  STOCKS_TICKER_4SIGMA_SCRIPT,
   FIFTY_PERCENT,
   COMMISSION,
-  STOCK_LISTING_MAP,
-  getAllStockListings,
-  getStockListing,
-  updateStockListing,
-  sellStock,
+  getPosition,
   buyStock,
+  sellStock,
 };

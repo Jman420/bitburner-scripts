@@ -8,9 +8,9 @@ import {getCmdFlag} from '/scripts/workflows/cmd-args';
 import {CMD_FLAG_TARGETS_CSV} from '/scripts/workers/shared';
 
 import {sendEvent} from '/scripts/comms/event-comms';
-import {WeakenEvent, WeakenStatus} from '/scripts/comms/messages/weaken-event';
-import {GrowEvent, GrowStatus} from '/scripts/comms/messages/grow-event';
-import {HackEvent, HackStatus} from '/scripts/comms/messages/hack-event';
+import {WeakenEvent, WeakenStatus} from '/scripts/comms/events/weaken-event';
+import {GrowEvent, GrowStatus} from '/scripts/comms/events/grow-event';
+import {HackEvent, HackStatus} from '/scripts/comms/events/hack-event';
 
 const WEAKEN_WORKER_SCRIPT = '/scripts/workers/weaken.js';
 const GROW_WORKER_SCRIPT = '/scripts/workers/grow.js';

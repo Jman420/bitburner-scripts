@@ -2,7 +2,9 @@ import {NS} from '@ns';
 
 import {MessageBase} from '/scripts/comms/msg-base';
 
-type ListenerFunc<TData extends MessageBase> = (data: TData) => void;
+type ListenerFunc<TData extends MessageBase> = (
+  data: TData
+) => Promise<void> | void;
 
 // Map Structure : key1 - messageType , value1 - subscriberMap ; key2 - subscriberName , value2 - listenerFunc
 const EVENT_LISTENER_MAP = new Map<
@@ -95,7 +97,7 @@ class EventListener {
   }
 }
 
-function sendEvent<TData extends MessageBase>(
+async function sendEvent<TData extends MessageBase>(
   data: TData,
   subscriber?: string
 ) {
@@ -119,7 +121,7 @@ function sendEvent<TData extends MessageBase>(
   }
 
   for (const callback of listenerFuncs) {
-    callback(data);
+    await callback(data);
   }
   return true;
 }

@@ -5,10 +5,15 @@ const COMMS_PACKAGE = [
   `${PATH}/package.js`,
   `${PATH}/event-comms.js`,
   `${PATH}/msg-base.js`,
-  `${PATH}/messages/exit-event.js`,
-  `${PATH}/messages/grow-event.js`,
-  `${PATH}/messages/hack-event.js`,
-  `${PATH}/messages/weaken-event.js`,
+  `${PATH}/events/exit-event.js`,
+  `${PATH}/events/grow-event.js`,
+  `${PATH}/events/hack-event.js`,
+  `${PATH}/events/stocks-listing-request.js`,
+  `${PATH}/events/stocks-listing-response.js`,
+  `${PATH}/events/stocks-purchased-event.js`,
+  `${PATH}/events/stocks-sold-event.js`,
+  `${PATH}/events/stocks-ticker-event.js`,
+  `${PATH}/events/weaken-event.js`,
 ];
 
 export {COMMS_PACKAGE};

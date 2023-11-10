@@ -11,7 +11,7 @@ import {
 } from '/scripts/workflows/recon';
 
 import {EventListener} from '/scripts/comms/event-comms';
-import {ExitEvent} from '/scripts/comms/messages/exit-event';
+import {ExitEvent} from '/scripts/comms/events/exit-event';
 
 type GrowWeakenHackFunction = (host: string) => Promise<number>;
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -19,7 +19,7 @@ type LoopableFunction = (...args: any[]) => Promise<void> | void;
 
 const MIN_LOOP_DELAY_MILLISEC = 1;
 const MAX_LOOP_DELAY_MILLISEC = 100;
-const EVENT_LOOP_DELAY = 500;
+const EVENT_LOOP_DELAY = 1000;
 
 function getRequiredRam(netscript: NS, scriptPath: string, threadCount = 1) {
   const scriptRam = netscript.getScriptRam(scriptPath);
@@ -40,7 +40,7 @@ function runScript(
   }
 
   if (!canRunScript(netscript, hostname, scriptName)) {
-    return -1;
+    return 0;
   }
 
   threadCount = maxThreads
@@ -108,7 +108,7 @@ async function waitForScripts(
     }
 
     if (scriptsRunning) {
-      await netscript.sleep(sleepTime);
+      await netscript.asleep(sleepTime);
     }
   }
 }
@@ -119,7 +119,7 @@ async function runGWH(
   targetHosts: string[],
   delay = 0
 ) {
-  await netscript.sleep(delay);
+  await netscript.asleep(delay);
   for (const hostname of targetHosts) {
     await gwhFunc(hostname);
   }
@@ -135,7 +135,7 @@ async function delayedInfiniteLoop(
   /* eslint-disable-next-line no-constant-condition */
   while (true) {
     await loopFunction(...funcArgs);
-    await netscript.sleep(delay);
+    await netscript.asleep(delay);
   }
 }
 
@@ -154,10 +154,12 @@ async function infiniteLoop(
 
 async function eventLoop(netscript: NS, eventListener: EventListener) {
   let exitFlag = false;
-  eventListener.addListeners(ExitEvent, () => (exitFlag = true));
+  eventListener.addListeners(ExitEvent, () => {
+    exitFlag = true;
+  });
 
   while (!exitFlag) {
-    await netscript.sleep(EVENT_LOOP_DELAY);
+    await netscript.asleep(EVENT_LOOP_DELAY);
   }
 }
 

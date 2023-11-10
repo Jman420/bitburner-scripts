@@ -119,7 +119,7 @@ async function attackTargets(
     logWriter.writeLine(
       `  Hacked Funds : $${netscript.formatNumber(
         hackResults.hackedFunds
-      )} / $${hostDetails.maxFunds}`
+      )} / $${netscript.formatNumber(hostDetails.maxFunds)}`
     );
 
     targetsAnalysis[targetCounter] = hackResults.hostDetails;
