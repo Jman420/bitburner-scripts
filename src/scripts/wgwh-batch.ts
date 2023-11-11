@@ -20,6 +20,7 @@ import {
   getRequiredRam,
   infiniteLoop,
   runWorkerScript,
+  waitForScripts,
 } from '/scripts/workflows/execution';
 import {
   analyzeHost,
@@ -56,7 +57,7 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_OPTIMAL_ONLY, 0],
   [CMD_FLAG_HACK_PERCENT, 0.75],
   [CMD_FLAG_FUNDS_LIMIT_WEIGHT, 1],
-  [CMD_FLAG_TARGETS, ''],
+  [CMD_FLAG_TARGETS, []],
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
@@ -75,14 +76,13 @@ async function attackTargets(
     growTime: 1,
     weakenTime: 1,
     expGain: 1,
-  },
-  totalRamBuffer = 2
+  }
 ) {
   if (targetHosts.length < 1) {
     logWriter.writeLine(
       'No target hosts provided.  Getting all rooted host targets...'
     );
-    targetHosts = scanWideNetwork(netscript, false, true, false, true);
+    targetHosts = scanWideNetwork(netscript, false, true, false, true, true);
   }
   logWriter.writeLine('Sorting target hosts by optimality...');
   let targetsAnalysis = targetHosts.map(value => analyzeHost(netscript, value));
@@ -97,6 +97,8 @@ async function attackTargets(
   }
 
   logWriter.writeLine(`Attacking ${targetsAnalysis.length} targets...`);
+  logWriter.writeLine(SECTION_DIVIDER);
+  const workerPids = new Array<number>();
   for (
     let targetCounter = 0;
     targetCounter < targetsAnalysis.length;
@@ -104,8 +106,6 @@ async function attackTargets(
   ) {
     const targetDetails = targetsAnalysis[targetCounter];
     const hostname = targetDetails.hostname;
-
-    logWriter.writeLine(ENTRY_DIVIDER);
     logWriter.writeLine(`Target Host : ${hostname}`);
 
     // Determine Total Ram needed to fully attack the server (add a constant buffer amount to be safe)
@@ -148,7 +148,7 @@ async function attackTargets(
     const hackBatchThreads = hackThreadsRequired(
       netscript,
       hostname,
-      hackPercent * targetDetails.availableFunds
+      hackPercent * targetDetails.maxFunds
     );
     const hackBatchRam = getRequiredRam(
       netscript,
@@ -156,11 +156,7 @@ async function attackTargets(
       hackBatchThreads
     );
     const totalRamRequired =
-      weakenGrowBatchRam +
-      growBatchRam +
-      weakenHackBatchRam +
-      hackBatchRam +
-      totalRamBuffer;
+      weakenGrowBatchRam + growBatchRam + weakenHackBatchRam + hackBatchRam;
 
     // Determine if Total Ram can be satisfied by accessible servers (max ram) ; if not then skip
     const attackHosts = scanWideNetwork(
@@ -175,14 +171,32 @@ async function attackTargets(
       logWriter.writeLine(
         '  Required RAM not satisfied by accessible servers.  Skipping target!'
       );
+      logWriter.writeLine(
+        `    Required RAM : ${netscript.formatRam(totalRamRequired)}`
+      );
+      logWriter.writeLine(
+        `    Max accessible server RAM : ${netscript.formatRam(
+          totalAttackMaxRam
+        )}`
+      );
       continue;
     }
 
     // Determine if Total Ram can be satisifed with available ram on servers ; if not then wait until Total Ram is available
-    if (getTotalAvailableRam(netscript, attackHosts) < totalRamRequired) {
+    let totalAvailableRam = getTotalAvailableRam(netscript, attackHosts);
+    if (totalAvailableRam < totalRamRequired) {
       logWriter.writeLine('  Waiting for required RAM to become available...');
-      while (getTotalAvailableRam(netscript, attackHosts) < totalRamRequired) {
+      logWriter.writeLine(
+        `    Required RAM : ${netscript.formatRam(totalRamRequired)}`
+      );
+      logWriter.writeLine(
+        `    Max accessible server RAM : ${netscript.formatRam(
+          totalAvailableRam
+        )}`
+      );
+      while (totalAvailableRam < totalRamRequired) {
         await netscript.asleep(DEFAULT_SLEEP_FOR_RAM);
+        totalAvailableRam = getTotalAvailableRam(netscript, attackHosts);
       }
     }
 
@@ -203,7 +217,7 @@ async function attackTargets(
 
     // Execute scripts with appropriate delays
     logWriter.writeLine('  Executing worker scripts...');
-    runWorkerScript(
+    const weakenGrowBatchPids = runWorkerScript(
       netscript,
       WEAKEN_WORKER_SCRIPT,
       WORKERS_PACKAGE,
@@ -214,7 +228,7 @@ async function attackTargets(
       getCmdFlag(CMD_FLAG_DELAY),
       weakenGrowBatchDelay
     );
-    runWorkerScript(
+    const growBatchPids = runWorkerScript(
       netscript,
       GROW_WORKER_SCRIPT,
       WORKERS_PACKAGE,
@@ -225,7 +239,7 @@ async function attackTargets(
       getCmdFlag(CMD_FLAG_DELAY),
       growBatchDelay
     );
-    runWorkerScript(
+    const weakenHackBatchPids = runWorkerScript(
       netscript,
       WEAKEN_WORKER_SCRIPT,
       WORKERS_PACKAGE,
@@ -236,7 +250,7 @@ async function attackTargets(
       getCmdFlag(CMD_FLAG_DELAY),
       weakenHackBatchDelay
     );
-    runWorkerScript(
+    const hackBatchPids = runWorkerScript(
       netscript,
       HACK_WORKER_SCRIPT,
       WORKERS_PACKAGE,
@@ -247,12 +261,21 @@ async function attackTargets(
       getCmdFlag(CMD_FLAG_DELAY),
       hackBatchDelay
     );
+    workerPids.push(...weakenGrowBatchPids);
+    workerPids.push(...growBatchPids);
+    workerPids.push(...weakenHackBatchPids);
+    workerPids.push(...hackBatchPids);
     logWriter.writeLine(
       `  Estimated batch completion ~${convertMillisecToTime(
         hackBatchDelay + targetDetails.hackTime
       )}`
     );
+    logWriter.writeLine(ENTRY_DIVIDER);
   }
+
+  // Wait for all batches to complete before scheduling the next set
+  logWriter.writeLine('Waiting for all batches to complete...');
+  await waitForScripts(netscript, workerPids);
 }
 
 /** @param {NS} netscript */
