@@ -39,8 +39,9 @@ class HistoricalStockDetails {
   readonly priceChanges = new FixedLengthQueue<number>(HISTORICAL_RECORD_DEPTH);
 }
 
-const HISTORICAL_RECORD_DEPTH = 20;
 const REFRESH_LISTINGS_DELAY = 1500;
+const HISTORICAL_RECORD_DEPTH = 20;
+const MIN_RECORDS_FOR_FORECAST = 4;
 const HISTORICAL_DETAILS_MAP = new Map<string, HistoricalStockDetails>();
 const STOCK_LISTING_MAP = new Map<string, StockListing>();
 
@@ -53,25 +54,36 @@ function updateStockListings(netscript: NS, logWriter: Logger) {
   for (const symbol of allSymbols) {
     const askPrice = netscript.stock.getAskPrice(symbol);
     const bidPrice = netscript.stock.getBidPrice(symbol);
+    const stockMaxShares = netscript.stock.getMaxShares(symbol);
     const currentListing = STOCK_LISTING_MAP.get(symbol);
 
     if (
       !currentListing ||
       currentListing.askPrice !== askPrice ||
-      currentListing.bidPrice !== bidPrice
+      currentListing.bidPrice !== bidPrice ||
+      currentListing.maxShares !== stockMaxShares
     ) {
       logWriter.writeLine(`Updating historical records for ${symbol}`);
       const historicalDetails =
         HISTORICAL_DETAILS_MAP.get(symbol) ?? new HistoricalStockDetails();
       const currentPrice = netscript.stock.getPrice(symbol);
+      const previousPrice = historicalDetails.prices.at(0) ?? currentPrice;
       historicalDetails.prices.unshift(currentPrice);
-      historicalDetails.priceChanges.unshift();
+      historicalDetails.priceChanges.unshift(currentPrice / previousPrice);
       HISTORICAL_DETAILS_MAP.set(symbol, historicalDetails);
 
+      logWriter.writeLine(`Calculating stock forecast for ${symbol}`);
+      let changeSum = 0;
+      let increaseChangeCount = 0;
+      for (const changeAmount of historicalDetails.priceChanges) {
+        changeSum += changeAmount;
+        increaseChangeCount += changeAmount > 1 ? 1 : 0;
+      }
+      const priceChangesLength = historicalDetails.priceChanges.length;
+      const stockVolatility = changeSum / priceChangesLength;
+      const stockForecast = priceChangesLength >= MIN_RECORDS_FOR_FORECAST ? increaseChangeCount / priceChangesLength : FIFTY_PERCENT;
+
       logWriter.writeLine(`Updating stock listing for symbol : ${symbol}`);
-      const stockMaxShares = netscript.stock.getMaxShares(symbol);
-      const stockVolatility = 0; // TODO (JMG) : Predict stock volatility from historical records
-      const stockForecast = 0; // TODO (JMG) : Predict stock forecast from historical records
       const stockPosition = getPosition(netscript, symbol);
       const stockListing: StockListing = {
         symbol: symbol,

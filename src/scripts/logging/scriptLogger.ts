@@ -13,10 +13,10 @@ class ScriptLogger {
       'grow',
       'hack',
       'exec',
-      'run',
-      'spawn',
-      'sleep',
-      'asleep',
+      'stock.buyStock',
+      'stock.buyShort',
+      'stock.sellStock',
+      'stock.sellShort',
     ];
     this.netscript.disableLog('ALL');
     for (const loggedFunc of enabledLogging) {
@@ -25,7 +25,7 @@ class ScriptLogger {
   }
 
   public writeLine(msg: string) {
-    this.netscript.print(`${this.moduleName} - ${msg}`);
+    this.netscript.print(msg);
   }
 }
 

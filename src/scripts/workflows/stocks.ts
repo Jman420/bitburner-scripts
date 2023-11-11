@@ -59,15 +59,20 @@ function buyStock(
   symbol: string,
   price: number,
   maxShares: number,
+  playerPosition: StockPosition,
   playerMoney: number,
   buyStockFunc: BuySellStockFunction
 ) {
+  if (playerPosition.longShares + playerPosition.shortShares >= maxShares) {
+    return 0;
+  }
+
   const shares = Math.min(
     Math.floor((playerMoney - COMMISSION) / price),
     maxShares
   );
   const purchasePrice = buyStockFunc(symbol, shares);
-  return purchasePrice * shares;
+  return purchasePrice > 0 ? purchasePrice * shares + COMMISSION : 0;
 }
 
 function sellStock(

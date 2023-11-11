@@ -29,6 +29,7 @@ function updateStockListings(netscript: NS, logWriter: Logger) {
   for (const symbol of allSymbols) {
     const askPrice = netscript.stock.getAskPrice(symbol);
     const bidPrice = netscript.stock.getBidPrice(symbol);
+    const stockMaxShares = netscript.stock.getMaxShares(symbol);
     const stockVolatility = netscript.stock.getVolatility(symbol);
     const stockForecast = netscript.stock.getForecast(symbol);
     const currentListing = STOCK_LISTINGS_MAP.get(symbol);
@@ -37,6 +38,7 @@ function updateStockListings(netscript: NS, logWriter: Logger) {
       !currentListing ||
       currentListing.askPrice !== askPrice ||
       currentListing.bidPrice !== bidPrice ||
+      currentListing.maxShares !== stockMaxShares ||
       currentListing.volatility !== stockVolatility ||
       currentListing.forecast !== stockForecast
     ) {

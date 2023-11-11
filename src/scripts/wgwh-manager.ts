@@ -40,6 +40,8 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
+const MODULE_NAME = 'wgwh-manager';
+
 async function attackTargets(
   netscript: NS,
   logWriter: Logger,
@@ -129,11 +131,11 @@ async function attackTargets(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'wgwh-manager', LoggerMode.TERMINAL);
-  logWriter.writeLine('WeakenGrowWeakenHack Attack Manager');
-  logWriter.writeLine(SECTION_DIVIDER);
+  const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
+  terminalWriter.writeLine('WeakenGrowWeakenHack Attack Manager');
+  terminalWriter.writeLine(SECTION_DIVIDER);
 
-  logWriter.writeLine('Parsing command line arguments...');
+  terminalWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
   const continuousAttack = cmdArgs[
     CMD_FLAG_CONTINUOUS_ATTACK
@@ -148,20 +150,24 @@ export async function main(netscript: NS) {
   ].valueOf() as number;
   const targetHosts = cmdArgs[CMD_FLAG_TARGETS].valueOf() as string[];
 
-  logWriter.writeLine(`Continuous Attack : ${continuousAttack}`);
-  logWriter.writeLine(`Include Home Attacker : ${includeHomeAttacker}`);
-  logWriter.writeLine(`Optimal Only : ${optimalOnlyCount}`);
-  logWriter.writeLine(`Hack Percent : ${hackPercent}`);
-  logWriter.writeLine(`Funds Limit Weight : ${fundsLimitWeight}`);
-  logWriter.writeLine(`Target Hosts : ${targetHosts}`);
-  logWriter.writeLine(SECTION_DIVIDER);
+  terminalWriter.writeLine(`Continuous Attack : ${continuousAttack}`);
+  terminalWriter.writeLine(`Include Home Attacker : ${includeHomeAttacker}`);
+  terminalWriter.writeLine(`Optimal Only : ${optimalOnlyCount}`);
+  terminalWriter.writeLine(`Hack Percent : ${hackPercent}`);
+  terminalWriter.writeLine(`Funds Limit Weight : ${fundsLimitWeight}`);
+  terminalWriter.writeLine(`Target Hosts : ${targetHosts}`);
+  terminalWriter.writeLine(SECTION_DIVIDER);
 
+  terminalWriter.writeLine('See script logs for on-going attack details.');
+  netscript.tail();
+
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   if (continuousAttack) {
     await infiniteLoop(
       netscript,
       attackTargets,
       netscript,
-      logWriter,
+      scriptLogWriter,
       targetHosts,
       hackPercent,
       optimalOnlyCount,
@@ -171,7 +177,7 @@ export async function main(netscript: NS) {
   } else {
     await attackTargets(
       netscript,
-      logWriter,
+      scriptLogWriter,
       targetHosts,
       hackPercent,
       optimalOnlyCount,
