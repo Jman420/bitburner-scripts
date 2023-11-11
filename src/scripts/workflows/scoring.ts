@@ -1,4 +1,5 @@
 import {NS} from '@ns';
+
 import {ServerDetails} from '/scripts/workflows/recon';
 
 interface ServerDetailsExtended extends ServerDetails {

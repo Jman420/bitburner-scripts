@@ -12,15 +12,16 @@ import {
   getSchemaFlags,
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
+import {
+  CMD_FLAG_CONTINUOUS_ATTACK,
+  CMD_FLAG_TARGETS_CSV,
+} from '/scripts/workers/shared';
+
 import {analyzeHost, scanWideNetwork} from '/scripts/workflows/recon';
 import {copyFiles} from '/scripts/workflows/propagation';
 import {WORKERS_PACKAGE} from '/scripts/workers/package';
 import {WEAKEN_WORKER_SCRIPT} from '/scripts/workflows/orchestration';
 import {runScript} from '/scripts/workflows/execution';
-import {
-  CMD_FLAG_CONTINUOUS_ATTACK,
-  CMD_FLAG_TARGETS_CSV,
-} from '/scripts/workers/shared';
 import {
   scoreHostForExperience,
   sortOptimalTargetHosts,
@@ -37,7 +38,7 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'expFarm-bots', LoggerMode.TERMINAL);
+  const logWriter = getLogger(netscript, 'farm-hackExp', LoggerMode.TERMINAL);
   logWriter.writeLine('Hacking Experience Farm - Using Weaken');
   logWriter.writeLine(SECTION_DIVIDER);
 

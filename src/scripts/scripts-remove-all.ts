@@ -54,8 +54,6 @@ export async function main(netscript: NS) {
 }
 
 export function autocomplete(data: AutocompleteData, args: string[]) {
-  console.log(CMD_FLAGS);
-
   const lastCmdFlag = getLastCmdFlag(args);
   if (lastCmdFlag === getCmdFlag(CMD_FLAG_INCLUDE_HOME)) {
     return BOOLEAN_AUTOCOMPLETE;
