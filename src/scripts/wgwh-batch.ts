@@ -8,7 +8,6 @@ import {
 } from '/scripts/logging/logOutput';
 
 import {
-  BOOLEAN_AUTOCOMPLETE,
   CMD_FLAG_TARGETS,
   CmdArgsSchema,
   PERCENT_AUTOCOMPLETE,
@@ -183,7 +182,7 @@ async function attackTargets(
     if (getTotalAvailableRam(netscript, attackHosts) < totalRamRequired) {
       logWriter.writeLine('  Waiting for required RAM to become available...');
       while (getTotalAvailableRam(netscript, attackHosts) < totalRamRequired) {
-        await netscript.sleep(DEFAULT_SLEEP_FOR_RAM);
+        await netscript.asleep(DEFAULT_SLEEP_FOR_RAM);
       }
     }
 
@@ -259,7 +258,7 @@ async function attackTargets(
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
-  terminalWriter.writeLine('Weaken-Grow Weaken-Hack Attack Batcher');
+  terminalWriter.writeLine('Weaken-Grow Weaken-Hack Batch Manager');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
   terminalWriter.writeLine('Parsing command line arguments...');
@@ -316,12 +315,6 @@ export async function main(netscript: NS) {
 
 export function autocomplete(data: AutocompleteData, args: string[]) {
   const lastCmdFlag = getLastCmdFlag(args);
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_CONTINUOUS_ATTACK)) {
-    return BOOLEAN_AUTOCOMPLETE;
-  }
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_INCLUDE_HOME)) {
-    return BOOLEAN_AUTOCOMPLETE;
-  }
   if (lastCmdFlag === getCmdFlag(CMD_FLAG_OPTIMAL_ONLY)) {
     return ['1', '2', '3', '5', '10', '15'];
   }

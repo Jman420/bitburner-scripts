@@ -7,7 +7,6 @@ import {
 } from '/scripts/logging/logOutput';
 
 import {
-  BOOLEAN_AUTOCOMPLETE,
   CmdArgsSchema,
   getCmdFlag,
   getLastCmdFlag,
@@ -111,9 +110,6 @@ export function autocomplete(data: AutocompleteData, args: string[]) {
   const lastCmdFlag = getLastCmdFlag(args);
   if (lastCmdFlag === getCmdFlag(CMD_FLAG_TOP_ONLY)) {
     return ['1', '2', '3', '5', '10', '15'];
-  }
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_INCLUDE_DETAIL)) {
-    return BOOLEAN_AUTOCOMPLETE;
   }
   if (lastCmdFlag === getCmdFlag(CMD_FLAG_SCORING_FUNC)) {
     return CMD_ARGS_FLAG_SCORING_FUNC;

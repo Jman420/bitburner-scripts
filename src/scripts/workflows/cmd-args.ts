@@ -9,7 +9,6 @@ const CMD_FLAG_TARGETS = 'targets';
 const CMD_FLAG_INCLUDE_HOME = 'includeHome';
 const CMD_FLAGS_HELP_ENTRY: CmdFlagsEntry = [CMD_FLAG_HELP, false];
 const PERCENT_AUTOCOMPLETE = ['1', '0.75', '0.5', '0.25'];
-const BOOLEAN_AUTOCOMPLETE = ['true', 'false'];
 const POWER_2_AUTOCOMPLETE = ['2', '4', '8', '16', '32', '64'];
 
 function getCmdFlag(cmdFlagName: string) {
@@ -73,7 +72,6 @@ export {
   CMD_FLAG_INCLUDE_HOME,
   CMD_FLAGS_HELP_ENTRY,
   PERCENT_AUTOCOMPLETE,
-  BOOLEAN_AUTOCOMPLETE,
   POWER_2_AUTOCOMPLETE,
   getCmdFlag,
   getSchemaFlags,

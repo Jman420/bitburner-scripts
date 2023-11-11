@@ -5,11 +5,8 @@ import {scanWideNetwork} from '/scripts/workflows/recon';
 import {SCRIPTS_PATH} from '/scripts/common/shared';
 
 import {
-  BOOLEAN_AUTOCOMPLETE,
   CMD_FLAG_INCLUDE_HOME,
   CmdArgsSchema,
-  getCmdFlag,
-  getLastCmdFlag,
   getSchemaFlags,
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
@@ -53,10 +50,7 @@ export async function main(netscript: NS) {
   }
 }
 
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 export function autocomplete(data: AutocompleteData, args: string[]) {
-  const lastCmdFlag = getLastCmdFlag(args);
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_INCLUDE_HOME)) {
-    return BOOLEAN_AUTOCOMPLETE;
-  }
   return CMD_FLAGS;
 }

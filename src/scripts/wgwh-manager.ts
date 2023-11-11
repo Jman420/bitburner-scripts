@@ -15,7 +15,6 @@ import {
 import {infiniteLoop} from '/scripts/workflows/execution';
 import {growHost, hackHost, weakenHost} from '/scripts/workflows/orchestration';
 import {
-  BOOLEAN_AUTOCOMPLETE,
   CMD_FLAG_TARGETS,
   CmdArgsSchema,
   PERCENT_AUTOCOMPLETE,
@@ -189,12 +188,6 @@ export async function main(netscript: NS) {
 
 export function autocomplete(data: AutocompleteData, args: string[]) {
   const lastCmdFlag = getLastCmdFlag(args);
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_CONTINUOUS_ATTACK)) {
-    return BOOLEAN_AUTOCOMPLETE;
-  }
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_INCLUDE_HOME)) {
-    return BOOLEAN_AUTOCOMPLETE;
-  }
   if (lastCmdFlag === getCmdFlag(CMD_FLAG_OPTIMAL_ONLY)) {
     return ['1', '2', '3', '5', '10', '15'];
   }

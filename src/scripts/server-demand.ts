@@ -4,7 +4,6 @@ import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {
-  BOOLEAN_AUTOCOMPLETE,
   CmdArgsSchema,
   getCmdFlag,
   getLastCmdFlag,
@@ -231,9 +230,6 @@ export function autocomplete(data: AutocompleteData, args: string[]) {
   }
   if (lastCmdFlag === getCmdFlag(CMD_FLAG_NAME_PREFIX)) {
     return [];
-  }
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_EXCLUDE_FARM)) {
-    return BOOLEAN_AUTOCOMPLETE;
   }
   return CMD_FLAGS;
 }

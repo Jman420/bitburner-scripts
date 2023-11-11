@@ -17,18 +17,20 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
+const MODULE_NAME = 'script-template';
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'script-template', LoggerMode.TERMINAL);
-  logWriter.writeLine('SCRIPT TEMPLATE');
-  logWriter.writeLine(SECTION_DIVIDER);
+  const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
+  terminalWriter.writeLine('SCRIPT TEMPLATE');
+  terminalWriter.writeLine(SECTION_DIVIDER);
 
-  logWriter.writeLine('Parsing command line arguments...');
+  terminalWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
   const sample = cmdArgs[CMD_FLAG_SAMPLE].valueOf() as string;
 
-  logWriter.writeLine(`Sample : ${sample}`);
-  logWriter.writeLine(SECTION_DIVIDER);
+  terminalWriter.writeLine(`Sample : ${sample}`);
+  terminalWriter.writeLine(SECTION_DIVIDER);
 
   
 }

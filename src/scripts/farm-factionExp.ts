@@ -4,7 +4,6 @@ import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {
-  BOOLEAN_AUTOCOMPLETE,
   CMD_FLAG_TARGETS,
   CmdArgsSchema,
   getCmdFlag,
@@ -78,9 +77,6 @@ export async function main(netscript: NS) {
 
 export function autocomplete(data: AutocompleteData, args: string[]) {
   const lastCmdFlag = getLastCmdFlag(args);
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_INCLUDE_HOME)) {
-    return BOOLEAN_AUTOCOMPLETE;
-  }
   if (lastCmdFlag === getCmdFlag(CMD_FLAG_TARGETS)) {
     return data.servers;
   }

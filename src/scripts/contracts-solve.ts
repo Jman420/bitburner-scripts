@@ -10,10 +10,7 @@ import {
 } from '/scripts/workflows/contracts';
 
 import {
-  BOOLEAN_AUTOCOMPLETE,
   CmdArgsSchema,
-  getCmdFlag,
-  getLastCmdFlag,
   getSchemaFlags,
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
@@ -80,10 +77,7 @@ export async function main(netscript: NS) {
   }
 }
 
+/* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 export function autocomplete(data: AutocompleteData, args: string[]) {
-  const lastCmdFlag = getLastCmdFlag(args);
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_INCLUDE_HOME)) {
-    return BOOLEAN_AUTOCOMPLETE;
-  }
   return CMD_FLAGS;
 }
