@@ -15,6 +15,7 @@ import {HackEvent, HackStatus} from '/scripts/comms/events/hack-event';
 const WEAKEN_WORKER_SCRIPT = '/scripts/workers/weaken.js';
 const GROW_WORKER_SCRIPT = '/scripts/workers/grow.js';
 const HACK_WORKER_SCRIPT = '/scripts/workers/hack.js';
+const SHARE_RAM_WORKER_SCRIPT = '/scripts/workers/share-ram.js';
 
 function weakenThreadsRequired(netscript: NS, targetReduction: number) {
   let requiredThreads = 1;
@@ -146,6 +147,7 @@ export {
   WEAKEN_WORKER_SCRIPT,
   GROW_WORKER_SCRIPT,
   HACK_WORKER_SCRIPT,
+  SHARE_RAM_WORKER_SCRIPT,
   weakenThreadsRequired,
   weakenHost,
   growThreadsRequired,
