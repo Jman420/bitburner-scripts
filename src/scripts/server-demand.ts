@@ -1,7 +1,7 @@
 import {AutocompleteData, NS} from '@ns';
 
-import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
-import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
+import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
+import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {
   BOOLEAN_AUTOCOMPLETE,
@@ -31,85 +31,31 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
+const MODULE_NAME = 'server-demand';
 const LOOP_DELAY_MILLISEC = 5000;
 
-/** @param {NS} netscript */
-export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'farm-manager', LoggerMode.TERMINAL);
-  logWriter.writeLine('Server Farm Manager');
-  logWriter.writeLine(SECTION_DIVIDER);
-
-  logWriter.writeLine('Parsing command line arguments...');
-  const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
-  const serverAmount = cmdArgs[CMD_FLAG_AMOUNT].valueOf() as number;
-  const ramExponent = cmdArgs[CMD_FLAG_RAM_EXPONENT].valueOf() as number;
-  const ramRequired = 2 ** ramExponent;
-  const namePrefix = cmdArgs[CMD_FLAG_NAME_PREFIX].valueOf() as string;
-  const excludeFarm = cmdArgs[CMD_FLAG_EXCLUDE_FARM].valueOf() as boolean;
-
-  logWriter.writeLine(`Server Amount : ${serverAmount}`);
-  logWriter.writeLine(`Ram Exponent : ${ramExponent}`);
-  logWriter.writeLine(`Ram Required : ${netscript.formatRam(ramRequired)}`);
-  logWriter.writeLine(`Name Prefix : ${namePrefix}`);
-  logWriter.writeLine(`Exclude Farm : ${excludeFarm}`);
-  logWriter.writeLine(SECTION_DIVIDER);
-
-  if (serverAmount < 1) {
-    logWriter.writeLine(
-      `${CMD_FLAG_AMOUNT} command flag must be a positive number greater than 0.`
-    );
-    return;
-  }
-  if (ramExponent < 1 || ramExponent > 20) {
-    logWriter.writeLine(
-      `${CMD_FLAG_RAM_EXPONENT} command flag must be a positive number where 0 < x < 20.`
-    );
-    return;
-  }
-
-  const serverFarmHosts = netscript.getPurchasedServers();
-  if (!excludeFarm) {
-    logWriter.writeLine(
-      `Checking server farm for ${serverAmount} servers with ${netscript.formatRam(
-        ramRequired
-      )} of RAM available...`
-    );
-    const farmHostsWithRam = findServersForRam(
-      netscript,
-      ramRequired,
-      ramRequired,
-      false,
-      serverFarmHosts
-    );
-    if (farmHostsWithRam.length >= serverAmount) {
-      logWriter.writeLine(
-        'Provided requirements are satisfied in current server farm :'
-      );
-      for (const hostname of farmHostsWithRam) {
-        logWriter.writeLine(
-          `  ${hostname} : ${netscript.formatRam(
-            getAvailableRam(netscript, hostname)
-          )}`
-        );
-      }
-      return;
-    }
-  }
-
+function getOrders(
+  netscript: NS,
+  logWriter: Logger,
+  serverCount: number,
+  ramAmount: number,
+  serverNamePrefix: string,
+  farmHosts: string[]
+) {
   logWriter.writeLine(
-    `Determining cheapest purchase path for ${serverAmount} servers with ${netscript.formatRam(
-      ramRequired
+    `Determining cheapest purchase path for ${serverCount} servers with ${netscript.formatRam(
+      ramAmount
     )} of RAM...`
   );
-  const newServerCost = netscript.getPurchasedServerCost(ramRequired);
+  const newServerCost = netscript.getPurchasedServerCost(ramAmount);
 
   logWriter.writeLine('  Checking server farm for upgrade paths...');
   const purchaseOrders = new Array<ServerFarmOrder>();
-  for (const hostname of serverFarmHosts) {
+  for (const hostname of farmHosts) {
     const maxRam = netscript.getServerMaxRam(hostname);
     const availableRam = getAvailableRam(netscript, hostname);
     const requiredRamUpgrade = nearestPowerOf2(
-      maxRam + ramRequired - availableRam
+      maxRam + ramAmount - availableRam
     );
     const upgradeCost = netscript.getPurchasedServerUpgradeCost(
       hostname,
@@ -128,7 +74,7 @@ export async function main(netscript: NS) {
   logWriter.writeLine(`  Found ${purchaseOrders.length} server farm upgrades.`);
 
   logWriter.writeLine('  Determining available server purchases...');
-  const requiredServers = serverAmount - purchaseOrders.length;
+  const requiredServers = serverCount - purchaseOrders.length;
   const availableServers = netscript.getPurchasedServerLimit();
   for (
     let serverCounter = 0;
@@ -136,8 +82,8 @@ export async function main(netscript: NS) {
     serverCounter++
   ) {
     purchaseOrders.push({
-      hostname: namePrefix,
-      ramAmount: ramRequired,
+      hostname: serverNamePrefix,
+      ramAmount: ramAmount,
       cost: newServerCost,
       purchaseFunc: netscript.purchaseServer,
     });
@@ -145,23 +91,15 @@ export async function main(netscript: NS) {
   logWriter.writeLine(
     `  Found ${purchaseOrders.length} server farm purchases.`
   );
-  logWriter.writeLine(SECTION_DIVIDER);
 
-  if (serverAmount > purchaseOrders.length) {
-    logWriter.writeLine(
-      'Server farm is unable to satisfy the required resources.'
-    );
-    logWriter.writeLine(
-      `Server farm is missing ${
-        serverAmount - purchaseOrders.length
-      } servers with ${netscript.formatRam(ramRequired)} of RAM.`
-    );
-    return;
-  }
+  return purchaseOrders;
+}
 
-  logWriter.writeLine(
-    `Purchasing ${purchaseOrders.length} server farm orders...`
-  );
+async function manageOrders(
+  netscript: NS,
+  logWriter: Logger,
+  purchaseOrders: ServerFarmOrder[]
+) {
   while (purchaseOrders.length > 0) {
     if (purchaseOrders[0].cost <= netscript.getPlayer().money) {
       const serverOrder = purchaseOrders.shift();
@@ -170,15 +108,117 @@ export async function main(netscript: NS) {
       }
 
       serverOrder.purchaseFunc(serverOrder.hostname, serverOrder.ramAmount);
+      logWriter.writeLine(ENTRY_DIVIDER);
+      logWriter.writeLine(
+        `Purchased server farm order : ${
+          serverOrder.hostname
+        } - ${netscript.formatRam(
+          serverOrder.ramAmount
+        )} - $${netscript.formatNumber(serverOrder.cost)}`
+      );
+      logWriter.writeLine(`  Orders remaining : ${purchaseOrders.length}`);
     } else {
       await netscript.sleep(LOOP_DELAY_MILLISEC);
     }
   }
-  logWriter.writeLine(
-    `Server farm has satisfied the requested ${serverAmount} servers with ${netscript.formatRam(
-      ramRequired
-    )} of RAM!`
+}
+
+/** @param {NS} netscript */
+export async function main(netscript: NS) {
+  const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
+  terminalWriter.writeLine('Server Farm Manager');
+  terminalWriter.writeLine(SECTION_DIVIDER);
+
+  terminalWriter.writeLine('Parsing command line arguments...');
+  const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
+  const serverAmount = cmdArgs[CMD_FLAG_AMOUNT].valueOf() as number;
+  const ramExponent = cmdArgs[CMD_FLAG_RAM_EXPONENT].valueOf() as number;
+  const ramRequired = 2 ** ramExponent;
+  const namePrefix = cmdArgs[CMD_FLAG_NAME_PREFIX].valueOf() as string;
+  const excludeFarm = cmdArgs[CMD_FLAG_EXCLUDE_FARM].valueOf() as boolean;
+
+  terminalWriter.writeLine(`Server Amount : ${serverAmount}`);
+  terminalWriter.writeLine(`Ram Exponent : ${ramExponent}`);
+  terminalWriter.writeLine(
+    `Ram Required : ${netscript.formatRam(ramRequired)}`
   );
+  terminalWriter.writeLine(`Name Prefix : ${namePrefix}`);
+  terminalWriter.writeLine(`Exclude Farm : ${excludeFarm}`);
+  terminalWriter.writeLine(SECTION_DIVIDER);
+
+  if (serverAmount < 1) {
+    terminalWriter.writeLine(
+      `${CMD_FLAG_AMOUNT} command flag must be a positive number greater than 0.`
+    );
+    return;
+  }
+  if (ramExponent < 1 || ramExponent > 20) {
+    terminalWriter.writeLine(
+      `${CMD_FLAG_RAM_EXPONENT} command flag must be a positive number where 0 < x < 20.`
+    );
+    return;
+  }
+
+  const serverFarmHosts = netscript.getPurchasedServers();
+  if (!excludeFarm) {
+    terminalWriter.writeLine(
+      `Checking server farm for ${serverAmount} servers with ${netscript.formatRam(
+        ramRequired
+      )} of RAM available...`
+    );
+    const farmHostsWithRam = findServersForRam(
+      netscript,
+      ramRequired,
+      ramRequired,
+      false,
+      serverFarmHosts
+    );
+    if (farmHostsWithRam.length >= serverAmount) {
+      terminalWriter.writeLine(
+        'Provided requirements are satisfied in current server farm :'
+      );
+      for (const hostname of farmHostsWithRam) {
+        terminalWriter.writeLine(
+          `  ${hostname} : ${netscript.formatRam(
+            getAvailableRam(netscript, hostname)
+          )}`
+        );
+      }
+      return;
+    }
+  }
+
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
+  const purchaseOrders = getOrders(
+    netscript,
+    scriptLogWriter,
+    serverAmount,
+    ramRequired,
+    namePrefix,
+    serverFarmHosts
+  );
+  if (serverAmount > purchaseOrders.length) {
+    terminalWriter.writeLine(
+      'Server farm is unable to satisfy the required resources.'
+    );
+    terminalWriter.writeLine(
+      `Server farm is missing ${
+        serverAmount - purchaseOrders.length
+      } servers with ${netscript.formatRam(ramRequired)} of RAM.`
+    );
+    return;
+  }
+  netscript.tail();
+
+  scriptLogWriter.writeLine(
+    `Purchasing ${purchaseOrders.length} server farm orders...`
+  );
+  await manageOrders(netscript, scriptLogWriter, purchaseOrders);
+  const successMsg = `Server farm has satisfied the requested ${serverAmount} servers with ${netscript.formatRam(
+    ramRequired
+  )} of RAM!`;
+  scriptLogWriter.writeLine(successMsg);
+  terminalWriter.writeLine(successMsg);
 }
 
 export function autocomplete(data: AutocompleteData, args: string[]) {

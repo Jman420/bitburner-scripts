@@ -132,7 +132,7 @@ async function attackTargets(
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
-  terminalWriter.writeLine('WeakenGrowWeakenHack Attack Manager');
+  terminalWriter.writeLine('Weaken-Grow Weaken-Hack Attack Manager');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
   terminalWriter.writeLine('Parsing command line arguments...');

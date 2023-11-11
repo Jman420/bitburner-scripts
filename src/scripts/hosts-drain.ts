@@ -2,6 +2,7 @@ import {AutocompleteData, NS} from '@ns';
 
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {
+  ENTRY_DIVIDER,
   SECTION_DIVIDER,
   convertMillisecToTime,
 } from '/scripts/logging/logOutput';
@@ -24,52 +25,58 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
+const MODULE_NAME = 'hosts-drain';
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'hosts-drain', LoggerMode.TERMINAL);
-  logWriter.writeLine('Drain Hosts of all Funds');
-  logWriter.writeLine(SECTION_DIVIDER);
+  const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
+  terminalWriter.writeLine('Drain Hosts of all Funds');
+  terminalWriter.writeLine(SECTION_DIVIDER);
 
-  logWriter.writeLine('Parsing command line arguments...');
+  terminalWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
   let targetHosts = cmdArgs[CMD_FLAG_TARGETS].valueOf() as string[];
   const includeHome = cmdArgs[CMD_FLAG_INCLUDE_HOME].valueOf() as boolean;
 
-  logWriter.writeLine(`Target Hosts : ${targetHosts}`);
-  logWriter.writeLine(`Include Home : ${includeHome}`);
-  logWriter.writeLine(SECTION_DIVIDER);
+  terminalWriter.writeLine(`Target Hosts : ${targetHosts}`);
+  terminalWriter.writeLine(`Include Home : ${includeHome}`);
+  terminalWriter.writeLine(SECTION_DIVIDER);
+  terminalWriter.writeLine('See script logs for on-going attack details.');
+  netscript.tail();
 
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   if (targetHosts.length < 1) {
-    logWriter.writeLine(
+    scriptLogWriter.writeLine(
       'No target hosts provided.  Scanning wide network for targets...'
     );
     targetHosts = scanWideNetwork(netscript, false, true, false, true, true);
   }
 
-  logWriter.writeLine(
+  scriptLogWriter.writeLine(
     `Draining all funds from ${targetHosts.length} target hosts...`
   );
   let hackedFundsTotal = 0;
   for (const hostname of targetHosts) {
-    logWriter.writeLine(`${hostname}`);
+    scriptLogWriter.writeLine(`${hostname}`);
     const hostDetails = analyzeHost(netscript, hostname);
-    logWriter.writeLine(
+    scriptLogWriter.writeLine(
       `  Draining all funds (~${convertMillisecToTime(
         hostDetails.hackTime
       )})...`
     );
     const hackResults = await hackHost(netscript, hostDetails, 1, includeHome);
     hackedFundsTotal += hackResults.hackedFunds;
-    logWriter.writeLine(
+    scriptLogWriter.writeLine(
       `  Drained $${netscript.formatNumber(hackResults.hackedFunds)}`
     );
+    scriptLogWriter.writeLine(ENTRY_DIVIDER);
   }
-  logWriter.writeLine(SECTION_DIVIDER);
-  logWriter.writeLine(
-    `Successfully drained all host funds for total $${netscript.formatNumber(
-      hackedFundsTotal
-    )}`
-  );
+
+  const successMsg = `Successfully drained all host funds for total $${netscript.formatNumber(
+    hackedFundsTotal
+  )}`;
+  terminalWriter.writeLine(successMsg);
+  scriptLogWriter.writeLine(successMsg);
 }
 
 export function autocomplete(data: AutocompleteData, args: string[]) {

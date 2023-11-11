@@ -1,6 +1,6 @@
 import {AutocompleteData, NS} from '@ns';
 
-import {Logger, getLogger} from '/scripts/logging/loggerManager';
+import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {
@@ -28,6 +28,7 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
+const MODULE_NAME = 'server-manager';
 const LOOP_DELAY_MILLISEC = 5000;
 
 function sortUpgradeOrders(upgradeOrders: Array<ServerFarmOrder>) {
@@ -108,7 +109,7 @@ function manageOrdersAndPurchases(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'farm-manager');
+  const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Server Farm Purchase Manager');
   logWriter.writeLine(SECTION_DIVIDER);
 
@@ -128,14 +129,16 @@ export async function main(netscript: NS) {
   logWriter.writeLine(
     `Found ${upgradeOrders.length} available Server Farm Upgrades.`
   );
-  logWriter.writeLine(ENTRY_DIVIDER);
+  logWriter.writeLine('See script logs for on-going purchase details.');
+  netscript.tail();
 
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   await delayedInfiniteLoop(
     netscript,
     LOOP_DELAY_MILLISEC,
     manageOrdersAndPurchases,
     netscript,
-    logWriter,
+    scriptLogWriter,
     upgradeOrders,
     namePrefix,
     minRamOrder

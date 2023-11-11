@@ -81,7 +81,10 @@ function updateStockListings(netscript: NS, logWriter: Logger) {
       }
       const priceChangesLength = historicalDetails.priceChanges.length;
       const stockVolatility = changeSum / priceChangesLength;
-      const stockForecast = priceChangesLength >= MIN_RECORDS_FOR_FORECAST ? increaseChangeCount / priceChangesLength : FIFTY_PERCENT;
+      const stockForecast =
+        priceChangesLength >= MIN_RECORDS_FOR_FORECAST
+          ? increaseChangeCount / priceChangesLength
+          : FIFTY_PERCENT;
 
       logWriter.writeLine(`Updating stock listing for symbol : ${symbol}`);
       const stockPosition = getPosition(netscript, symbol);

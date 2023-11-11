@@ -1,6 +1,6 @@
 import {Hacknet, NS} from '@ns';
 
-import {Logger, getLogger} from '/scripts/logging/loggerManager';
+import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {delayedInfiniteLoop} from '/scripts/workflows/execution';
@@ -33,9 +33,8 @@ function manageOrdersAndPurchases(
   logWriter: Logger
 ) {
   const hacknetApi = netscript.hacknet;
-
-  logWriter.writeLine('Checking Hacknet Purchase Node Order...');
   const nodeCost = hacknetApi.getPurchaseNodeCost();
+  let orderPurchased = false;
   if (
     hacknetApi.numNodes() < hacknetApi.maxNumNodes() &&
     (!upgradeOrders.length || nodeCost < upgradeOrders[0].cost) &&
@@ -56,11 +55,9 @@ function manageOrdersAndPurchases(
     logWriter.writeLine(
       `Successfully added Hacknet Node ${newNodeIndex} Upgrade Orders.`
     );
+    orderPurchased = true;
   }
 
-  logWriter.writeLine(
-    `Checking ${upgradeOrders.length} Hacknet Upgrade Orders...`
-  );
   while (
     upgradeOrders.length > 0 &&
     upgradeOrders[0].cost <= netscript.getPlayer().money
@@ -92,22 +89,27 @@ function manageOrdersAndPurchases(
     logWriter.writeLine(
       `Successfully updated upgrade cost for ${orderDetails.resource} on node ${orderDetails.nodeIndex}.`
     );
+    orderPurchased = true;
   }
-  logWriter.writeLine(ENTRY_DIVIDER);
+
+  if (orderPurchased) {
+    logWriter.writeLine(ENTRY_DIVIDER);
+  }
 }
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'hacknet-manager');
+  const logWriter = getLogger(netscript, 'hacknet-manager', LoggerMode.SCRIPT);
   logWriter.writeLine('Hacknet Purchase Manager');
   logWriter.writeLine(SECTION_DIVIDER);
+  netscript.tail();
 
   logWriter.writeLine('Initializing Hacknet Upgrade Orders...');
   const upgradeOrders = initializeUpgradeOrders(netscript.hacknet);
   logWriter.writeLine(
     `Found ${upgradeOrders.length} available Hacknet Upgrades.`
   );
-  logWriter.writeLine(ENTRY_DIVIDER);
+  logWriter.writeLine(SECTION_DIVIDER);
 
   await delayedInfiniteLoop(
     netscript,
