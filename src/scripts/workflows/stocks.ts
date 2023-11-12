@@ -1,4 +1,5 @@
 import {NS} from '@ns';
+import {runScript} from '/scripts/workflows/execution';
 
 type BuySellStockFunction = (symbol: string, shares: number) => number;
 
@@ -42,6 +43,30 @@ const STOCKS_TICKER_4SIGMA_SCRIPT = '/scripts/stocks-ticker-4sigma.js';
 
 const FIFTY_PERCENT = 0.5;
 const COMMISSION = 100000;
+const TOTAL_STOCKS = 33;
+
+function runTicker(netscript: NS) {
+  let stockForecastPid = -1;
+  if (
+    !netscript.isRunning(STOCKS_TICKER_HISTORY_SCRIPT) &&
+    !netscript.isRunning(STOCKS_TICKER_4SIGMA_SCRIPT)
+  ) {
+    if (netscript.stock.has4SDataTIXAPI()) {
+      stockForecastPid = runScript(
+        netscript,
+        STOCKS_TICKER_4SIGMA_SCRIPT,
+        netscript.getHostname()
+      );
+    } else {
+      stockForecastPid = runScript(
+        netscript,
+        STOCKS_TICKER_HISTORY_SCRIPT,
+        netscript.getHostname()
+      );
+    }
+  }
+  return stockForecastPid !== 0;
+}
 
 function getPosition(netscript: NS, symbol: string) {
   const [longShares, longPrice, shortShares, shortPrice] =
@@ -97,6 +122,8 @@ export {
   STOCKS_TICKER_4SIGMA_SCRIPT,
   FIFTY_PERCENT,
   COMMISSION,
+  TOTAL_STOCKS,
+  runTicker,
   getPosition,
   buyStock,
   sellStock,

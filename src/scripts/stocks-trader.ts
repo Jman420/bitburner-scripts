@@ -14,16 +14,15 @@ import {
 
 import {HOME_SERVER_NAME} from '/scripts/common/shared';
 
-import {eventLoop, runScript} from '/scripts/workflows/execution';
+import {eventLoop} from '/scripts/workflows/execution';
 import {
   COMMISSION,
   FIFTY_PERCENT,
   PurchaseTransaction,
-  STOCKS_TICKER_4SIGMA_SCRIPT,
-  STOCKS_TICKER_HISTORY_SCRIPT,
   SaleTransaction,
   TransactionPosition,
   buyStock,
+  runTicker,
   sellStock,
 } from '/scripts/workflows/stocks';
 
@@ -297,26 +296,7 @@ export async function main(netscript: NS) {
     return;
   }
 
-  let stockForecastPid = -1;
-  if (
-    !netscript.isRunning(STOCKS_TICKER_HISTORY_SCRIPT) &&
-    !netscript.isRunning(STOCKS_TICKER_4SIGMA_SCRIPT)
-  ) {
-    if (netscript.stock.has4SDataTIXAPI()) {
-      stockForecastPid = runScript(
-        netscript,
-        STOCKS_TICKER_4SIGMA_SCRIPT,
-        netscript.getHostname()
-      );
-    } else {
-      stockForecastPid = runScript(
-        netscript,
-        STOCKS_TICKER_HISTORY_SCRIPT,
-        netscript.getHostname()
-      );
-    }
-  }
-  if (!stockForecastPid) {
+  if (!runTicker(netscript)) {
     terminalWriter.writeLine(
       'Failed to find or execute a Stock Forecasting script!'
     );

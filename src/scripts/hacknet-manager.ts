@@ -40,7 +40,9 @@ function manageOrdersAndPurchases(
     (!upgradeOrders.length || nodeCost < upgradeOrders[0].cost) &&
     nodeCost <= netscript.getPlayer().money
   ) {
-    logWriter.writeLine(`Purchasing new Hacknet Node for $${nodeCost}...`);
+    logWriter.writeLine(
+      `Purchasing new Hacknet Node for $${netscript.formatNumber(nodeCost)}...`
+    );
     const newNodeIndex = hacknetApi.purchaseNode();
     logWriter.writeLine(
       `Successfully purchased new Hacknet Node with index : ${newNodeIndex}.`
@@ -68,7 +70,9 @@ function manageOrdersAndPurchases(
     }
 
     logWriter.writeLine(
-      `Purchasing ${orderDetails.resource} upgrade for node ${orderDetails.nodeIndex} for $${orderDetails.cost}...`
+      `Purchasing ${orderDetails.resource} upgrade for node ${
+        orderDetails.nodeIndex
+      } for $${netscript.formatNumber(orderDetails.cost)}...`
     );
     orderDetails.purchaseFunc(orderDetails.nodeIndex);
     logWriter.writeLine(
