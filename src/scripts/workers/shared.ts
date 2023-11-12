@@ -34,7 +34,9 @@ async function runWorker(
   const continuousAttack = cmdArgs[
     CMD_FLAG_CONTINUOUS_ATTACK
   ].valueOf() as boolean;
-  const influenceStocks = cmdArgs[CMD_FLAG_INFLUENCE_STOCKS].valueOf() as boolean;
+  const influenceStocks = cmdArgs[
+    CMD_FLAG_INFLUENCE_STOCKS
+  ].valueOf() as boolean;
 
   logWriter.writeLine(`Target Hosts : ${targetHosts}`);
   logWriter.writeLine(`Delay : ${delay}`);

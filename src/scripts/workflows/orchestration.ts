@@ -5,7 +5,10 @@ import {runWorkerScript, waitForScripts} from '/scripts/workflows/execution';
 
 import {WORKERS_PACKAGE} from '/scripts/workers/package';
 import {getCmdFlag} from '/scripts/workflows/cmd-args';
-import {CMD_FLAG_INFLUENCE_STOCKS, CMD_FLAG_TARGETS_CSV} from '/scripts/workers/shared';
+import {
+  CMD_FLAG_INFLUENCE_STOCKS,
+  CMD_FLAG_TARGETS_CSV,
+} from '/scripts/workers/shared';
 
 import {sendEvent} from '/scripts/comms/event-comms';
 import {WeakenEvent, WeakenStatus} from '/scripts/comms/events/weaken-event';
@@ -85,7 +88,7 @@ async function growHost(
       hostDetails,
       requiredFundsMultiplier
     );
-    
+
     const scriptPids = await runWorkerScript(
       netscript,
       GROW_WORKER_SCRIPT,

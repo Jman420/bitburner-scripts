@@ -1,6 +1,6 @@
 import {NS} from '@ns';
 import {runScript} from '/scripts/workflows/execution';
-import { scanWideNetwork } from '/scripts/workflows/recon';
+import {scanWideNetwork} from '/scripts/workflows/recon';
 
 type BuySellStockFunction = (symbol: string, shares: number) => number;
 

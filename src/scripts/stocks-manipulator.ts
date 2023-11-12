@@ -24,12 +24,15 @@ import {StocksPurchasedEvent} from '/scripts/comms/events/stocks-purchased-event
 import {StocksSoldEvent} from '/scripts/comms/events/stocks-sold-event';
 import {infiniteLoop, runScript} from '/scripts/workflows/execution';
 import {StockListingsResponse} from '/scripts/comms/events/stocks-listing-response';
-import { StockListingsRequest } from '/scripts/comms/events/stocks-listing-request';
-import { analyzeHost, scanWideNetwork } from '/scripts/workflows/recon';
-import { growHost, hackHost } from '/scripts/workflows/orchestration';
+import {StockListingsRequest} from '/scripts/comms/events/stocks-listing-request';
+import {analyzeHost} from '/scripts/workflows/recon';
+import {growHost, hackHost} from '/scripts/workflows/orchestration';
 
 const CMD_FLAG_ATTACK_HOSTS = 'attackHosts';
-const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_INCLUDE_HOME, false],[CMD_FLAG_ATTACK_HOSTS, []]];
+const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
+  [CMD_FLAG_INCLUDE_HOME, false],
+  [CMD_FLAG_ATTACK_HOSTS, []],
+];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const MODULE_NAME = 'stocks-manipulator';
@@ -47,10 +50,15 @@ function setupStocksManipulator(
   logWriter.writeLine('  Getting current stock portfolio details...');
   for (const stockListing of eventData.stockListings ?? []) {
     if (stockListing.position.longShares > 0) {
-      targetTransactions.set(stockListing.symbol, {symbol: stockListing.symbol, position: TransactionPosition.LONG});
-    }
-    else if (stockListing.position.shortShares > 0) {
-      targetTransactions.set(stockListing.symbol, {symbol: stockListing.symbol, position: TransactionPosition.SHORT});
+      targetTransactions.set(stockListing.symbol, {
+        symbol: stockListing.symbol,
+        position: TransactionPosition.LONG,
+      });
+    } else if (stockListing.position.shortShares > 0) {
+      targetTransactions.set(stockListing.symbol, {
+        symbol: stockListing.symbol,
+        position: TransactionPosition.SHORT,
+      });
     }
   }
 
@@ -83,7 +91,11 @@ function handleStocksPurchasedEvent(
   logWriter.writeLine(SECTION_DIVIDER);
 }
 
-function handleStocksSoldEvent(eventData: StocksSoldEvent, logWriter: Logger, targetTransactions: Map<string, StockTransaction>) {
+function handleStocksSoldEvent(
+  eventData: StocksSoldEvent,
+  logWriter: Logger,
+  targetTransactions: Map<string, StockTransaction>
+) {
   logWriter.writeLine('Removing sold stocks from target transactions...');
   for (const transactionDetails of eventData.transactions ?? []) {
     logWriter.writeLine(`  Removing symbol ${transactionDetails.symbol}`);
@@ -102,19 +114,22 @@ async function runAttacks(
   if (targetTransactions.size < 1) {
     return;
   }
-  
-  logWriter.writeLine(`Manipulating stocks prices for ${targetTransactions.size} symbols...`);
+
+  logWriter.writeLine(
+    `Manipulating stocks prices for ${targetTransactions.size} symbols...`
+  );
   for (const transaction of targetTransactions.values()) {
     logWriter.writeLine(ENTRY_DIVIDER);
     const symbolHosts = getHostnamesFromSymbol(netscript, transaction.symbol);
     for (const hostname of symbolHosts) {
-      logWriter.writeLine(`  Attacking ${hostname} (${transaction.symbol}) for transaction type : ${transaction.position}`);
+      logWriter.writeLine(
+        `  Attacking ${hostname} (${transaction.symbol}) for transaction type : ${transaction.position}`
+      );
       const hostDetails = analyzeHost(netscript, hostname);
       if (transaction.position === TransactionPosition.LONG) {
         logWriter.writeLine(`    Growing ${hostname} to maximum funds...`);
         await growHost(netscript, hostDetails, includeHome, 1, true);
-      }
-      else if (transaction.position === TransactionPosition.SHORT) {
+      } else if (transaction.position === TransactionPosition.SHORT) {
         logWriter.writeLine(`    Hacking ${hostname} for all funds...`);
         await hackHost(netscript, hostDetails, 0.95, includeHome, true);
       }
