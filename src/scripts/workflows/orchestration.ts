@@ -5,7 +5,7 @@ import {runWorkerScript, waitForScripts} from '/scripts/workflows/execution';
 
 import {WORKERS_PACKAGE} from '/scripts/workers/package';
 import {getCmdFlag} from '/scripts/workflows/cmd-args';
-import {CMD_FLAG_TARGETS_CSV} from '/scripts/workers/shared';
+import {CMD_FLAG_INFLUENCE_STOCKS, CMD_FLAG_TARGETS_CSV} from '/scripts/workers/shared';
 
 import {sendEvent} from '/scripts/comms/event-comms';
 import {WeakenEvent, WeakenStatus} from '/scripts/comms/events/weaken-event';
@@ -28,7 +28,8 @@ function weakenThreadsRequired(netscript: NS, targetReduction: number) {
 async function weakenHost(
   netscript: NS,
   hostDetails: ServerDetails,
-  includeHomeAttacker = false
+  includeHomeAttacker = false,
+  influenceStocks = false
 ) {
   sendEvent(new WeakenEvent(hostDetails.hostname, WeakenStatus.IN_PROGRESS));
 
@@ -47,7 +48,8 @@ async function weakenHost(
       requiredThreads,
       includeHomeAttacker,
       getCmdFlag(CMD_FLAG_TARGETS_CSV),
-      hostDetails.hostname
+      hostDetails.hostname,
+      influenceStocks ? getCmdFlag(CMD_FLAG_INFLUENCE_STOCKS) : ''
     );
     await waitForScripts(netscript, scriptPids);
 
@@ -70,7 +72,8 @@ async function growHost(
   netscript: NS,
   hostDetails: ServerDetails,
   includeHomeAttacker = false,
-  maxFundsWeight = 1
+  maxFundsWeight = 1,
+  influenceStocks = false
 ) {
   sendEvent(new GrowEvent(hostDetails.hostname, GrowStatus.IN_PROGRESS));
 
@@ -82,7 +85,7 @@ async function growHost(
       hostDetails,
       requiredFundsMultiplier
     );
-
+    
     const scriptPids = await runWorkerScript(
       netscript,
       GROW_WORKER_SCRIPT,
@@ -90,7 +93,8 @@ async function growHost(
       requiredThreads,
       includeHomeAttacker,
       getCmdFlag(CMD_FLAG_TARGETS_CSV),
-      hostDetails.hostname
+      hostDetails.hostname,
+      influenceStocks ? getCmdFlag(CMD_FLAG_INFLUENCE_STOCKS) : ''
     );
     await waitForScripts(netscript, scriptPids);
 
@@ -113,7 +117,8 @@ async function hackHost(
   netscript: NS,
   hostDetails: ServerDetails,
   hackPercent = 0.75,
-  includeHomeAttacker = false
+  includeHomeAttacker = false,
+  influenceStocks = false
 ) {
   sendEvent(new HackEvent(hostDetails.hostname, HackStatus.IN_PROGRESS));
 
@@ -131,7 +136,8 @@ async function hackHost(
     requiredThreads,
     includeHomeAttacker,
     getCmdFlag(CMD_FLAG_TARGETS_CSV),
-    hostDetails.hostname
+    hostDetails.hostname,
+    influenceStocks ? getCmdFlag(CMD_FLAG_INFLUENCE_STOCKS) : ''
   );
   await waitForScripts(netscript, scriptPids);
 

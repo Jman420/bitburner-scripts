@@ -1,11 +1,12 @@
 import {NS} from '@ns';
 import {runScript} from '/scripts/workflows/execution';
+import { scanWideNetwork } from '/scripts/workflows/recon';
 
 type BuySellStockFunction = (symbol: string, shares: number) => number;
 
 enum TransactionPosition {
-  LONG,
-  SHORT,
+  LONG = 'LONG',
+  SHORT = 'SHORT',
 }
 
 interface StockPosition {
@@ -114,6 +115,33 @@ function sellStock(
   return saleTotal - saleCost;
 }
 
+function getHostnamesFromSymbol(netscript: NS, symbol: string) {
+  const results = new Array<string>();
+  const symbolChars = symbol.split('');
+  const allHosts = scanWideNetwork(netscript, false);
+  for (const hostname of allHosts) {
+    const hostDetails = netscript.getServer(hostname);
+    let hostOrgName = hostDetails.organizationName.toUpperCase();
+
+    if (!hostOrgName.includes('POLICE') && !hostOrgName.includes('NIGHT')) {
+      const symbolMatched = symbolChars.every(char => {
+        const charIndex = hostOrgName.indexOf(char);
+        if (charIndex > -1) {
+          hostOrgName = hostOrgName.slice(charIndex + 1);
+          return true;
+        }
+        return false;
+      });
+
+      if (symbolMatched) {
+        results.push(hostname);
+      }
+    }
+  }
+
+  return results;
+}
+
 export {
   TransactionPosition,
   StockPosition,
@@ -131,4 +159,5 @@ export {
   getPosition,
   buyStock,
   sellStock,
+  getHostnamesFromSymbol,
 };

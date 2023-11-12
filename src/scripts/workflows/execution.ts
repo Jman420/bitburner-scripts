@@ -1,4 +1,4 @@
-import {NS} from '@ns';
+import {BasicHGWOptions, NS} from '@ns';
 
 import {randomIntWithinRange} from '/scripts/common/shared';
 
@@ -15,7 +15,7 @@ import {ExitEvent} from '/scripts/comms/events/exit-event';
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 type LoopableFunction = (...args: any[]) => Promise<void> | void;
-type GrowWeakenHackFunction = (host: string) => Promise<number>;
+type GrowWeakenHackFunction = (host: string, opts?: BasicHGWOptions) => Promise<number>;
 
 const MIN_LOOP_DELAY_MILLISEC = 1;
 const MAX_LOOP_DELAY_MILLISEC = 100;
@@ -117,11 +117,12 @@ async function runGWH(
   netscript: NS,
   gwhFunc: GrowWeakenHackFunction,
   targetHosts: string[],
-  delay = 0
+  delay = 0,
+  influenceStocks = false,
 ) {
   await netscript.asleep(delay);
   for (const hostname of targetHosts) {
-    await gwhFunc(hostname);
+    await gwhFunc(hostname, {stock: influenceStocks});
   }
 }
 

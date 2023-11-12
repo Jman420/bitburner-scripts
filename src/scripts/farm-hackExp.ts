@@ -95,8 +95,7 @@ export async function main(netscript: NS) {
         true,
         getCmdFlag(CMD_FLAG_TARGETS_CSV),
         targetHosts.join(','),
-        getCmdFlag(CMD_FLAG_CONTINUOUS_ATTACK),
-        true
+        getCmdFlag(CMD_FLAG_CONTINUOUS_ATTACK)
       )
     ) {
       logWriter.writeLine(`    Successfully running ${WEAKEN_WORKER_SCRIPT}.`);

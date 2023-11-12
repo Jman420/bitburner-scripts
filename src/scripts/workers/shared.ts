@@ -13,10 +13,12 @@ import {CmdArgsSchema, parseCmdFlags} from '/scripts/workflows/cmd-args';
 const CMD_FLAG_DELAY = 'delay';
 const CMD_FLAG_TARGETS_CSV = 'targetsCsv';
 const CMD_FLAG_CONTINUOUS_ATTACK = 'continuousAttack';
+const CMD_FLAG_INFLUENCE_STOCKS = 'influenceStocks';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_DELAY, 0],
   [CMD_FLAG_TARGETS_CSV, ''],
   [CMD_FLAG_CONTINUOUS_ATTACK, false],
+  [CMD_FLAG_INFLUENCE_STOCKS, false],
 ];
 
 async function runWorker(
@@ -32,10 +34,12 @@ async function runWorker(
   const continuousAttack = cmdArgs[
     CMD_FLAG_CONTINUOUS_ATTACK
   ].valueOf() as boolean;
+  const influenceStocks = cmdArgs[CMD_FLAG_INFLUENCE_STOCKS].valueOf() as boolean;
 
   logWriter.writeLine(`Target Hosts : ${targetHosts}`);
   logWriter.writeLine(`Delay : ${delay}`);
   logWriter.writeLine(`Continuous Attack : ${continuousAttack}`);
+  logWriter.writeLine(`Influence Stocks : ${influenceStocks}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine(`Performing worker activity : ${gwhFunc.name}`);
@@ -58,6 +62,7 @@ export {
   CMD_FLAG_DELAY,
   CMD_FLAG_TARGETS_CSV,
   CMD_FLAG_CONTINUOUS_ATTACK,
+  CMD_FLAG_INFLUENCE_STOCKS,
   CMD_FLAGS_SCHEMA,
   runWorker,
 };
