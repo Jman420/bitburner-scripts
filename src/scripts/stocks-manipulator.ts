@@ -164,7 +164,7 @@ export async function main(netscript: NS) {
   netscript.tail();
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
-  const eventListener = new EventListener(netscript, SUBSCRIBER_NAME);
+  const eventListener = new EventListener(SUBSCRIBER_NAME);
 
   const targetTransactions = new Map<string, StockTransaction>();
   eventListener.addListener(

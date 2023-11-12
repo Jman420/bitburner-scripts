@@ -10,7 +10,7 @@ import {
   maxScriptThreads,
 } from '/scripts/workflows/recon';
 
-import {EventListener} from '/scripts/comms/event-comms';
+import {EventListener, sendEvent} from '/scripts/comms/event-comms';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -59,8 +59,9 @@ function runWorkerScript(
   requiredThreads = 1,
   includeHome = false,
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  ...scriptArgs: any[]
+  ...scriptArgs: (string | number | boolean)[]
 ) {
+  scriptArgs = scriptArgs.filter(value => value !== '');
   requiredThreads = Math.ceil(requiredThreads);
   const requiredRam = getRequiredRam(netscript, scriptPath, requiredThreads);
   const scriptRam = netscript.getScriptRam(scriptPath);
@@ -129,6 +130,10 @@ async function runGWH(
   }
 }
 
+function initializeScript(netscript: NS, subscriberName: string) {
+  netscript.atExit(() => sendEvent(new ExitEvent(), subscriberName));
+}
+
 async function delayedInfiniteLoop<FuncType extends LoopableFunction>(
   netscript: NS,
   delay: number,
@@ -175,6 +180,7 @@ export {
   runWorkerScript,
   waitForScripts,
   runGWH,
+  initializeScript,
   delayedInfiniteLoop,
   infiniteLoop,
   eventLoop,

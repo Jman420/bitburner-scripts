@@ -12,9 +12,13 @@ import {
 import {HudHooks, getHUD, getHtmlElement} from '/scripts/workflows/ui';
 import {StocksTickerEvent} from '/scripts/comms/events/stocks-ticker-event';
 import {EventListener} from '/scripts/comms/event-comms';
-import {delayedInfiniteLoop} from '/scripts/workflows/execution';
+import {
+  delayedInfiniteLoop,
+  initializeScript,
+} from '/scripts/workflows/execution';
 import {TOTAL_STOCKS, runTicker} from '/scripts/workflows/stocks';
 import {scanWideNetwork} from '/scripts/workflows/recon';
+import {ExitEvent} from '/scripts/comms/events/exit-event';
 
 const CMD_FLAG_EXCLUDE_LOCATION_METRICS = 'excludeLocation';
 const CMD_FLAG_EXCLUDE_SCRIPT_METRICS = 'excludeScripts';
@@ -97,7 +101,7 @@ class HudExtensions {
       HUD_LOCATION_CLASS_NAME
     );
     this.scriptIncomeLabel = this.addNewHudRow(
-      'Script Income',
+      'Script Inc',
       'Script income per second',
       this.excludeScriptMetrics,
       HUD_SCRIPT_METRICS_CLASS_NAME,
@@ -133,19 +137,6 @@ class HudExtensions {
     );
   }
 
-  public shutdown() {
-    if (this.hudHooks.labelsElement) {
-      for (const element of this.hudHooks.labelsElement.children) {
-        this.hudHooks.labelsElement.removeChild(element);
-      }
-    }
-    if (this.hudHooks.valuesElement) {
-      for (const element of this.hudHooks.valuesElement.children) {
-        this.hudHooks.valuesElement.removeChild(element);
-      }
-    }
-  }
-
   public setCity(value: string) {
     this.setTextValue(this.cityLabel, value);
   }
@@ -155,6 +146,9 @@ class HudExtensions {
   }
 
   public setScriptIncome(value: string) {
+    if (value.at(0) !== '$') {
+      value = `$${value}`;
+    }
     this.setTextValue(this.scriptIncomeLabel, value);
   }
 
@@ -163,10 +157,16 @@ class HudExtensions {
   }
 
   public setStocksValue(value: string) {
+    if (value.at(0) !== '$') {
+      value = `$${value}`;
+    }
     this.setTextValue(this.stocksValueLabel, value);
   }
 
   public setStocksProfit(value: string) {
+    if (value.at(0) !== '$') {
+      value = `$${value}`;
+    }
     this.setTextValue(this.stocksProfitLabel, value);
   }
 
@@ -179,11 +179,14 @@ class HudExtensions {
   }
 
   private addNewSeparator() {
-    const newElement = getHtmlElement('hr');
-    newElement.classList.add(SEPARATOR_CLASS_NAME, HUD_ELEMENT_CLASS_NAME);
-    this.hudHooks.labelsElement?.appendChild(newElement);
-    this.hudHooks.valuesElement?.appendChild(newElement);
-    return newElement;
+    const labelSeparator = getHtmlElement('hr');
+    labelSeparator.classList.add(SEPARATOR_CLASS_NAME, HUD_ELEMENT_CLASS_NAME);
+    this.hudHooks.labelsElement?.appendChild(labelSeparator);
+
+    const valueSeparator = getHtmlElement('hr');
+    valueSeparator.classList.add(SEPARATOR_CLASS_NAME, HUD_ELEMENT_CLASS_NAME);
+    this.hudHooks.valuesElement?.appendChild(valueSeparator);
+    return labelSeparator;
   }
 
   private addNewHudRow(
@@ -197,17 +200,46 @@ class HudExtensions {
     }
 
     const textElement = getHtmlElement();
+    const displayState = hidden ? 'none' : '';
     textElement.innerText = text;
     textElement.title = hoverText;
-    textElement.style.display = hidden ? 'none' : textElement.style.display;
+    textElement.style.display = displayState;
     textElement.classList.add(...classNames);
     this.hudHooks.labelsElement?.appendChild(textElement);
 
+    const labelLineBreak = getHtmlElement('br');
+    labelLineBreak.style.display = displayState;
+    labelLineBreak.classList.add(HUD_ELEMENT_CLASS_NAME);
+    this.hudHooks.labelsElement?.appendChild(labelLineBreak);
+
     const valueElement = getHtmlElement();
+    valueElement.style.display = displayState;
     valueElement.classList.add(...classNames);
     this.hudHooks.valuesElement?.appendChild(valueElement);
 
+    const valueLineBreak = getHtmlElement('br');
+    valueLineBreak.style.display = displayState;
+    labelLineBreak.classList.add(HUD_ELEMENT_CLASS_NAME);
+    this.hudHooks.valuesElement?.appendChild(valueLineBreak);
+
     return valueElement;
+  }
+
+  public shutdown() {
+    if (this.hudHooks.labelsElement) {
+      while (this.hudHooks.labelsElement.firstChild) {
+        this.hudHooks.labelsElement.removeChild(
+          this.hudHooks.labelsElement.firstChild
+        );
+      }
+    }
+    if (this.hudHooks.valuesElement) {
+      while (this.hudHooks.valuesElement.firstChild) {
+        this.hudHooks.valuesElement.removeChild(
+          this.hudHooks.valuesElement.firstChild
+        );
+      }
+    }
   }
 }
 
@@ -289,6 +321,7 @@ function updateStockMetrics(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('HUD Extensions Refresh Manager');
   terminalWriter.writeLine(SECTION_DIVIDER);
@@ -343,10 +376,13 @@ export async function main(netscript: NS) {
     excludeStockMetrics,
     excludePlayerMetrics
   );
-  netscript.atExit(() => hudExtensions.shutdown());
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
-  const eventListener = new EventListener(netscript, SUBSCRIBER_NAME);
+  const eventListener = new EventListener(SUBSCRIBER_NAME);
+  eventListener.addListener(
+    ExitEvent,
+    hudExtensions.shutdown.bind(hudExtensions)
+  );
   eventListener.addListener(
     StocksTickerEvent,
     updateStockMetrics,

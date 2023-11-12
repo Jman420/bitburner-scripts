@@ -11,6 +11,8 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
+import {initializeScript} from '/scripts/workflows/execution';
+
 const CMD_FLAG_SAMPLE = 'sample';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_SAMPLE, ''],
@@ -18,9 +20,11 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const MODULE_NAME = 'script-template';
+const SUBSCRIBER_NAME = 'script-template';
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('SCRIPT TEMPLATE');
   terminalWriter.writeLine(SECTION_DIVIDER);

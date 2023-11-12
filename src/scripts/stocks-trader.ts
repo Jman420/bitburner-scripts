@@ -288,7 +288,7 @@ export async function main(netscript: NS) {
     return;
   }
 
-  const eventListener = new EventListener(netscript, SUBSCRIBER_NAME);
+  const eventListener = new EventListener(SUBSCRIBER_NAME);
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   eventListener.addListener(
     StockListingsResponse,

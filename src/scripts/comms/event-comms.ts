@@ -1,6 +1,5 @@
-import {NS} from '@ns';
-
 import {MessageBase} from '/scripts/comms/msg-base';
+import {ExitEvent} from '/scripts/comms/events/exit-event';
 
 type OmitFirstParam<TFunc> = TFunc extends (
   data: MessageBase,
@@ -33,11 +32,11 @@ class EventListener {
   readonly subscriberName: string;
   readonly messageTypes: Set<string>;
 
-  constructor(netscript: NS, subscriberName: string) {
+  constructor(subscriberName: string) {
     this.subscriberName = subscriberName;
     this.messageTypes = new Set<string>();
 
-    netscript.atExit(this.removeAllListeners.bind(this));
+    this.addListener(ExitEvent, this.removeAllListeners.bind(this));
   }
 
   public addListener<
