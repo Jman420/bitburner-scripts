@@ -101,7 +101,7 @@ export async function main(netscript: NS) {
   }
 
   const eventListener = new EventListener(netscript, SUBSCRIBER_NAME);
-  eventListener.addListeners(StockListingsRequest, sendListings);
+  eventListener.addListener(StockListingsRequest, sendListings);
 
   await delayedInfiniteLoop(
     netscript,

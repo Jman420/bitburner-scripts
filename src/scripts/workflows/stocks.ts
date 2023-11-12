@@ -26,20 +26,22 @@ interface StockListing {
   position: StockPosition;
 }
 
-interface SaleTransaction {
+interface StockTransaction {
   symbol: string;
   position: TransactionPosition;
+}
+
+interface SaleTransaction extends StockTransaction {
   profit: number;
 }
 
-interface PurchaseTransaction {
-  symbol: string;
-  position: TransactionPosition;
+interface PurchaseTransaction extends StockTransaction {
   cost: number;
 }
 
 const STOCKS_TICKER_HISTORY_SCRIPT = '/scripts/stocks-ticker-history.js';
 const STOCKS_TICKER_4SIGMA_SCRIPT = '/scripts/stocks-ticker-4sigma.js';
+const STOCKS_TRADER_SCRIPT = '/scripts/stocks-trader.js';
 
 const FIFTY_PERCENT = 0.5;
 const COMMISSION = 100000;
@@ -116,10 +118,12 @@ export {
   TransactionPosition,
   StockPosition,
   StockListing,
+  StockTransaction,
   SaleTransaction,
   PurchaseTransaction,
   STOCKS_TICKER_HISTORY_SCRIPT,
   STOCKS_TICKER_4SIGMA_SCRIPT,
+  STOCKS_TRADER_SCRIPT,
   FIFTY_PERCENT,
   COMMISSION,
   TOTAL_STOCKS,

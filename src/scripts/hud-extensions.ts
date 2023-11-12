@@ -251,10 +251,10 @@ function updatePolledMetrics(
 }
 
 function updateStockMetrics(
+  eventData: StocksTickerEvent,
   netscript: NS,
   logWriter: Logger,
-  hudExtensions: HudExtensions,
-  eventData: StocksTickerEvent
+  hudExtensions: HudExtensions
 ) {
   if (
     !eventData.stockListings ||
@@ -347,14 +347,12 @@ export async function main(netscript: NS) {
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const eventListener = new EventListener(netscript, SUBSCRIBER_NAME);
-  eventListener.addListeners(
+  eventListener.addListener(
     StocksTickerEvent,
-    updateStockMetrics.bind(
-      undefined,
-      netscript,
-      scriptLogWriter,
-      hudExtensions
-    )
+    updateStockMetrics,
+    netscript,
+    scriptLogWriter,
+    hudExtensions
   );
 
   await delayedInfiniteLoop(

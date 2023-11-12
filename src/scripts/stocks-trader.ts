@@ -32,11 +32,8 @@ import {StocksSoldEvent} from '/scripts/comms/events/stocks-sold-event';
 import {StocksPurchasedEvent} from '/scripts/comms/events/stocks-purchased-event';
 import {StockListingsResponse} from '/scripts/comms/events/stocks-listing-response';
 import {StockListingsRequest} from '/scripts/comms/events/stocks-listing-request';
-
-type TradeStocksFunc = (
-  fundsLimit: number,
-  eventData: StocksTickerEvent
-) => void;
+import {TerminalLogger} from '/scripts/logging/terminalLogger';
+import {ScriptLogger} from '/scripts/logging/scriptLogger';
 
 const CMD_FLAG_FUNDS_SAFETY_LIMIT = 'fundsSafetyLimit';
 const CMD_FLAG_ENABLE_SHORT_SALES = 'enableShort';
@@ -51,11 +48,11 @@ const SUBSCRIBER_NAME = 'stocks-trader';
 const PURCHASE_FORECAST_MARGIN = 0.1;
 
 function tradeStocks(
+  eventData: StocksTickerEvent,
   netscript: NS,
   logWriter: Logger,
   shortEnabled: boolean,
-  fundsLimit: number,
-  eventData: StocksTickerEvent
+  fundsLimit: number
 ) {
   const stockListings = eventData.stockListings ?? [];
   if (stockListings.length < 1) {
@@ -183,26 +180,15 @@ function tradeStocks(
 }
 
 function setupStockTrader(
+  eventData: StockListingsResponse,
   netscript: NS,
   eventListener: EventListener,
-  terminalWriter: Logger,
-  scriptLogWriter: Logger,
+  terminalWriter: TerminalLogger,
+  scriptLogWriter: ScriptLogger,
   fundsLimitPercent: number,
-  tradeStocksFunc: TradeStocksFunc,
-  eventData: StockListingsResponse
+  shortEnabled: boolean
 ) {
-  eventListener.removeListeners(
-    StockListingsResponse,
-    setupStockTrader.bind(
-      undefined,
-      netscript,
-      eventListener,
-      terminalWriter,
-      scriptLogWriter,
-      fundsLimitPercent,
-      tradeStocksFunc
-    )
-  );
+  eventListener.removeListeners(StockListingsResponse, setupStockTrader);
 
   terminalWriter.writeLine(
     'Selling all stock positions for accurate funds limit calculation...'
@@ -247,23 +233,22 @@ function setupStockTrader(
     netscript.exit();
   }
 
-  scriptLogWriter.writeLine(
-    `Stock trader setup successfully with funds limit $${netscript.formatNumber(
-      fundsLimit
-    )}`
-  );
+  const successMsg = `Stock trader setup successfully with funds limit $${netscript.formatNumber(
+    fundsLimit
+  )}`;
+  scriptLogWriter.writeLine(successMsg);
   scriptLogWriter.writeLine('Waiting for Stock Ticker Event...');
   scriptLogWriter.writeLine(SECTION_DIVIDER);
-  eventListener.addListeners(
+  eventListener.addListener(
     StocksTickerEvent,
-    tradeStocksFunc.bind(undefined, fundsLimit)
+    tradeStocks,
+    netscript,
+    scriptLogWriter,
+    shortEnabled,
+    fundsLimit
   );
 
-  terminalWriter.writeLine(
-    `Stock trader setup successfully with funds limit : $${netscript.formatNumber(
-      fundsLimit
-    )}`
-  );
+  terminalWriter.writeLine(successMsg);
   terminalWriter.writeLine('See script logs for on-going trade details.');
   netscript.tail();
 }
@@ -303,26 +288,18 @@ export async function main(netscript: NS) {
     return;
   }
 
-  // Setup event listener chain to sell all existing positions to get accurate funds limit
   const eventListener = new EventListener(netscript, SUBSCRIBER_NAME);
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
-  const tradeStocksFunc = tradeStocks.bind(
-    undefined,
-    netscript,
-    scriptLogWriter,
-    shortEnabled
-  );
-  const sellAllPositionsFunc = setupStockTrader.bind(
-    undefined,
+  eventListener.addListener(
+    StockListingsResponse,
+    setupStockTrader,
     netscript,
     eventListener,
     terminalWriter,
     scriptLogWriter,
     fundsLimitPercent,
-    tradeStocksFunc
+    shortEnabled
   );
-  eventListener.addListeners(StockListingsResponse, sellAllPositionsFunc);
-  await netscript.asleep(100);
   sendEvent(new StockListingsRequest(SUBSCRIBER_NAME));
 
   await eventLoop(netscript, eventListener);

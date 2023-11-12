@@ -2,14 +2,31 @@ import {NS} from '@ns';
 
 import {MessageBase} from '/scripts/comms/msg-base';
 
-type ListenerFunc<TData extends MessageBase> = (
-  data: TData
+type OmitFirstParam<TFunc> = TFunc extends (
+  data: MessageBase,
+  ...args: infer TArgs
+) => infer TRemoved
+  ? (...args: TArgs) => TRemoved
+  : never;
+type CallbackFunc<TData extends MessageBase> = (
+  data: TData,
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  ...args: any[]
 ) => Promise<void> | void;
 
-// Map Structure : key1 - messageType , value1 - subscriberMap ; key2 - subscriberName , value2 - listenerFunc
+interface SubscriberDetails<
+  TData extends MessageBase,
+  TCallbackFunc extends CallbackFunc<TData>,
+> {
+  subscriberName: string;
+  callbackFunc: TCallbackFunc;
+  functionArgs: Parameters<OmitFirstParam<TCallbackFunc>>;
+}
+
+// Map Structure : key1 - messageType , value1 - subscriberMap ; key2 - subscriberName , value2 - subscriberDetails
 const EVENT_LISTENER_MAP = new Map<
   string,
-  Map<string, ListenerFunc<MessageBase>[]>
+  Map<string, SubscriberDetails<MessageBase, CallbackFunc<MessageBase>>[]>
 >();
 
 class EventListener {
@@ -23,38 +40,46 @@ class EventListener {
     netscript.atExit(this.removeAllListeners.bind(this));
   }
 
-  public addListeners<TData extends MessageBase>(
+  public addListener<
+    TData extends MessageBase,
+    TFunc extends CallbackFunc<MessageBase>,
+  >(
     messageType: {new (): TData},
-    ...callbackFuncs: ListenerFunc<MessageBase>[]
+    callbackFunc: TFunc,
+    ...callbackArgs: Parameters<OmitFirstParam<typeof callbackFunc>>
   ) {
     const dummyMsg = new messageType();
-    const listeners = this.getListeners(dummyMsg);
-    let callbacksAdded = false;
-    for (const callback of callbackFuncs) {
-      if (!listeners.includes(callback)) {
-        listeners.push(callback);
-        callbacksAdded = true;
-      }
-    }
+    const subscriptions = this.getSubscriptions(dummyMsg);
 
-    if (callbacksAdded) {
-      this.setListeners(dummyMsg, listeners);
+    if (
+      !subscriptions.find(
+        value =>
+          value.callbackFunc === callbackFunc &&
+          value.functionArgs === callbackArgs
+      )
+    ) {
+      subscriptions.push({
+        subscriberName: this.subscriberName,
+        callbackFunc: callbackFunc,
+        functionArgs: callbackArgs,
+      });
+      this.setListeners(dummyMsg, subscriptions);
       this.messageTypes.add(dummyMsg.messageType);
     }
   }
 
   public removeListeners<TData extends MessageBase>(
     messageType: {new (): TData},
-    ...callbackFuncs: ListenerFunc<MessageBase>[]
+    ...callbackFuncs: CallbackFunc<MessageBase>[]
   ) {
     const dummyMsg = new messageType();
-    const prevListeners = this.getListeners(dummyMsg);
-    const updatedListeners = prevListeners.filter(
-      listener => !callbackFuncs.includes(listener)
+    const currentSubscriptions = this.getSubscriptions(dummyMsg);
+    const updatedSubscriptions = currentSubscriptions.filter(
+      subscriber => !callbackFuncs.includes(subscriber.callbackFunc)
     );
-    this.setListeners(dummyMsg, updatedListeners);
+    this.setListeners(dummyMsg, updatedSubscriptions);
 
-    if (updatedListeners.length < 1) {
+    if (updatedSubscriptions.length < 1) {
       const subscriberMap = this.getSubscriberMap(dummyMsg);
       subscriberMap.delete(this.subscriberName);
       this.messageTypes.delete(dummyMsg.messageType);
@@ -72,17 +97,17 @@ class EventListener {
     this.messageTypes.clear();
   }
 
-  private getListeners<TData extends MessageBase>(dummyMsg: TData) {
+  private getSubscriptions<TData extends MessageBase>(dummyMsg: TData) {
     const subscriberMap = this.getSubscriberMap(dummyMsg);
     const listeners =
       subscriberMap.get(this.subscriberName) ??
-      new Array<ListenerFunc<MessageBase>>();
+      new Array<SubscriberDetails<MessageBase, CallbackFunc<MessageBase>>>();
     return listeners;
   }
 
   private setListeners<TData extends MessageBase>(
     dummyMsg: TData,
-    listeners: ListenerFunc<MessageBase>[]
+    listeners: SubscriberDetails<MessageBase, CallbackFunc<MessageBase>>[]
   ) {
     const subscriberMap = this.getSubscriberMap(dummyMsg);
     subscriberMap.set(this.subscriberName, listeners);
@@ -92,7 +117,10 @@ class EventListener {
   private getSubscriberMap<TData extends MessageBase>(dummyMsg: TData) {
     return (
       EVENT_LISTENER_MAP.get(dummyMsg.messageType) ??
-      new Map<string, ListenerFunc<MessageBase>[]>()
+      new Map<
+        string,
+        SubscriberDetails<MessageBase, CallbackFunc<MessageBase>>[]
+      >()
     );
   }
 }
@@ -110,20 +138,23 @@ async function sendEvent<TData extends MessageBase>(
     return true;
   }
 
-  let listenerFuncs: ListenerFunc<TData>[];
+  let subscribers: SubscriberDetails<TData, CallbackFunc<TData>>[];
   if (subscriber) {
-    listenerFuncs = subscriberMap.get(subscriber) ?? [];
+    subscribers = subscriberMap.get(subscriber) ?? [];
   } else {
-    listenerFuncs = [];
+    subscribers = [];
     for (const subscriberFuncs of subscriberMap.values()) {
-      listenerFuncs.push(...subscriberFuncs);
+      subscribers.push(...subscriberFuncs);
     }
   }
 
-  for (const callback of listenerFuncs) {
-    await callback(data);
+  for (const subscriberDetails of subscribers) {
+    await subscriberDetails.callbackFunc(
+      data,
+      ...subscriberDetails.functionArgs
+    );
   }
   return true;
 }
 
-export {ListenerFunc, EventListener, sendEvent};
+export {CallbackFunc, EventListener, sendEvent};

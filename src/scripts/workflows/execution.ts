@@ -13,9 +13,9 @@ import {
 import {EventListener} from '/scripts/comms/event-comms';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
 
-type GrowWeakenHackFunction = (host: string) => Promise<number>;
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 type LoopableFunction = (...args: any[]) => Promise<void> | void;
+type GrowWeakenHackFunction = (host: string) => Promise<number>;
 
 const MIN_LOOP_DELAY_MILLISEC = 1;
 const MAX_LOOP_DELAY_MILLISEC = 100;
@@ -125,12 +125,11 @@ async function runGWH(
   }
 }
 
-async function delayedInfiniteLoop(
+async function delayedInfiniteLoop<FuncType extends LoopableFunction>(
   netscript: NS,
   delay: number,
-  loopFunction: LoopableFunction,
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  ...funcArgs: any[]
+  loopFunction: FuncType,
+  ...funcArgs: Parameters<FuncType>
 ) {
   /* eslint-disable-next-line no-constant-condition */
   while (true) {
@@ -139,11 +138,10 @@ async function delayedInfiniteLoop(
   }
 }
 
-async function infiniteLoop(
+async function infiniteLoop<FuncType extends LoopableFunction>(
   netscript: NS,
-  loopFunction: LoopableFunction,
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  ...funcArgs: any[]
+  loopFunction: FuncType,
+  ...funcArgs: Parameters<FuncType>
 ) {
   const delay = randomIntWithinRange(
     MIN_LOOP_DELAY_MILLISEC,
@@ -154,7 +152,7 @@ async function infiniteLoop(
 
 async function eventLoop(netscript: NS, eventListener: EventListener) {
   let exitFlag = false;
-  eventListener.addListeners(ExitEvent, () => {
+  eventListener.addListener(ExitEvent, () => {
     exitFlag = true;
   });
 
