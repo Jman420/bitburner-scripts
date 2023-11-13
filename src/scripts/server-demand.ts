@@ -164,11 +164,6 @@ export async function main(netscript: NS) {
 
   const serverFarmHosts = netscript.getPurchasedServers();
   if (!excludeFarm) {
-    terminalWriter.writeLine(
-      `Checking server farm for ${serverAmount} servers with ${netscript.formatRam(
-        ramRequired
-      )} of RAM available...`
-    );
     const farmHostsWithRam = findServersForRam(
       netscript,
       ramRequired,
@@ -211,6 +206,7 @@ export async function main(netscript: NS) {
     );
     return;
   }
+  terminalWriter.writeLine('See script logs for on-going purchase details.');
   netscript.tail();
 
   scriptLogWriter.writeLine(

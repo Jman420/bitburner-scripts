@@ -50,9 +50,6 @@ function manageOrdersAndPurchases(
       `Purchasing new Hacknet Node for $${netscript.formatNumber(nodeCost)}...`
     );
     const newNodeIndex = hacknetApi.purchaseNode();
-    logWriter.writeLine(
-      `Successfully purchased new Hacknet Node with index : ${newNodeIndex}.`
-    );
 
     logWriter.writeLine(
       `Adding new Hacknet Node ${newNodeIndex} Upgrade Orders...`
@@ -60,9 +57,6 @@ function manageOrdersAndPurchases(
     const nodeUpgradeOrders = getNodeUpgradeOrders(hacknetApi, newNodeIndex);
     sortUpgradeOrders(nodeUpgradeOrders);
     upgradeOrders.unshift(...nodeUpgradeOrders);
-    logWriter.writeLine(
-      `Successfully added Hacknet Node ${newNodeIndex} Upgrade Orders.`
-    );
     orderPurchased = true;
   }
 
@@ -81,9 +75,6 @@ function manageOrdersAndPurchases(
       } for $${netscript.formatNumber(orderDetails.cost)}...`
     );
     orderDetails.purchaseFunc(orderDetails.nodeIndex);
-    logWriter.writeLine(
-      `Successfully purchased ${orderDetails.resource} upgrade for node ${orderDetails.nodeIndex}.`
-    );
 
     logWriter.writeLine(
       `Updating upgrade cost for ${orderDetails.resource} on node ${orderDetails.nodeIndex}...`
@@ -96,9 +87,6 @@ function manageOrdersAndPurchases(
       )
     );
     sortUpgradeOrders(upgradeOrders);
-    logWriter.writeLine(
-      `Successfully updated upgrade cost for ${orderDetails.resource} on node ${orderDetails.nodeIndex}.`
-    );
     orderPurchased = true;
   }
 
