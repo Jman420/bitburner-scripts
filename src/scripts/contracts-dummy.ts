@@ -11,9 +11,14 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
+import {initializeScript} from '/scripts/workflows/execution';
+
 const CMD_FLAG_CONTRACT_TYPE = 'contractType';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_CONTRACT_TYPE, []]];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
+
+const MODULE_NAME = 'contracts-dummy';
+const SUBSCRIBER_NAME = 'contracts-dummy';
 
 let CONTRACT_TYPES: string[];
 
@@ -23,11 +28,8 @@ export async function main(netscript: NS) {
     .getContractTypes()
     .map(value => `'${value}'`);
 
-  const logWriter = getLogger(
-    netscript,
-    'contracts-dummy',
-    LoggerMode.TERMINAL
-  );
+  initializeScript(netscript, SUBSCRIBER_NAME);
+  const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Create Dummy Coding Contract');
   logWriter.writeLine(SECTION_DIVIDER);
 

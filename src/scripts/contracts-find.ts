@@ -4,9 +4,15 @@ import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {scanWideNetwork} from '/scripts/workflows/recon';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
+import {initializeScript} from '/scripts/workflows/execution';
+
+const MODULE_NAME = 'contracts-find';
+const SUBSCRIBER_NAME = 'contracts-find';
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'contracts-find', LoggerMode.TERMINAL);
+  initializeScript(netscript, SUBSCRIBER_NAME);
+  const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Find Coding Contracts');
   logWriter.writeLine(SECTION_DIVIDER);
 

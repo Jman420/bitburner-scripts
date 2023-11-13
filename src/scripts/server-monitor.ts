@@ -3,11 +3,17 @@ import {NS} from '@ns';
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
+import {initializeScript} from '/scripts/workflows/execution';
+
 import {getAvailableRam} from '/scripts/workflows/recon';
+
+const MODULE_NAME = 'farm-monitor';
+const SUBSCRIBER_NAME = 'farm-monitor';
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'farm-monitor', LoggerMode.TERMINAL);
+  initializeScript(netscript, SUBSCRIBER_NAME);
+  const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Server Farm Monitor');
   logWriter.writeLine(SECTION_DIVIDER);
 

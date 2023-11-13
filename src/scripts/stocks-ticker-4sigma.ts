@@ -3,7 +3,11 @@ import {NS} from '@ns';
 import {getLogger, Logger, LoggerMode} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
-import {delayedInfiniteLoop} from '/scripts/workflows/execution';
+import {
+  delayedInfiniteLoop,
+  initializeScript,
+} from '/scripts/workflows/execution';
+
 import {
   FIFTY_PERCENT,
   getPosition,
@@ -16,7 +20,9 @@ import {StocksTickerEvent} from '/scripts/comms/events/stocks-ticker-event';
 import {StockListingsRequest} from '/scripts/comms/events/stocks-listing-request';
 import {StockListingsResponse} from '/scripts/comms/events/stocks-listing-response';
 
+const MODULE_NAME = 'stocks-ticker-4sigma';
 const SUBSCRIBER_NAME = 'stocks-ticker-4sigma';
+
 const REFRESH_LISTINGS_DELAY = 1500;
 const STOCK_LISTINGS_MAP = new Map<string, StockListing>();
 
@@ -86,11 +92,8 @@ function sendListings(eventData: StockListingsRequest) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(
-    netscript,
-    'stocks-ticker-4sigma',
-    LoggerMode.SCRIPT
-  );
+  initializeScript(netscript, SUBSCRIBER_NAME);
+  const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   logWriter.writeLine('Stock Market Ticker - 4Sigma Market Data');
   logWriter.writeLine(SECTION_DIVIDER);
 

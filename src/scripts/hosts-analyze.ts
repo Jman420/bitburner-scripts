@@ -17,12 +17,18 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
+import {initializeScript} from '/scripts/workflows/execution';
+
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_TARGETS, []]];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
+const MODULE_NAME = 'hosts-analyze';
+const SUBSCRIBER_NAME = 'hosts-analyze';
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'hosts-analyze', LoggerMode.TERMINAL);
+  initializeScript(netscript, SUBSCRIBER_NAME);
+  const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Analyze Hosts');
   logWriter.writeLine(SECTION_DIVIDER);
 

@@ -3,7 +3,10 @@ import {NS} from '@ns';
 import {getLogger, Logger, LoggerMode} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
-import {delayedInfiniteLoop} from '/scripts/workflows/execution';
+import {
+  delayedInfiniteLoop,
+  initializeScript,
+} from '/scripts/workflows/execution';
 import {
   FIFTY_PERCENT,
   getPosition,
@@ -38,6 +41,9 @@ class HistoricalStockDetails {
   readonly prices = new FixedLengthQueue<number>(HISTORICAL_RECORD_DEPTH);
   readonly priceChanges = new FixedLengthQueue<number>(HISTORICAL_RECORD_DEPTH);
 }
+
+const MODULE_NAME = 'stocks-ticker-history';
+const SUBSCRIBER_NAME = 'stocks-ticker-history';
 
 const REFRESH_LISTINGS_DELAY = 1500;
 const HISTORICAL_RECORD_DEPTH = 20;
@@ -114,11 +120,8 @@ function updateStockListings(netscript: NS, logWriter: Logger) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(
-    netscript,
-    'stocks-ticker-history',
-    LoggerMode.SCRIPT
-  );
+  initializeScript(netscript, SUBSCRIBER_NAME);
+  const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   logWriter.writeLine('Stock Market Ticker - Historical Market Data');
   logWriter.writeLine(SECTION_DIVIDER);
 

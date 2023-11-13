@@ -13,6 +13,12 @@ import {
 } from '/scripts/workflows/cmd-args';
 
 import {
+  infiniteLoop,
+  initializeScript,
+  runScript,
+} from '/scripts/workflows/execution';
+
+import {
   STOCKS_TRADER_SCRIPT,
   StockTransaction,
   TransactionPosition,
@@ -22,9 +28,9 @@ import {
 import {EventListener, sendEvent} from '/scripts/comms/event-comms';
 import {StocksPurchasedEvent} from '/scripts/comms/events/stocks-purchased-event';
 import {StocksSoldEvent} from '/scripts/comms/events/stocks-sold-event';
-import {infiniteLoop, runScript} from '/scripts/workflows/execution';
 import {StockListingsResponse} from '/scripts/comms/events/stocks-listing-response';
 import {StockListingsRequest} from '/scripts/comms/events/stocks-listing-request';
+
 import {analyzeHost} from '/scripts/workflows/recon';
 import {growHost, hackHost} from '/scripts/workflows/orchestration';
 
@@ -140,6 +146,7 @@ async function runAttacks(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Stock Market Manipulator');
   terminalWriter.writeLine(SECTION_DIVIDER);

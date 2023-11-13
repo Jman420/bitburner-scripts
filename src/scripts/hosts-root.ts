@@ -3,9 +3,6 @@ import {AutocompleteData, NS} from '@ns';
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
-import {scanWideNetwork} from '/scripts/workflows/recon';
-import {getRootTools, obtainRoot} from '/scripts/workflows/escalation';
-
 import {
   CMD_FLAG_TARGETS,
   CmdArgsSchema,
@@ -15,12 +12,21 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
+import {initializeScript} from '/scripts/workflows/execution';
+
+import {scanWideNetwork} from '/scripts/workflows/recon';
+import {getRootTools, obtainRoot} from '/scripts/workflows/escalation';
+
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_TARGETS, []]];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
+const MODULE_NAME = 'hosts-root';
+const SUBSCRIBER_NAME = 'hosts-root';
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'hosts-root', LoggerMode.TERMINAL);
+  initializeScript(netscript, SUBSCRIBER_NAME);
+  const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Root All Available Hosts');
   logWriter.writeLine(SECTION_DIVIDER);
 

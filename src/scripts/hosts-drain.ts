@@ -16,6 +16,9 @@ import {
   getSchemaFlags,
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
+
+import {initializeScript} from '/scripts/workflows/execution';
+
 import {analyzeHost, scanWideNetwork} from '/scripts/workflows/recon';
 import {hackHost} from '/scripts/workflows/orchestration';
 
@@ -26,9 +29,11 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const MODULE_NAME = 'hosts-drain';
+const SUBSCRIBER_NAME = 'hosts-drain';
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Drain Hosts of all Funds');
   terminalWriter.writeLine(SECTION_DIVIDER);

@@ -1,9 +1,9 @@
 BitBurner Quick Start
   * run scripts/hosts-root.js  # Root all available hosts
-
   * run scripts/hacknet-manager.js  # Start generating passive income
-  * run scripts/farm-hackExp.js --includeHome --onlyOptimal 3  # Start farming hacking exp (up to level ~250)
-  * Manually go to University for free hacking class  # Generate quick early hacking exp (up to level ~25)
+  * run scripts/farm-hackExp.js --includeHome --optimalOnly 3  # Start farming hacking exp (until ~5cycles per level)
+  * Manually go to University for free hacking class  # Generate quick early hacking exp (until farm script heats up)
+  
   * Manually create root tools as available
     @ run scripts/hosts-root.js  # Root newly available hosts
 

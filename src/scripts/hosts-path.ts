@@ -3,8 +3,6 @@ import {AutocompleteData, NS} from '@ns';
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
-import {HOME_SERVER_NAME} from '/scripts/common/shared';
-import {scanLocalNetwork} from '/scripts/workflows/recon';
 import {
   CMD_FLAG_TARGETS,
   CmdArgsSchema,
@@ -14,8 +12,16 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
+import {initializeScript} from '/scripts/workflows/execution';
+
+import {HOME_SERVER_NAME} from '/scripts/common/shared';
+import {scanLocalNetwork} from '/scripts/workflows/recon';
+
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_TARGETS, []]];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
+
+const MODULE_NAME = 'hosts-path';
+const SUBSCRIBER_NAME = 'hosts-path';
 
 function findHostPath(
   netscript: NS,
@@ -44,7 +50,8 @@ function findHostPath(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'hosts-path', LoggerMode.TERMINAL);
+  initializeScript(netscript, SUBSCRIBER_NAME);
+  const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Find Path to Host');
   logWriter.writeLine(SECTION_DIVIDER);
 

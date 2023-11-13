@@ -14,6 +14,9 @@ import {
   getSchemaFlags,
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
+
+import {initializeScript} from '/scripts/workflows/execution';
+
 import {HOME_SERVER_NAME} from '/scripts/common/shared';
 
 const CMD_FLAG_INCLUDE_HOME = 'includeHome';
@@ -24,13 +27,13 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
+const MODULE_NAME = 'contracts-solve';
+const SUBSCRIBER_NAME = 'contracts-solve';
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(
-    netscript,
-    'contracts-solve',
-    LoggerMode.TERMINAL
-  );
+  initializeScript(netscript, SUBSCRIBER_NAME);
+  const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Automatically Solve Known Coding Contracts');
   logWriter.writeLine(SECTION_DIVIDER);
 

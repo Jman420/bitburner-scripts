@@ -20,7 +20,7 @@ import {analyzeHost, scanWideNetwork} from '/scripts/workflows/recon';
 import {copyFiles} from '/scripts/workflows/propagation';
 import {WORKERS_PACKAGE} from '/scripts/workers/package';
 import {WEAKEN_WORKER_SCRIPT} from '/scripts/workflows/orchestration';
-import {runScript} from '/scripts/workflows/execution';
+import {initializeScript, runScript} from '/scripts/workflows/execution';
 import {
   scoreHostForExperience,
   sortOptimalTargetHosts,
@@ -35,9 +35,13 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
+const MODULE_NAME = 'farm-hackExp';
+const SUBSCRIBER_NAME = 'farm-hackExp';
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'farm-hackExp', LoggerMode.TERMINAL);
+  initializeScript(netscript, SUBSCRIBER_NAME);
+  const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Hacking Experience Farm - Using Weaken');
   logWriter.writeLine(SECTION_DIVIDER);
 

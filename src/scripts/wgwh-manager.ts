@@ -12,7 +12,7 @@ import {
   WeightScoreValues,
   sortOptimalTargetHosts,
 } from '/scripts/workflows/scoring';
-import {infiniteLoop} from '/scripts/workflows/execution';
+import {infiniteLoop, initializeScript} from '/scripts/workflows/execution';
 import {growHost, hackHost, weakenHost} from '/scripts/workflows/orchestration';
 import {
   CMD_FLAG_TARGETS,
@@ -40,6 +40,7 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const MODULE_NAME = 'wgwh-manager';
+const SUBSCRIBER_NAME = 'wgwh-manager';
 
 async function attackTargets(
   netscript: NS,
@@ -130,6 +131,7 @@ async function attackTargets(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Weaken-Grow Weaken-Hack Attack Manager');
   terminalWriter.writeLine(SECTION_DIVIDER);

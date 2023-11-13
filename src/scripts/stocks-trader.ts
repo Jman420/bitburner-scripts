@@ -14,7 +14,7 @@ import {
 
 import {HOME_SERVER_NAME} from '/scripts/common/shared';
 
-import {eventLoop} from '/scripts/workflows/execution';
+import {eventLoop, initializeScript} from '/scripts/workflows/execution';
 import {
   COMMISSION,
   FIFTY_PERCENT,
@@ -255,6 +255,7 @@ function setupStockTrader(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Stock Market Trade Manager');
   terminalWriter.writeLine(SECTION_DIVIDER);

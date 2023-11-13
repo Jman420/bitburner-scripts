@@ -16,7 +16,7 @@ import {getAvailableRam, scanWideNetwork} from '/scripts/workflows/recon';
 import {copyFiles} from '/scripts/workflows/propagation';
 import {WORKERS_PACKAGE} from '/scripts/workers/package';
 import {SHARE_RAM_WORKER_SCRIPT} from '/scripts/workflows/orchestration';
-import {runScript} from '/scripts/workflows/execution';
+import {initializeScript, runScript} from '/scripts/workflows/execution';
 
 const CMD_FLAG_INCLUDE_HOME = 'includeHome';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
@@ -25,13 +25,13 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
+const MODULE_NAME = 'farm-factionExp';
+const SUBSCRIBER_NAME = 'farm-factionExp';
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(
-    netscript,
-    'farm-factionExp',
-    LoggerMode.TERMINAL
-  );
+  initializeScript(netscript, SUBSCRIBER_NAME);
+  const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Boost Faction Reputation Gain Rate ');
   logWriter.writeLine(SECTION_DIVIDER);
 

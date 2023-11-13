@@ -11,17 +11,19 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
+import {initializeScript} from '/scripts/workflows/execution';
+
 const CMD_FLAG_REPUTATION = 'reputation';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_REPUTATION, 0]];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
+const MODULE_NAME = 'faction-donation';
+const SUBSCRIBER_NAME = 'faction-donation';
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(
-    netscript,
-    'faction-donation',
-    LoggerMode.TERMINAL
-  );
+  initializeScript(netscript, SUBSCRIBER_NAME);
+  const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Faction Donation Calculator');
   logWriter.writeLine(SECTION_DIVIDER);
 

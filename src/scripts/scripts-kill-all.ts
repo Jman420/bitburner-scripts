@@ -1,7 +1,7 @@
 import {AutocompleteData, NS} from '@ns';
 
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
-import {scanWideNetwork} from '/scripts/workflows/recon';
+import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {
   CMD_FLAG_INCLUDE_HOME,
@@ -9,18 +9,21 @@ import {
   getSchemaFlags,
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
-import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
+
+import {initializeScript} from '/scripts/workflows/execution';
+
+import {scanWideNetwork} from '/scripts/workflows/recon';
 
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_INCLUDE_HOME, false]];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
+const MODULE_NAME = 'scripts-kill-all';
+const SUBSCRIBER_NAME = 'scripts-kill-all';
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(
-    netscript,
-    'scripts-kill-all',
-    LoggerMode.TERMINAL
-  );
+  initializeScript(netscript, SUBSCRIBER_NAME);
+  const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Kill All Scripts on All Hosts');
   logWriter.writeLine(SECTION_DIVIDER);
 

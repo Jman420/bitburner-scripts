@@ -1,8 +1,7 @@
 import {AutocompleteData, NS} from '@ns';
 
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
-import {scanWideNetwork} from '/scripts/workflows/recon';
-import {SCRIPTS_PATH} from '/scripts/common/shared';
+import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {
   CMD_FLAG_INCLUDE_HOME,
@@ -10,18 +9,22 @@ import {
   getSchemaFlags,
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
-import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
+
+import {initializeScript} from '/scripts/workflows/execution';
+
+import {scanWideNetwork} from '/scripts/workflows/recon';
+import {SCRIPTS_PATH} from '/scripts/common/shared';
 
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_INCLUDE_HOME, false]];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
+const MODULE_NAME = 'scripts-remove-all';
+const SUBSCRIBER_NAME = 'scripts-remove-all';
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(
-    netscript,
-    'scripts-remove-all',
-    LoggerMode.TERMINAL
-  );
+  initializeScript(netscript, SUBSCRIBER_NAME);
+  const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Remove All Scripts on All Hosts');
   logWriter.writeLine(SECTION_DIVIDER);
 

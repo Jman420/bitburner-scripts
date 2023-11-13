@@ -16,9 +16,11 @@ import {
   getSchemaFlags,
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
+
 import {
   getRequiredRam,
   infiniteLoop,
+  initializeScript,
   runWorkerScript,
   waitForScripts,
 } from '/scripts/workflows/execution';
@@ -43,6 +45,7 @@ import {CMD_FLAG_DELAY, CMD_FLAG_TARGETS_CSV} from '/scripts/workers/shared';
 import {WORKERS_PACKAGE} from '/scripts/workers/package';
 
 const MODULE_NAME = 'wgwh-batches';
+const SUBSCRIBER_NAME = 'wgwh-batches';
 const DEFAULT_SLEEP_FOR_RAM = 500;
 const BATCH_BUFFER_DELAY = 100;
 
@@ -280,6 +283,7 @@ async function attackTargets(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Weaken-Grow Weaken-Hack Batch Manager');
   terminalWriter.writeLine(SECTION_DIVIDER);

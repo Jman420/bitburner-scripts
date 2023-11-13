@@ -3,8 +3,14 @@ import {Hacknet, NS} from '@ns';
 import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
-import {delayedInfiniteLoop} from '/scripts/workflows/execution';
+import {
+  delayedInfiniteLoop,
+  initializeScript,
+} from '/scripts/workflows/execution';
 import {HacknetOrder, getNodeUpgradeOrders} from '/scripts/workflows/hacknet';
+
+const MODULE_NAME = 'hacknet-manager';
+const SUBSCRIBER_NAME = 'hacknet-manager';
 
 const LOOP_DELAY_MILLISEC = 5000;
 
@@ -103,7 +109,8 @@ function manageOrdersAndPurchases(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'hacknet-manager', LoggerMode.SCRIPT);
+  initializeScript(netscript, SUBSCRIBER_NAME);
+  const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   logWriter.writeLine('Hacknet Purchase Manager');
   logWriter.writeLine(SECTION_DIVIDER);
   netscript.tail();

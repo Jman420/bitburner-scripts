@@ -11,6 +11,12 @@ import {
   getSchemaFlags,
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
+
+import {
+  delayedInfiniteLoop,
+  initializeScript,
+} from '/scripts/workflows/execution';
+
 import {
   CMD_FLAG_NAME_PREFIX,
   DEFAULT_NODE_NAME_PREFIX,
@@ -19,7 +25,6 @@ import {
   getNodeUpgradeOrder,
   nearestPowerOf2,
 } from '/scripts/workflows/server-farm';
-import {delayedInfiniteLoop} from '/scripts/workflows/execution';
 
 const CMD_FLAG_MIN_RAM = 'minimumRam';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
@@ -29,6 +34,7 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const MODULE_NAME = 'server-manager';
+const SUBSCRIBER_NAME = 'server-manager';
 const LOOP_DELAY_MILLISEC = 5000;
 
 function sortUpgradeOrders(upgradeOrders: Array<ServerFarmOrder>) {
@@ -109,6 +115,7 @@ function manageOrdersAndPurchases(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  initializeScript(netscript, SUBSCRIBER_NAME);
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Server Farm Purchase Manager');
   logWriter.writeLine(SECTION_DIVIDER);

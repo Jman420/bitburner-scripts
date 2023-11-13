@@ -13,6 +13,9 @@ import {
   getSchemaFlags,
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
+
+import {initializeScript} from '/scripts/workflows/execution';
+
 import {analyzeHost, scanWideNetwork} from '/scripts/workflows/recon';
 import {
   ServerDetailsExtended,
@@ -38,9 +41,13 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
+const MODULE_NAME = 'hosts-score';
+const SUBSCRIBER_NAME = 'hosts-score';
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const logWriter = getLogger(netscript, 'hosts-score', LoggerMode.TERMINAL);
+  initializeScript(netscript, SUBSCRIBER_NAME);
+  const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Target Hosts Score Report');
   logWriter.writeLine(SECTION_DIVIDER);
 

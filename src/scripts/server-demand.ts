@@ -11,6 +11,8 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
+import {initializeScript} from '/scripts/workflows/execution';
+
 import {findServersForRam, getAvailableRam} from '/scripts/workflows/recon';
 import {
   CMD_FLAG_NAME_PREFIX,
@@ -31,6 +33,7 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const MODULE_NAME = 'server-demand';
+const SUBSCRIBER_NAME = 'server-demand';
 const LOOP_DELAY_MILLISEC = 5000;
 
 function getOrders(
@@ -124,6 +127,7 @@ async function manageOrders(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Server Farm Manager');
   terminalWriter.writeLine(SECTION_DIVIDER);
