@@ -28,4 +28,33 @@ function getHtmlElement(tagName = 'element') {
   return getDocument().createElement(tagName);
 }
 
-export {HudHooks, getWindow, getDocument, getHUD, getHtmlElement};
+function runTerminalCommand(cmd: string) {
+  const doc = getDocument();
+
+  const terminalInput = doc.getElementById(
+    'terminal-input'
+  ) as HTMLInputElement;
+  if (!terminalInput) {
+    return false;
+  }
+  terminalInput.value = cmd;
+
+  const eventHandlerKey = Object.keys(terminalInput)[1];
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  const anyTerminalInput = terminalInput as any;
+  anyTerminalInput[eventHandlerKey].onChange({target: terminalInput});
+  anyTerminalInput[eventHandlerKey].onKeyDown({
+    key: 'Enter',
+    preventDefault: () => undefined,
+  });
+  return true;
+}
+
+export {
+  HudHooks,
+  getWindow,
+  getDocument,
+  getHUD,
+  getHtmlElement,
+  runTerminalCommand,
+};

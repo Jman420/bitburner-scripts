@@ -71,6 +71,31 @@ function scanWideNetwork(
   return availableHosts;
 }
 
+function findHostPath(
+  netscript: NS,
+  hostname: string,
+  targetHost: string,
+  path: string[] = [],
+  traversedHosts: string[] = []
+) {
+  if (hostname === targetHost) {
+    path.unshift(hostname);
+    return path;
+  }
+
+  traversedHosts.push(hostname);
+  const localHosts = scanLocalNetwork(netscript, hostname, false, false).filter(
+    value => !traversedHosts.includes(value)
+  );
+  for (const nextHost of localHosts) {
+    if (findHostPath(netscript, nextHost, targetHost, path, traversedHosts)) {
+      path.unshift(hostname);
+      return path;
+    }
+  }
+  return undefined;
+}
+
 function findServersForRam(
   netscript: NS,
   requiredTotalRam: number,
@@ -186,6 +211,7 @@ export {
   ServerDetails,
   scanLocalNetwork,
   scanWideNetwork,
+  findHostPath,
   findServersForRam,
   getTotalMaxRam,
   getAvailableRam,

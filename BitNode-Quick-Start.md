@@ -10,6 +10,7 @@ BitBurner Quick Start
   * run scripts/scripts-kill-all.js --includeHome  # Kill all scripts for next cycle
   * run scripts/hacknet-manager.js  # Continue increasing passive income (up to ~200k/s)
   * run scripts/wgwh-manager.js --includeHome --continuousAttack  # Generate hacking exp & income
+  * Manually commit crimes (Rob store, larceny, forge bonds)  # Supplement income (until hacking scripts heat up)
 
   * Purchase Tor Router
   * Purchase any missing root tools
