@@ -8,9 +8,15 @@ import {
   initializeScript,
 } from '/scripts/workflows/execution';
 import {HacknetOrder, getNodeUpgradeOrders} from '/scripts/workflows/hacknet';
+import {openTail} from '/scripts/workflows/ui';
 
 const MODULE_NAME = 'hacknet-manager';
 const SUBSCRIBER_NAME = 'hacknet-manager';
+
+const TAIL_X_POS = 250;
+const TAIL_Y_POS = 0;
+const TAIL_WIDTH = 670;
+const TAIL_HEIGHT = 515;
 
 const LOOP_DELAY_MILLISEC = 5000;
 
@@ -101,7 +107,7 @@ export async function main(netscript: NS) {
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   logWriter.writeLine('Hacknet Purchase Manager');
   logWriter.writeLine(SECTION_DIVIDER);
-  netscript.tail();
+  openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
   logWriter.writeLine('Initializing Hacknet Upgrade Orders...');
   const upgradeOrders = initializeUpgradeOrders(netscript.hacknet);

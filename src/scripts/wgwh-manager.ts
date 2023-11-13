@@ -23,6 +23,7 @@ import {
   getSchemaFlags,
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
+import {openTail} from '/scripts/workflows/ui';
 
 const CMD_FLAG_CONTINUOUS_ATTACK = 'continuousAttack';
 const CMD_FLAG_INCLUDE_HOME = 'includeHome';
@@ -41,6 +42,11 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const MODULE_NAME = 'wgwh-manager';
 const SUBSCRIBER_NAME = 'wgwh-manager';
+
+const TAIL_X_POS = 920;
+const TAIL_Y_POS = 0;
+const TAIL_WIDTH = 1240;
+const TAIL_HEIGHT = 515;
 
 async function attackTargets(
   netscript: NS,
@@ -160,7 +166,7 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine(SECTION_DIVIDER);
 
   terminalWriter.writeLine('See script logs for on-going attack details.');
-  netscript.tail();
+  openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   if (continuousAttack) {

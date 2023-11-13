@@ -1,3 +1,5 @@
+import {NS} from '@ns';
+
 interface HudHooks {
   labelsElement?: HTMLElement;
   valuesElement?: HTMLElement;
@@ -50,6 +52,23 @@ function runTerminalCommand(cmd: string) {
   return true;
 }
 
+function openTail(
+  netscript: NS,
+  xPos?: number,
+  yPos?: number,
+  width?: number,
+  height?: number,
+  scriptPid?: number
+) {
+  netscript.tail(scriptPid);
+  if (xPos !== undefined && yPos !== undefined) {
+    netscript.moveTail(xPos, yPos);
+  }
+  if (width !== undefined && height !== undefined) {
+    netscript.resizeTail(width, height);
+  }
+}
+
 export {
   HudHooks,
   getWindow,
@@ -57,4 +76,5 @@ export {
   getHUD,
   getHtmlElement,
   runTerminalCommand,
+  openTail,
 };

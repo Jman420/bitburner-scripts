@@ -20,6 +20,7 @@ import {
   ServerFarmOrder,
   nearestPowerOf2,
 } from '/scripts/workflows/server-farm';
+import {openTail} from '/scripts/workflows/ui';
 
 const CMD_FLAG_AMOUNT = 'amount';
 const CMD_FLAG_RAM_EXPONENT = 'ramExponent';
@@ -34,6 +35,12 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const MODULE_NAME = 'server-demand';
 const SUBSCRIBER_NAME = 'server-demand';
+
+const TAIL_X_POS = 1665;
+const TAIL_Y_POS = 580;
+const TAIL_WIDTH = 895;
+const TAIL_HEIGHT = 385;
+
 const LOOP_DELAY_MILLISEC = 5000;
 
 function getOrders(
@@ -207,7 +214,7 @@ export async function main(netscript: NS) {
     return;
   }
   terminalWriter.writeLine('See script logs for on-going purchase details.');
-  netscript.tail();
+  openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
   scriptLogWriter.writeLine(
     `Purchasing ${purchaseOrders.length} server farm orders...`
