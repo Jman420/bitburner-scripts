@@ -31,6 +31,7 @@ function weakenThreadsRequired(netscript: NS, targetReduction: number) {
 async function weakenHost(
   netscript: NS,
   hostDetails: ServerDetails,
+  useMaxThreads = false,
   includeHomeAttacker = false,
   influenceStocks = false
 ) {
@@ -39,16 +40,20 @@ async function weakenHost(
   while (hostDetails.securityLevel > hostDetails.minSecurityLevel) {
     const targetWeaknessReduction =
       hostDetails.securityLevel - hostDetails.minSecurityLevel;
-    const requiredThreads = weakenThreadsRequired(
-      netscript,
-      targetWeaknessReduction
-    );
+    let requiredThreads = 0;
+    if (!useMaxThreads) {
+      requiredThreads = weakenThreadsRequired(
+        netscript,
+        targetWeaknessReduction
+      );
+    }
 
     const scriptPids = runWorkerScript(
       netscript,
       WEAKEN_WORKER_SCRIPT,
       WORKERS_PACKAGE,
       requiredThreads,
+      useMaxThreads,
       includeHomeAttacker,
       getCmdFlag(CMD_FLAG_TARGETS_CSV),
       hostDetails.hostname,
@@ -68,12 +73,14 @@ function growThreadsRequired(
   hostDetails: ServerDetails,
   targetMultiplier: number
 ) {
+  // growthAnalyze() is not accurate in its thread predictions... this will almost always require 2 cycles to fully grow the host
   return netscript.growthAnalyze(hostDetails.hostname, targetMultiplier);
 }
 
 async function growHost(
   netscript: NS,
   hostDetails: ServerDetails,
+  useMaxThreads = true,
   includeHomeAttacker = false,
   maxFundsWeight = 1,
   influenceStocks = false
@@ -83,17 +90,21 @@ async function growHost(
   const maxFundsLimit = maxFundsWeight * hostDetails.maxFunds;
   while (hostDetails.availableFunds < maxFundsLimit) {
     const requiredFundsMultiplier = maxFundsLimit / hostDetails.availableFunds;
-    const requiredThreads = growThreadsRequired(
-      netscript,
-      hostDetails,
-      requiredFundsMultiplier
-    );
+    let requiredThreads = 0;
+    if (!useMaxThreads) {
+      requiredThreads = growThreadsRequired(
+        netscript,
+        hostDetails,
+        requiredFundsMultiplier
+      );
+    }
 
     const scriptPids = await runWorkerScript(
       netscript,
       GROW_WORKER_SCRIPT,
       WORKERS_PACKAGE,
       requiredThreads,
+      useMaxThreads,
       includeHomeAttacker,
       getCmdFlag(CMD_FLAG_TARGETS_CSV),
       hostDetails.hostname,
@@ -119,24 +130,30 @@ function hackThreadsRequired(
 async function hackHost(
   netscript: NS,
   hostDetails: ServerDetails,
-  hackPercent = 0.75,
+  useMaxThreads = false,
   includeHomeAttacker = false,
+  hackPercent = 0.75,
   influenceStocks = false
 ) {
   sendEvent(new HackEvent(hostDetails.hostname, HackStatus.IN_PROGRESS));
 
   const prehackFunds = hostDetails.availableFunds;
   const targetHackFunds = prehackFunds * hackPercent;
-  const requiredThreads = hackThreadsRequired(
-    netscript,
-    hostDetails.hostname,
-    targetHackFunds
-  );
+  let requiredThreads = 0;
+  if (!useMaxThreads) {
+    requiredThreads = hackThreadsRequired(
+      netscript,
+      hostDetails.hostname,
+      targetHackFunds
+    );
+  }
+
   const scriptPids = await runWorkerScript(
     netscript,
     HACK_WORKER_SCRIPT,
     WORKERS_PACKAGE,
     requiredThreads,
+    useMaxThreads,
     includeHomeAttacker,
     getCmdFlag(CMD_FLAG_TARGETS_CSV),
     hostDetails.hostname,

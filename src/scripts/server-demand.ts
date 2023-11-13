@@ -36,10 +36,10 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 const MODULE_NAME = 'server-demand';
 const SUBSCRIBER_NAME = 'server-demand';
 
-const TAIL_X_POS = 1665;
-const TAIL_Y_POS = 580;
-const TAIL_WIDTH = 895;
-const TAIL_HEIGHT = 385;
+const TAIL_X_POS = 1740;
+const TAIL_Y_POS = 600;
+const TAIL_WIDTH = 820;
+const TAIL_HEIGHT = 380;
 
 const LOOP_DELAY_MILLISEC = 5000;
 

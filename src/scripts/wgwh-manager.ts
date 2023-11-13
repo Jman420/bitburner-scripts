@@ -99,13 +99,19 @@ async function attackTargets(
         hostDetails.weakenTime
       )})...`
     );
-    hostDetails = await weakenHost(netscript, hostDetails, includeHomeAttacker);
+    hostDetails = await weakenHost(
+      netscript,
+      hostDetails,
+      true,
+      includeHomeAttacker
+    );
     logWriter.writeLine(
       `  Growing Host (~${convertMillisecToTime(hostDetails.growTime)})...`
     );
     hostDetails = await growHost(
       netscript,
       hostDetails,
+      true,
       includeHomeAttacker,
       fundsLimitWeight
     );
@@ -114,15 +120,21 @@ async function attackTargets(
         hostDetails.weakenTime
       )})...`
     );
-    hostDetails = await weakenHost(netscript, hostDetails, includeHomeAttacker);
+    hostDetails = await weakenHost(
+      netscript,
+      hostDetails,
+      true,
+      includeHomeAttacker
+    );
     logWriter.writeLine(
       `  Hacking Host (~${convertMillisecToTime(hostDetails.hackTime)})...`
     );
     const hackResults = await hackHost(
       netscript,
       hostDetails,
-      hackPercent,
-      includeHomeAttacker
+      false,
+      includeHomeAttacker,
+      hackPercent
     );
     logWriter.writeLine(
       `  Hacked Funds : $${netscript.formatNumber(

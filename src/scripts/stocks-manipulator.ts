@@ -134,10 +134,10 @@ async function runAttacks(
       const hostDetails = analyzeHost(netscript, hostname);
       if (transaction.position === TransactionPosition.LONG) {
         logWriter.writeLine(`    Growing ${hostname} to maximum funds...`);
-        await growHost(netscript, hostDetails, includeHome, 1, true);
+        await growHost(netscript, hostDetails, true, includeHome, 1, true);
       } else if (transaction.position === TransactionPosition.SHORT) {
         logWriter.writeLine(`    Hacking ${hostname} for all funds...`);
-        await hackHost(netscript, hostDetails, 0.95, includeHome, true);
+        await hackHost(netscript, hostDetails, false, includeHome, 0.95, true);
       }
     }
   }

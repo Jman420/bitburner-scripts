@@ -69,7 +69,13 @@ export async function main(netscript: NS) {
         hostDetails.hackTime
       )})...`
     );
-    const hackResults = await hackHost(netscript, hostDetails, 1, includeHome);
+    const hackResults = await hackHost(
+      netscript,
+      hostDetails,
+      true,
+      includeHome,
+      1
+    );
     hackedFundsTotal += hackResults.hackedFunds;
     scriptLogWriter.writeLine(
       `  Drained $${netscript.formatNumber(hackResults.hackedFunds)}`

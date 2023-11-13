@@ -62,7 +62,14 @@ export async function main(netscript: NS) {
   logWriter.writeLine(`Score Function : ${scoreFunc}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
-  const targetHosts = scanWideNetwork(netscript, false, true, false, true);
+  const targetHosts = scanWideNetwork(
+    netscript,
+    false,
+    true,
+    false,
+    true,
+    true
+  );
   const targetsAnalysis = targetHosts.map(hostname =>
     analyzeHost(netscript, hostname)
   );

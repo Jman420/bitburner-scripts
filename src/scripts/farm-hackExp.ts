@@ -60,7 +60,7 @@ export async function main(netscript: NS) {
     logWriter.writeLine(
       'No target hosts provided.  Getting all rooted host targets...'
     );
-    targetHosts = scanWideNetwork(netscript, false, true, false, true);
+    targetHosts = scanWideNetwork(netscript, false, true, false, false, true);
   }
   logWriter.writeLine('Sorting target hosts by optimality...');
   const targetsAnalysis = targetHosts.map(value =>

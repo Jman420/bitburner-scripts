@@ -125,6 +125,7 @@ function findServersForRam(
       satisfiedRam += currentServerRam;
     }
   }
+
   return serversWithRam;
 }
 

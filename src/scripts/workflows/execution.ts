@@ -8,6 +8,7 @@ import {
   findServersForRam,
   getAvailableRam,
   maxScriptThreads,
+  scanWideNetwork,
 } from '/scripts/workflows/recon';
 
 import {EventListener, sendEvent} from '/scripts/comms/event-comms';
@@ -35,7 +36,7 @@ function runScript(
   scriptName: string,
   hostname: string,
   threadCount = 1,
-  maxThreads = false,
+  useMaxThreads = false,
   ...args: (string | number | boolean)[]
 ) {
   if (netscript.isRunning(scriptName, hostname)) {
@@ -46,7 +47,7 @@ function runScript(
     return 0;
   }
 
-  threadCount = maxThreads
+  threadCount = useMaxThreads
     ? maxScriptThreads(netscript, hostname, scriptName, false)
     : threadCount;
   return netscript.exec(scriptName, hostname, threadCount, ...args);
@@ -57,37 +58,43 @@ function runWorkerScript(
   scriptPath: string,
   workerPackage: string[],
   requiredThreads = 1,
+  useMaxThreads = false,
   includeHome = false,
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   ...scriptArgs: (string | number | boolean)[]
 ) {
   scriptArgs = scriptArgs.filter(value => value !== '');
   requiredThreads = Math.ceil(requiredThreads);
+
   const requiredRam = getRequiredRam(netscript, scriptPath, requiredThreads);
   const scriptRam = netscript.getScriptRam(scriptPath);
-  const attackHosts = findServersForRam(
-    netscript,
-    requiredRam,
-    scriptRam,
-    includeHome
-  );
+
+  let attackHosts: string[];
+  if (useMaxThreads) {
+    attackHosts = scanWideNetwork(netscript, includeHome, true, true);
+  } else {
+    attackHosts = findServersForRam(
+      netscript,
+      requiredRam,
+      scriptRam,
+      includeHome
+    );
+  }
 
   const scriptPids = new Array<number>();
-  for (const attackerHostname of attackHosts) {
+  for (const hostname of attackHosts) {
     let hostThreads = Math.floor(
-      getAvailableRam(netscript, attackerHostname) /
-        netscript.getScriptRam(scriptPath)
+      getAvailableRam(netscript, hostname) / netscript.getScriptRam(scriptPath)
     );
     if (hostThreads > requiredThreads) {
       hostThreads = requiredThreads;
     }
-    copyFiles(netscript, workerPackage, attackerHostname);
+    copyFiles(netscript, workerPackage, hostname);
     const scriptPid = runScript(
       netscript,
       scriptPath,
-      attackerHostname,
+      hostname,
       hostThreads,
-      false,
+      useMaxThreads,
       ...scriptArgs
     );
     if (scriptPid) {
