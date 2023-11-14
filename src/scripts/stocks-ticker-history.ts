@@ -14,8 +14,10 @@ import {
   StockListing,
 } from '/scripts/workflows/stocks';
 
-import {sendEvent} from '/scripts/comms/event-comms';
+import {EventListener, sendEvent} from '/scripts/comms/event-comms';
 import {StocksTickerEvent} from '/scripts/comms/events/stocks-ticker-event';
+import {StockListingsRequest} from '/scripts/comms/events/stocks-listing-request';
+import {StockListingsResponse} from '/scripts/comms/events/stocks-listing-response';
 
 class FixedLengthQueue<TElement> extends Array<TElement> {
   readonly fixedLength: number;
@@ -47,9 +49,9 @@ const SUBSCRIBER_NAME = 'stocks-ticker-history';
 
 const REFRESH_LISTINGS_DELAY = 1500;
 const HISTORICAL_RECORD_DEPTH = 20;
-const MIN_RECORDS_FOR_FORECAST = 4;
+const MIN_RECORDS_FOR_FORECAST = 10;
 const HISTORICAL_DETAILS_MAP = new Map<string, HistoricalStockDetails>();
-const STOCK_LISTING_MAP = new Map<string, StockListing>();
+const STOCK_LISTINGS_MAP = new Map<string, StockListing>();
 
 function updateStockListings(netscript: NS, logWriter: Logger) {
   logWriter.writeLine('Updating Stock Listings from Historical Market Data');
@@ -61,7 +63,7 @@ function updateStockListings(netscript: NS, logWriter: Logger) {
     const askPrice = netscript.stock.getAskPrice(symbol);
     const bidPrice = netscript.stock.getBidPrice(symbol);
     const stockMaxShares = netscript.stock.getMaxShares(symbol);
-    const currentListing = STOCK_LISTING_MAP.get(symbol);
+    const currentListing = STOCK_LISTINGS_MAP.get(symbol);
 
     if (
       !currentListing ||
@@ -106,7 +108,7 @@ function updateStockListings(netscript: NS, logWriter: Logger) {
         position: stockPosition,
       };
 
-      STOCK_LISTING_MAP.set(symbol, stockListing);
+      STOCK_LISTINGS_MAP.set(symbol, stockListing);
       updatedListings.push(stockListing);
       logWriter.writeLine(`  Forecast score : ${stockListing.forecastScore}`);
       logWriter.writeLine(ENTRY_DIVIDER);
@@ -116,6 +118,17 @@ function updateStockListings(netscript: NS, logWriter: Logger) {
   sendEvent(new StocksTickerEvent(updatedListings));
   logWriter.writeLine(`Updated ${updatedListings.length} stock listings.`);
   logWriter.writeLine(SECTION_DIVIDER);
+}
+
+function sendListings(eventData: StockListingsRequest) {
+  const result = new Array<StockListing>();
+  for (const symbol of eventData.symbols ?? STOCK_LISTINGS_MAP.keys()) {
+    const stockListing = STOCK_LISTINGS_MAP.get(symbol);
+    if (stockListing) {
+      result.push(stockListing);
+    }
+  }
+  sendEvent(new StockListingsResponse(result), eventData.subscriber);
 }
 
 /** @param {NS} netscript */
@@ -130,6 +143,9 @@ export async function main(netscript: NS) {
       `Conflicting stock ticker script running : ${STOCKS_TICKER_4SIGMA_SCRIPT}`
     );
   }
+
+  const eventListener = new EventListener(SUBSCRIBER_NAME);
+  eventListener.addListener(StockListingsRequest, sendListings);
 
   HISTORICAL_DETAILS_MAP.clear();
   await delayedInfiniteLoop(
