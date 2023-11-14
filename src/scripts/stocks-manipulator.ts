@@ -1,7 +1,11 @@
 import {AutocompleteData, NS} from '@ns';
 
 import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
-import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
+import {
+  ENTRY_DIVIDER,
+  SECTION_DIVIDER,
+  convertMillisecToTime,
+} from '/scripts/logging/logOutput';
 
 import {
   CMD_FLAG_INCLUDE_HOME,
@@ -89,12 +93,23 @@ function handleStocksPurchasedEvent(
   logWriter: Logger,
   targetTransactions: Map<string, StockTransaction>
 ) {
-  logWriter.writeLine('Adding purchased stocks to target transactions...');
+  const addedTransactions = new Array<StockTransaction>();
   for (const transactionDetails of eventData.transactions ?? []) {
-    logWriter.writeLine(`  Adding symbol ${transactionDetails.symbol}`);
-    targetTransactions.set(transactionDetails.symbol, transactionDetails);
+    if (!targetTransactions.has(transactionDetails.symbol)) {
+      addedTransactions.push(transactionDetails);
+      targetTransactions.set(transactionDetails.symbol, transactionDetails);
+    }
   }
-  logWriter.writeLine(SECTION_DIVIDER);
+
+  if (addedTransactions.length > 0) {
+    logWriter.writeLine('Added purchased stocks to target transactions...');
+    for (const transactionDetails of addedTransactions) {
+      logWriter.writeLine(
+        `  Added symbol ${transactionDetails.symbol} with position : ${transactionDetails.position}`
+      );
+    }
+    logWriter.writeLine(SECTION_DIVIDER);
+  }
 }
 
 function handleStocksSoldEvent(
@@ -102,12 +117,21 @@ function handleStocksSoldEvent(
   logWriter: Logger,
   targetTransactions: Map<string, StockTransaction>
 ) {
-  logWriter.writeLine('Removing sold stocks from target transactions...');
+  const removedTransactions = new Array<StockTransaction>();
   for (const transactionDetails of eventData.transactions ?? []) {
-    logWriter.writeLine(`  Removing symbol ${transactionDetails.symbol}`);
+    removedTransactions.push(transactionDetails);
     targetTransactions.delete(transactionDetails.symbol);
   }
-  logWriter.writeLine(SECTION_DIVIDER);
+
+  if (removedTransactions.length > 0) {
+    logWriter.writeLine('Removing sold stocks from target transactions...');
+    for (const transactionDetails of removedTransactions) {
+      logWriter.writeLine(
+        `  Removing symbol ${transactionDetails.symbol} with position : ${transactionDetails.position}`
+      );
+    }
+    logWriter.writeLine(SECTION_DIVIDER);
+  }
 }
 
 async function runAttacks(
@@ -133,10 +157,18 @@ async function runAttacks(
       );
       const hostDetails = analyzeHost(netscript, hostname);
       if (transaction.position === TransactionPosition.LONG) {
-        logWriter.writeLine(`    Growing ${hostname} to maximum funds...`);
+        logWriter.writeLine(
+          `    Growing ${hostname} to maximum funds (~${convertMillisecToTime(
+            hostDetails.growTime
+          )}))...`
+        );
         await growHost(netscript, hostDetails, true, includeHome, 1, true);
       } else if (transaction.position === TransactionPosition.SHORT) {
-        logWriter.writeLine(`    Hacking ${hostname} for all funds...`);
+        logWriter.writeLine(
+          `    Hacking ${hostname} for 95% of funds (~${convertMillisecToTime(
+            hostDetails.hackTime
+          )})...`
+        );
         await hackHost(netscript, hostDetails, false, includeHome, 0.95, true);
       }
     }

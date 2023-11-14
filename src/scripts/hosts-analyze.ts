@@ -69,6 +69,11 @@ export async function main(netscript: NS) {
     logWriter.writeLine(
       `Hack Time : ${convertMillisecToTime(hostDetails.hackTime)}`
     );
+    logWriter.writeLine(
+      `Hack Chance : ${netscript.formatPercent(
+        netscript.hackAnalyzeChance(hostname)
+      )}`
+    );
     logWriter.writeLine(ENTRY_DIVIDER);
   }
 }

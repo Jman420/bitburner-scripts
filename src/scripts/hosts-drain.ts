@@ -21,6 +21,8 @@ import {initializeScript} from '/scripts/workflows/execution';
 
 import {analyzeHost, scanWideNetwork} from '/scripts/workflows/recon';
 import {hackHost} from '/scripts/workflows/orchestration';
+import {DEFAULT_NETSCRIPT_ENABLED_LOGGING} from '/scripts/logging/scriptLogger';
+import {openTail} from '/scripts/workflows/ui';
 
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_TARGETS, []],
@@ -30,6 +32,11 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const MODULE_NAME = 'hosts-drain';
 const SUBSCRIBER_NAME = 'hosts-drain';
+
+const TAIL_X_POS = 920;
+const TAIL_Y_POS = 0;
+const TAIL_WIDTH = 1275;
+const TAIL_HEIGHT = 510;
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
@@ -46,10 +53,19 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine(`Target Hosts : ${targetHosts}`);
   terminalWriter.writeLine(`Include Home : ${includeHome}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
-  terminalWriter.writeLine('See script logs for on-going attack details.');
-  netscript.tail();
 
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
+  terminalWriter.writeLine('See script logs for on-going attack details.');
+  openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
+
+  const netscriptEnabledLogging = DEFAULT_NETSCRIPT_ENABLED_LOGGING.filter(
+    value => value !== 'exec'
+  );
+  const scriptLogWriter = getLogger(
+    netscript,
+    MODULE_NAME,
+    LoggerMode.SCRIPT,
+    netscriptEnabledLogging
+  );
   if (targetHosts.length < 1) {
     scriptLogWriter.writeLine(
       'No target hosts provided.  Scanning wide network for targets...'

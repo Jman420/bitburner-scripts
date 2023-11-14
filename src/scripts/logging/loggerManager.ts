@@ -1,6 +1,9 @@
 import {NS} from '@ns';
 
-import {ScriptLogger} from '/scripts/logging/scriptLogger';
+import {
+  DEFAULT_NETSCRIPT_ENABLED_LOGGING,
+  ScriptLogger,
+} from '/scripts/logging/scriptLogger';
 import {TerminalLogger} from '/scripts/logging/terminalLogger';
 import {NoopLooger} from '/scripts/logging/noopLogger';
 import {ConsoleLogger} from '/scripts/logging/consoleLogger';
@@ -17,13 +20,14 @@ enum LoggerMode {
 function getLogger(
   netscript: NS,
   moduleName: string,
-  loggerMode = LoggerMode.NOOP
+  loggerMode = LoggerMode.NOOP,
+  netscriptEnabledLogging = DEFAULT_NETSCRIPT_ENABLED_LOGGING
 ): Logger {
   let result: Logger;
   if (loggerMode === LoggerMode.CONSOLE) {
     result = new ConsoleLogger(netscript, moduleName);
   } else if (loggerMode === LoggerMode.SCRIPT) {
-    result = new ScriptLogger(netscript, moduleName);
+    result = new ScriptLogger(netscript, moduleName, netscriptEnabledLogging);
   } else if (loggerMode === LoggerMode.TERMINAL) {
     result = new TerminalLogger(netscript, moduleName);
   } else {

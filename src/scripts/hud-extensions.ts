@@ -89,6 +89,7 @@ class HudExtensions {
     this.cityLabel = this.addNewHudRow(
       'City',
       'Name of the city you are currently in.',
+      this.uiTheme['infolight'],
       this.excludeLocationMetrics,
       HUD_LOCATION_METRICS_CLASS_NAME,
       HUD_CITY_CLASS_NAME
@@ -96,34 +97,39 @@ class HudExtensions {
     this.locationLabel = this.addNewHudRow(
       'Location',
       'Current location witin the city.',
+      this.uiTheme['infolight'],
       this.excludeLocationMetrics,
       HUD_LOCATION_METRICS_CLASS_NAME,
       HUD_LOCATION_CLASS_NAME
     );
-    this.scriptIncomeLabel = this.addNewHudRow(
-      'Script Inc',
-      'Script income per second',
-      this.excludeScriptMetrics,
-      HUD_SCRIPT_METRICS_CLASS_NAME,
-      HUD_SCRIPT_INCOME_CLASS_NAME
-    );
     this.scriptExpLabel = this.addNewHudRow(
       'Script Exp',
       'Script hacking experience per second',
+      this.uiTheme['hack'],
       this.excludeScriptMetrics,
       HUD_SCRIPT_METRICS_CLASS_NAME,
       HUD_SCRIPT_EXP_CLASS_NAME
     );
+    this.scriptIncomeLabel = this.addNewHudRow(
+      'Script Inc',
+      'Script income per second',
+      this.uiTheme['money'],
+      this.excludeScriptMetrics,
+      HUD_SCRIPT_METRICS_CLASS_NAME,
+      HUD_SCRIPT_INCOME_CLASS_NAME
+    );
     this.stocksValueLabel = this.addNewHudRow(
-      'Stocks Value',
+      'Stocks Val',
       'Total value of stock portfolio',
+      this.uiTheme['money'],
       this.excludeStockMetrics,
       HUD_STOCK_METRICS_CLASS_NAME,
       HUD_STOCKS_VALUE_CLASS_NAME
     );
     this.stocksProfitLabel = this.addNewHudRow(
-      'Stocks Profit',
+      'Stocks Pft',
       'Total profit from stock portfolio',
+      this.uiTheme['money'],
       this.excludeStockMetrics,
       HUD_STOCK_METRICS_CLASS_NAME,
       HUD_STOCKS_PROFIT_CLASS_NAME
@@ -131,6 +137,7 @@ class HudExtensions {
     this.karmaLabel = this.addNewHudRow(
       'Karma',
       'Player karma level',
+      this.uiTheme['hp'],
       this.excludePlayerMetrics,
       HUD_PLAYER_METRICS_CLASS_NAME,
       HUD_KARMA_CLASS_NAME
@@ -192,6 +199,7 @@ class HudExtensions {
   private addNewHudRow(
     text = '',
     hoverText = '',
+    color = '',
     hidden = false,
     ...classNames: string[]
   ) {
@@ -204,6 +212,7 @@ class HudExtensions {
     textElement.innerText = text;
     textElement.title = hoverText;
     textElement.style.display = displayState;
+    textElement.style.color = color;
     textElement.classList.add(...classNames);
     this.hudHooks.labelsElement?.appendChild(textElement);
 
@@ -214,6 +223,7 @@ class HudExtensions {
 
     const valueElement = getHtmlElement();
     valueElement.style.display = displayState;
+    valueElement.style.color = color;
     valueElement.classList.add(...classNames);
     this.hudHooks.valuesElement?.appendChild(valueElement);
 

@@ -20,12 +20,10 @@ const GROW_WORKER_SCRIPT = '/scripts/workers/grow.js';
 const HACK_WORKER_SCRIPT = '/scripts/workers/hack.js';
 const SHARE_RAM_WORKER_SCRIPT = '/scripts/workers/share-ram.js';
 
-function weakenThreadsRequired(netscript: NS, targetReduction: number) {
-  let requiredThreads = 1;
-  while (netscript.weakenAnalyze(requiredThreads) < targetReduction) {
-    requiredThreads++;
-  }
-  return requiredThreads;
+const WEAKEN_REDUCTION_AMOUNT = 0.05;
+
+function weakenThreadsRequired(targetReduction: number) {
+  return Math.ceil(targetReduction / WEAKEN_REDUCTION_AMOUNT);
 }
 
 async function weakenHost(
@@ -42,18 +40,15 @@ async function weakenHost(
       hostDetails.securityLevel - hostDetails.minSecurityLevel;
     let requiredThreads = 0;
     if (!useMaxThreads) {
-      requiredThreads = weakenThreadsRequired(
-        netscript,
-        targetWeaknessReduction
-      );
+      requiredThreads = weakenThreadsRequired(targetWeaknessReduction);
     }
 
     const scriptPids = runWorkerScript(
       netscript,
       WEAKEN_WORKER_SCRIPT,
       WORKERS_PACKAGE,
-      requiredThreads,
       useMaxThreads,
+      requiredThreads,
       includeHomeAttacker,
       getCmdFlag(CMD_FLAG_TARGETS_CSV),
       hostDetails.hostname,
@@ -103,8 +98,8 @@ async function growHost(
       netscript,
       GROW_WORKER_SCRIPT,
       WORKERS_PACKAGE,
-      requiredThreads,
       useMaxThreads,
+      requiredThreads,
       includeHomeAttacker,
       getCmdFlag(CMD_FLAG_TARGETS_CSV),
       hostDetails.hostname,
@@ -152,8 +147,8 @@ async function hackHost(
     netscript,
     HACK_WORKER_SCRIPT,
     WORKERS_PACKAGE,
-    requiredThreads,
     useMaxThreads,
+    requiredThreads,
     includeHomeAttacker,
     getCmdFlag(CMD_FLAG_TARGETS_CSV),
     hostDetails.hostname,

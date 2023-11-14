@@ -34,6 +34,7 @@ import {StockListingsResponse} from '/scripts/comms/events/stocks-listing-respon
 import {StockListingsRequest} from '/scripts/comms/events/stocks-listing-request';
 import {TerminalLogger} from '/scripts/logging/terminalLogger';
 import {ScriptLogger} from '/scripts/logging/scriptLogger';
+import {openTail} from '/scripts/workflows/ui';
 
 const CMD_FLAG_FUNDS_SAFETY_LIMIT = 'fundsSafetyLimit';
 const CMD_FLAG_ENABLE_SHORT_SALES = 'enableShort';
@@ -45,6 +46,12 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const MODULE_NAME = 'stocks-trader';
 const SUBSCRIBER_NAME = 'stocks-trader';
+
+const TAIL_X_POS = 1470;
+const TAIL_Y_POS = 620;
+const TAIL_WIDTH = 1090;
+const TAIL_HEIGHT = 490;
+
 const PURCHASE_FORECAST_MARGIN = 0.1;
 
 function tradeStocks(
@@ -58,6 +65,9 @@ function tradeStocks(
   if (stockListings.length < 1) {
     return;
   }
+  stockListings.sort(
+    (listingA, listingB) => listingB.forecastScore - listingA.forecastScore
+  );
 
   // Handle Sales Transactions
   let totalSaleProfits = 0;
@@ -250,7 +260,7 @@ function setupStockTrader(
 
   terminalWriter.writeLine(successMsg);
   terminalWriter.writeLine('See script logs for on-going trade details.');
-  netscript.tail();
+  openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 }
 
 /** @param {NS} netscript */

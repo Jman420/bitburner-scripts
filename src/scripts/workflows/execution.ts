@@ -57,8 +57,8 @@ function runWorkerScript(
   netscript: NS,
   scriptPath: string,
   workerPackage: string[],
-  requiredThreads = 1,
   useMaxThreads = false,
+  requiredThreads = 1,
   includeHome = false,
   ...scriptArgs: (string | number | boolean)[]
 ) {

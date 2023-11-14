@@ -24,6 +24,7 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 import {openTail} from '/scripts/workflows/ui';
+import {DEFAULT_NETSCRIPT_ENABLED_LOGGING} from '/scripts/logging/scriptLogger';
 
 const CMD_FLAG_CONTINUOUS_ATTACK = 'continuousAttack';
 const CMD_FLAG_INCLUDE_HOME = 'includeHome';
@@ -45,8 +46,8 @@ const SUBSCRIBER_NAME = 'wgwh-manager';
 
 const TAIL_X_POS = 920;
 const TAIL_Y_POS = 0;
-const TAIL_WIDTH = 1240;
-const TAIL_HEIGHT = 515;
+const TAIL_WIDTH = 1275;
+const TAIL_HEIGHT = 510;
 
 async function attackTargets(
   netscript: NS,
@@ -180,7 +181,15 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('See script logs for on-going attack details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
+  const netscriptEnabledLogging = DEFAULT_NETSCRIPT_ENABLED_LOGGING.filter(
+    value => value !== 'exec'
+  );
+  const scriptLogWriter = getLogger(
+    netscript,
+    MODULE_NAME,
+    LoggerMode.SCRIPT,
+    netscriptEnabledLogging
+  );
   if (continuousAttack) {
     await infiniteLoop(
       netscript,
