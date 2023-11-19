@@ -52,10 +52,10 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 const MODULE_NAME = 'gangs-manager';
 const SUBSCRIBER_NAME = 'gangs-manager';
 
-const TAIL_X_POS = 1231;
-const TAIL_Y_POS = 120;
-const TAIL_WIDTH = 1090;
-const TAIL_HEIGHT = 490;
+const TAIL_X_POS = 1670;
+const TAIL_Y_POS = 18;
+const TAIL_WIDTH = 650;
+const TAIL_HEIGHT = 415;
 
 const UPDATE_DELAY = 3000;
 const TRAINING_ASCENTION_LIMIT = 8;
@@ -321,7 +321,7 @@ export async function main(netscript: NS) {
   }
 
   terminalWriter.writeLine('See script logs for on-going gang details.');
-  openTail(netscript); //, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
+  openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const eventListener = new EventListener(SUBSCRIBER_NAME);

@@ -36,7 +36,7 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 const MODULE_NAME = 'server-demand';
 const SUBSCRIBER_NAME = 'server-demand';
 
-const TAIL_X_POS = 1501;
+const TAIL_X_POS = 1500;
 const TAIL_Y_POS = 86;
 const TAIL_WIDTH = 820;
 const TAIL_HEIGHT = 380;
