@@ -21,3 +21,15 @@ BitBurner Quick Start
   * Purchase Stock Market Account
   * Purchase TIX API Access
   * run scripts/stocks-trader.js  # Generate stock market income
+
+Starter Augmentations
+  * Sector-12
+    - Neuralstimulator - $3b
+      * Increases hack stats
+    - CashRoot Starter Kit - $125m
+      * Start with BruteSSH.exe
+  * Tian Di Hui
+    - Neuroreceptor Management Implant - $550m
+      * Removes unfocused penalties
+    - Social Negotiation Assistant (S.N.A) - $30m
+      * Increases company & faction reputation gain
