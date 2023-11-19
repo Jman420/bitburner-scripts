@@ -1,4 +1,4 @@
-import {AutocompleteData, NS} from '@ns';
+import {AutocompleteData, GangTaskStats, NS} from '@ns';
 
 import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
@@ -9,43 +9,50 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
-import {
-  delayedInfiniteLoop,
-  initializeScript,
-} from '/scripts/workflows/execution';
+import {eventLoop, initializeScript} from '/scripts/workflows/execution';
+
 import {EventListener} from '/scripts/comms/event-comms';
-import {GangsUpdateSettingsEvent} from '/scripts/comms/events/gangs-update-settings-event';
+import {GangInfoChangedEvent} from '/scripts/comms/events/gang-info-changed-event';
+import {GangEnemiesChangedEvent} from '/scripts/comms/events/gang-enemies-changed-event';
+import {GangUpdateSettingsEvent} from '/scripts/comms/events/gang-update-settings-event';
 
 import {
   MemberDetails,
   CHARISMA_TRAINING_TASK,
   COMBAT_TRAINING_TASK,
   HACKING_TRAINING_TASK,
-  VIGILANTE_TASK,
   WAR_PARTY_TASK,
   ASCENSION_SCORE_PROPERTIES,
-  ASCENSION_COMBAT_PROPERTIES,
-  ASCENSION_HACKING_PROPERTIES,
-  ASCENSION_CHARISMA_PROPERTIES,
-  SKILL_COMBAT_PROPERTIES,
-  SKILL_HACKING_PROPERTIES,
-  SKILL_CHARISMA_PROPERTIES,
   AUGMENTATIONS_UPGRADES_TYPE,
+  runGangMonitor,
   recruitAvailableMembers,
-  getMemberDetails,
   memberStatsSatisfyLimit,
   ascendEligible,
   ascendMember,
-  getEquipmentCosts,
+  getUpgradeCosts,
   getCriminalTaskDetails,
+  getTrainingStatus,
+  getMemberDetails,
+  getVigilanteTaskDetails,
+  TaskFocus,
+  getRespectGainIncrease,
+  getWantedLevelGainIncrease,
 } from '/scripts/workflows/gangs';
+
 import {openTail} from '/scripts/workflows/ui';
 
 const CMG_FLAG_MEMBER_NAME_PREFIX = 'memberNamePrefix';
+const CMD_FLAG_PURCHASE_AUGMENTATIONS = 'purchaseAugmentations';
 const CMD_FLAG_PURCHASE_EQUIPMENT = 'purchaseEquipment';
+const CMD_FLAG_TASK_FOCUS = 'taskFocus';
+const TASK_FOCUS_RESPECT = 'respect';
+const TASK_FOCUS_MONEY = 'money';
+const TASK_FOCUS_OPTIONS = [TASK_FOCUS_RESPECT, TASK_FOCUS_MONEY];
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMG_FLAG_MEMBER_NAME_PREFIX, 'henchman-'],
+  [CMD_FLAG_PURCHASE_AUGMENTATIONS, false],
   [CMD_FLAG_PURCHASE_EQUIPMENT, false],
+  [CMD_FLAG_TASK_FOCUS, TASK_FOCUS_OPTIONS[0]],
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
@@ -57,22 +64,31 @@ const TAIL_Y_POS = 18;
 const TAIL_WIDTH = 650;
 const TAIL_HEIGHT = 415;
 
-const UPDATE_DELAY = 3000;
-const TRAINING_ASCENTION_LIMIT = 8;
+const ASCENSION_FACTOR_INCREASE = 2;
+const TRAINING_ASCENSION_LIMIT = 8;
 const TRAINING_SKILL_LIMIT = 1000;
 const WARTIME_CHANCE_LIMIT = 0.85;
 const WAR_PARTY_SIZE = 6;
-const MAX_WANTED_PENALTY = 0.15;
 
+let purchaseAugmentations = false;
 let purchaseEquipment = false;
+let taskFocus = TaskFocus.RESPECT;
+
+let formWarParty = false;
+let engageWarfare = false;
 
 function manageGang(
+  eventData: GangInfoChangedEvent,
   netscript: NS,
   logWriter: Logger,
   memberNamePrefix: string
 ) {
-  const gangInfo = netscript.gang.getGangInformation();
-  const gangMembers = getMemberDetails(netscript);
+  if (!eventData.gangInfo || !eventData.gangMembers) {
+    return;
+  }
+
+  const gangInfo = eventData.gangInfo;
+  const gangMembers = eventData.gangMembers;
   logWriter.writeLine(`Managing gang for faction : ${gangInfo.faction}`);
 
   logWriter.writeLine('  Recruiting available members...');
@@ -84,37 +100,32 @@ function manageGang(
   gangMembers.push(...newMembers);
   logWriter.writeLine(`  Recruited ${newMembers.length} new members.`);
 
-  logWriter.writeLine('  Determining eligible tasks for members...');
-  const criminalTaskDetails = getCriminalTaskDetails(netscript).sort(
-    (taskA, taskB) => taskB.score - taskA.score
-  );
-  const otherGangsInfo = netscript.gang.getOtherGangInformation();
-  const otherGangNames = Object.keys(otherGangsInfo);
-  let formWarParty = false;
-  let engageWarfare = false;
-  for (
-    let gangNameIndex = 0;
-    gangNameIndex < otherGangNames.length;
-    gangNameIndex++
-  ) {
-    const gangName = otherGangNames[gangNameIndex];
-    formWarParty = formWarParty || otherGangsInfo[gangName].territory > 0;
-    engageWarfare =
-      engageWarfare ||
-      netscript.gang.getChanceToWinClash(gangName) <= WARTIME_CHANCE_LIMIT;
-  }
-
   logWriter.writeLine('  Getting augmentation & equipment costs...');
-  const equipmentCosts = getEquipmentCosts(netscript);
-  equipmentCosts.sort((equipmentA, equipmentB) => {
-    if (
-      equipmentA.type === AUGMENTATIONS_UPGRADES_TYPE &&
-      equipmentB.type !== AUGMENTATIONS_UPGRADES_TYPE
-    ) {
-      return 1;
+  const upgradeCosts = getUpgradeCosts(netscript);
+  const augmentationCosts = upgradeCosts
+    .filter(value => value.type === AUGMENTATIONS_UPGRADES_TYPE)
+    .sort((valueA, valueB) => valueA.cost - valueB.cost);
+  const equipmentCosts = upgradeCosts
+    .filter(value => value.type !== AUGMENTATIONS_UPGRADES_TYPE)
+    .sort((valueA, valueB) => valueA.cost - valueB.cost);
+
+  logWriter.writeLine('  Determining eligible tasks for members...');
+  const vigilanteTaskDetails = getVigilanteTaskDetails(netscript);
+  const criminalTaskDetails = getCriminalTaskDetails(netscript).sort(
+    (taskA, taskB) => {
+      let scoreA = 0;
+      let scoreB = 0;
+      if (taskFocus === TaskFocus.RESPECT) {
+        scoreA = taskA.baseRespect;
+        scoreB = taskB.baseRespect;
+      } else if (taskFocus === TaskFocus.MONEY) {
+        scoreA = taskA.baseMoney;
+        scoreB = taskB.baseMoney;
+      }
+
+      return scoreB - scoreA || taskA.difficulty - taskB.difficulty;
     }
-    return equipmentA.cost - equipmentB.cost;
-  });
+  );
 
   logWriter.writeLine(`  Managing ${gangMembers.length} gang members...`);
   let membersAscended = 0;
@@ -122,23 +133,41 @@ function manageGang(
   let itemsPurchased = 0;
   let purchasedCost = 0;
   gangMembers.sort(
-    (memberA, memberB) => memberA.ascension_score - memberB.ascension_score
+    (memberA, memberB) => memberA.ascensionScore - memberB.ascensionScore
   );
   for (let memberDetails of gangMembers) {
     // Handle Ascension
-    if (ascendEligible(netscript, memberDetails.name)) {
-      const ascendedMemberDetails = ascendMember(netscript, memberDetails.name);
-      memberDetails = ascendedMemberDetails;
+    if (
+      ascendEligible(netscript, memberDetails.name, ASCENSION_FACTOR_INCREASE)
+    ) {
+      memberDetails = ascendMember(netscript, memberDetails.name);
       membersAscended++;
       ascendedRespect += memberDetails.earnedRespect;
     }
 
-    // Purchase Equipment
-    const memberUpgrades = memberDetails.augmentations.concat(
-      memberDetails.upgrades
+    // Purchase Augmentations
+    const remainingAugmentations = augmentationCosts.filter(
+      value => !memberDetails.augmentations.includes(value.name)
     );
+    while (
+      purchaseAugmentations &&
+      remainingAugmentations.length > 0 &&
+      remainingAugmentations[0].cost <= netscript.getPlayer().money
+    ) {
+      const upgradeDetails = remainingAugmentations.shift();
+      if (!upgradeDetails) {
+        break;
+      }
+
+      netscript.gang.purchaseEquipment(memberDetails.name, upgradeDetails.name);
+      memberDetails = getMemberDetails(netscript, memberDetails.name)[0];
+      itemsPurchased++;
+      purchasedCost += upgradeDetails.cost;
+    }
+
+    // Purchase Equipment
     const remainingUpgrades = equipmentCosts.filter(
-      value => !memberUpgrades.includes(value.name)
+      value => !memberDetails.upgrades.includes(value.name)
     );
     while (
       purchaseEquipment &&
@@ -147,7 +176,7 @@ function manageGang(
       memberStatsSatisfyLimit(
         memberDetails,
         ASCENSION_SCORE_PROPERTIES,
-        TRAINING_ASCENTION_LIMIT
+        TRAINING_ASCENSION_LIMIT
       )
     ) {
       const upgradeDetails = remainingUpgrades.shift();
@@ -156,6 +185,7 @@ function manageGang(
       }
 
       netscript.gang.purchaseEquipment(memberDetails.name, upgradeDetails.name);
+      memberDetails = getMemberDetails(netscript, memberDetails.name)[0];
       itemsPurchased++;
       purchasedCost += upgradeDetails.cost;
     }
@@ -175,49 +205,42 @@ function manageGang(
   const criminalCrew = new Array<MemberDetails>();
   const unassignedMembers = new Array<MemberDetails>();
   gangMembers.sort(
-    (memberA, memberB) => memberA.skill_score - memberB.skill_score
+    (memberA, memberB) => memberA.skillScore - memberB.skillScore
   );
   for (const memberDetails of gangMembers) {
+    const ascensionResult = netscript.gang.getAscensionResult(
+      memberDetails.name
+    );
+    const trainingStatus = getTrainingStatus(
+      memberDetails,
+      ascensionResult,
+      ASCENSION_FACTOR_INCREASE,
+      TRAINING_ASCENSION_LIMIT,
+      TRAINING_SKILL_LIMIT
+    );
+
     // Handle Training
     if (
-      !memberStatsSatisfyLimit(
-        memberDetails,
-        ASCENSION_COMBAT_PROPERTIES,
-        TRAINING_ASCENTION_LIMIT
-      ) ||
-      !memberStatsSatisfyLimit(
-        memberDetails,
-        SKILL_COMBAT_PROPERTIES,
-        TRAINING_SKILL_LIMIT
-      )
+      (!trainingStatus.combatAscensionLimitReached &&
+        !trainingStatus.combatAscensionReady) ||
+      (trainingStatus.combatAscensionLimitReached &&
+        !trainingStatus.combatSkillLimitReached)
     ) {
       netscript.gang.setMemberTask(memberDetails.name, COMBAT_TRAINING_TASK);
       trainingTeam.push(memberDetails);
     } else if (
-      !memberStatsSatisfyLimit(
-        memberDetails,
-        ASCENSION_HACKING_PROPERTIES,
-        TRAINING_ASCENTION_LIMIT
-      ) ||
-      !memberStatsSatisfyLimit(
-        memberDetails,
-        SKILL_HACKING_PROPERTIES,
-        TRAINING_SKILL_LIMIT
-      )
+      (!trainingStatus.hackingAscensionLimitReached &&
+        !trainingStatus.hackingAscensionReady) ||
+      (trainingStatus.hackingAscensionLimitReached &&
+        !trainingStatus.hackingSkillLimitReached)
     ) {
       netscript.gang.setMemberTask(memberDetails.name, HACKING_TRAINING_TASK);
       trainingTeam.push(memberDetails);
     } else if (
-      !memberStatsSatisfyLimit(
-        memberDetails,
-        ASCENSION_CHARISMA_PROPERTIES,
-        TRAINING_ASCENTION_LIMIT
-      ) ||
-      !memberStatsSatisfyLimit(
-        memberDetails,
-        SKILL_CHARISMA_PROPERTIES,
-        TRAINING_SKILL_LIMIT
-      )
+      (!trainingStatus.charismaAscensionLimitReached &&
+        !trainingStatus.charismaAscensionReady) ||
+      (trainingStatus.charismaAscensionLimitReached &&
+        !trainingStatus.charismaSkillLimitReached)
     ) {
       netscript.gang.setMemberTask(memberDetails.name, CHARISMA_TRAINING_TASK);
       trainingTeam.push(memberDetails);
@@ -234,31 +257,47 @@ function manageGang(
     }
 
     // Handle Vigilantes
-    else if (
-      gangInfo.wantedLevelGainRate > 0 &&
-      gangInfo.wantedPenalty > MAX_WANTED_PENALTY
-    ) {
-      netscript.gang.setMemberTask(memberDetails.name, VIGILANTE_TASK);
+    else if (gangInfo.wantedLevelGainRate > 0) {
+      netscript.gang.setMemberTask(
+        memberDetails.name,
+        vigilanteTaskDetails.name
+      );
       vigilanteGroup.push(memberDetails);
+      gangInfo.wantedLevelGainRate += getWantedLevelGainIncrease(
+        gangInfo,
+        memberDetails,
+        vigilanteTaskDetails
+      );
     }
 
     // Handle Criminal Tasks
     else {
+      const eligibleTasks = criminalTaskDetails.filter(
+        value =>
+          getRespectGainIncrease(gangInfo, memberDetails, value) >
+          getWantedLevelGainIncrease(gangInfo, memberDetails, value)
+      );
+      let crimeTask: GangTaskStats | undefined = undefined;
       let taskAssigned = false;
       for (
         let taskCounter = 0;
-        taskCounter < criminalTaskDetails.length && !taskAssigned;
+        taskCounter < eligibleTasks.length && !taskAssigned;
         taskCounter++
       ) {
-        const crimeTask = criminalTaskDetails[taskCounter];
+        crimeTask = eligibleTasks[taskCounter];
         taskAssigned = netscript.gang.setMemberTask(
           memberDetails.name,
           crimeTask.name
         );
       }
 
-      if (taskAssigned) {
+      if (taskAssigned && crimeTask) {
         criminalCrew.push(memberDetails);
+        gangInfo.wantedLevelGainRate += getWantedLevelGainIncrease(
+          gangInfo,
+          memberDetails,
+          crimeTask
+        );
       } else {
         unassignedMembers.push(memberDetails);
       }
@@ -285,14 +324,43 @@ function manageGang(
   logWriter.writeLine(ENTRY_DIVIDER);
 }
 
+function handleEnemiesChangedEvent(
+  eventData: GangEnemiesChangedEvent,
+  netscript: NS
+) {
+  if (!eventData.enemiesInfo || !eventData.enemyNames) {
+    return;
+  }
+
+  const otherGangsInfo = eventData.enemiesInfo;
+  const otherGangNames = eventData.enemyNames;
+  formWarParty = false;
+  engageWarfare = false;
+  for (
+    let gangNameIndex = 0;
+    gangNameIndex < otherGangNames.length && (!formWarParty || !engageWarfare);
+    gangNameIndex++
+  ) {
+    const gangName = otherGangNames[gangNameIndex];
+    formWarParty = formWarParty || otherGangsInfo[gangName].territory > 0;
+    engageWarfare =
+      engageWarfare ||
+      netscript.gang.getChanceToWinClash(gangName) >= WARTIME_CHANCE_LIMIT;
+  }
+}
+
 function handleUpdateSettingsEvent(
-  eventData: GangsUpdateSettingsEvent,
+  eventData: GangUpdateSettingsEvent,
   logWriter: Logger
 ) {
   logWriter.writeLine('Update settings event received...');
+  purchaseAugmentations = eventData.purchaseAugmentations ?? false;
   purchaseEquipment = eventData.purchaseEquipment ?? false;
+  taskFocus = eventData.taskFocus ?? TaskFocus.RESPECT;
 
+  logWriter.writeLine(`  Purchase Augmentations : ${purchaseAugmentations}`);
   logWriter.writeLine(`  Purchase Equipment : ${purchaseEquipment}`);
+  logWriter.writeLine(`  Task Focus : ${taskFocus}`);
 }
 
 /** @param {NS} netscript */
@@ -308,14 +376,27 @@ export async function main(netscript: NS) {
     CMG_FLAG_MEMBER_NAME_PREFIX
   ].valueOf() as string;
   purchaseEquipment = cmdArgs[CMD_FLAG_PURCHASE_EQUIPMENT].valueOf() as boolean;
+  purchaseEquipment = cmdArgs[CMD_FLAG_PURCHASE_EQUIPMENT].valueOf() as boolean;
+  const taskFocusFlag = (
+    cmdArgs[CMD_FLAG_TASK_FOCUS].valueOf() as string
+  ).toUpperCase() as keyof typeof TaskFocus;
+  taskFocus = TaskFocus[taskFocusFlag];
 
   terminalWriter.writeLine(`New Member Name Prefix : ${memberNamePrefix}`);
   terminalWriter.writeLine(`Purchase Equipment : ${purchaseEquipment}`);
+  terminalWriter.writeLine(`Task Focus : ${taskFocus}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
   if (!netscript.gang.inGang()) {
     terminalWriter.writeLine(
       'Player not in a gang.  Gang must be created before running this script.'
+    );
+    return;
+  }
+
+  if (!runGangMonitor(netscript)) {
+    terminalWriter.writeLine(
+      'Failed to find or execute the Gang Monitor script!'
     );
     return;
   }
@@ -326,19 +407,24 @@ export async function main(netscript: NS) {
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const eventListener = new EventListener(SUBSCRIBER_NAME);
   eventListener.addListener(
-    GangsUpdateSettingsEvent,
-    handleUpdateSettingsEvent,
-    scriptLogWriter
-  );
-
-  await delayedInfiniteLoop(
-    netscript,
-    UPDATE_DELAY,
+    GangInfoChangedEvent,
     manageGang,
     netscript,
     scriptLogWriter,
     memberNamePrefix
   );
+  eventListener.addListener(
+    GangEnemiesChangedEvent,
+    handleEnemiesChangedEvent,
+    netscript
+  );
+  eventListener.addListener(
+    GangUpdateSettingsEvent,
+    handleUpdateSettingsEvent,
+    scriptLogWriter
+  );
+
+  await eventLoop(netscript, eventListener);
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-unused-vars */

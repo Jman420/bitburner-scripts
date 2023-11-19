@@ -22,7 +22,7 @@ import {
   SaleTransaction,
   TransactionPosition,
   buyStock,
-  runTicker,
+  runStockTicker,
   sellStock,
 } from '/scripts/workflows/stocks';
 
@@ -292,7 +292,7 @@ export async function main(netscript: NS) {
     return;
   }
 
-  if (!runTicker(netscript)) {
+  if (!runStockTicker(netscript)) {
     terminalWriter.writeLine(
       'Failed to find or execute a Stock Forecasting script!'
     );

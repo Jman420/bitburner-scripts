@@ -8,11 +8,6 @@ const COMMS_PACKAGE = [
   `${PATH}/events/exit-event.js`,
   `${PATH}/events/grow-event.js`,
   `${PATH}/events/hack-event.js`,
-  `${PATH}/events/stocks-listing-request.js`,
-  `${PATH}/events/stocks-listing-response.js`,
-  `${PATH}/events/stocks-purchased-event.js`,
-  `${PATH}/events/stocks-sold-event.js`,
-  `${PATH}/events/stocks-ticker-event.js`,
   `${PATH}/events/weaken-event.js`,
 ];
 

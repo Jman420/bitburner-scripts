@@ -16,19 +16,20 @@ import {
   delayedInfiniteLoop,
   initializeScript,
 } from '/scripts/workflows/execution';
-import {TOTAL_STOCKS, runTicker} from '/scripts/workflows/stocks';
+import {TOTAL_STOCKS, runStockTicker} from '/scripts/workflows/stocks';
 import {scanWideNetwork} from '/scripts/workflows/recon';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
+import {GangInfoChangedEvent} from '/scripts/comms/events/gang-info-changed-event';
 
 const CMD_FLAG_EXCLUDE_LOCATION_METRICS = 'excludeLocation';
 const CMD_FLAG_EXCLUDE_SCRIPT_METRICS = 'excludeScripts';
 const CMD_FLAG_EXCLUDE_STOCK_METRICS = 'excludeStocks';
-const CMD_FLAG_EXCLUDE_PLAYER_METRICS = 'excludePlayer';
+const CMD_FLAG_EXCLUDE_GANG_METRICS = 'excludeGang';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_EXCLUDE_LOCATION_METRICS, false],
   [CMD_FLAG_EXCLUDE_SCRIPT_METRICS, false],
   [CMD_FLAG_EXCLUDE_STOCK_METRICS, false],
-  [CMD_FLAG_EXCLUDE_PLAYER_METRICS, false],
+  [CMD_FLAG_EXCLUDE_GANG_METRICS, false],
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
@@ -47,8 +48,10 @@ const HUD_SCRIPT_EXP_CLASS_NAME = 'HUD_scr-exp';
 const HUD_STOCK_METRICS_CLASS_NAME = 'HUD_stk-metrics';
 const HUD_STOCKS_VALUE_CLASS_NAME = 'HUD_stk-val';
 const HUD_STOCKS_PROFIT_CLASS_NAME = 'HUD_stk-prof';
-const HUD_PLAYER_METRICS_CLASS_NAME = 'HUD_plr-metrics';
-const HUD_KARMA_CLASS_NAME = 'HUD_karma';
+const HUD_GANG_METRICS_CLASS_NAME = 'HUD_gang-metrics';
+const HUD_GANG_INCOME_CLASS_NAME = 'HUD_gang-inc';
+const HUD_GANG_BUY_AUGMENTATIONS_CLASS_NAME = 'HUD_gang-buy-augs';
+const HUD_GANG_BUY_EQUIPMENT_CLASS_NAME = 'HUD_gang-buy-gear';
 
 class HudExtensions {
   readonly hudHooks: HudHooks;
@@ -57,7 +60,7 @@ class HudExtensions {
   readonly excludeLocationMetrics: boolean;
   readonly excludeScriptMetrics: boolean;
   readonly excludeStockMetrics: boolean;
-  readonly excludePlayerMetrics: boolean;
+  readonly excludeGangMetrics: boolean;
 
   private cityLabel: HTMLElement;
   private locationLabel: HTMLElement;
@@ -65,14 +68,14 @@ class HudExtensions {
   private scriptExpLabel: HTMLElement;
   private stocksValueLabel: HTMLElement;
   private stocksProfitLabel: HTMLElement;
-  private karmaLabel: HTMLElement;
+  private gangIncomeLabel: HTMLElement;
 
   constructor(
     uiTheme: UserInterfaceTheme,
     excludeLocationMetrics = false,
     excludeScriptMetrics = false,
     excludeStockMetrics = false,
-    excludePlayerMetrics = false
+    excludeGangMetrics = false
   ) {
     this.hudHooks = getHUD();
     if (!this.hudHooks.labelsElement || !this.hudHooks.valuesElement) {
@@ -83,7 +86,7 @@ class HudExtensions {
     this.excludeLocationMetrics = excludeLocationMetrics;
     this.excludeScriptMetrics = excludeScriptMetrics;
     this.excludeStockMetrics = excludeStockMetrics;
-    this.excludePlayerMetrics = excludePlayerMetrics;
+    this.excludeGangMetrics = excludeGangMetrics;
 
     this.addNewSeparator();
     this.cityLabel = this.addNewHudRow(
@@ -134,13 +137,13 @@ class HudExtensions {
       HUD_STOCK_METRICS_CLASS_NAME,
       HUD_STOCKS_PROFIT_CLASS_NAME
     );
-    this.karmaLabel = this.addNewHudRow(
-      'Karma',
-      'Player karma level',
-      this.uiTheme['hp'],
-      this.excludePlayerMetrics,
-      HUD_PLAYER_METRICS_CLASS_NAME,
-      HUD_KARMA_CLASS_NAME
+    this.gangIncomeLabel = this.addNewHudRow(
+      'Gang Inc',
+      'Gang income per second',
+      this.uiTheme['money'],
+      this.excludeGangMetrics,
+      HUD_GANG_METRICS_CLASS_NAME,
+      HUD_GANG_INCOME_CLASS_NAME
     );
   }
 
@@ -177,8 +180,11 @@ class HudExtensions {
     this.setTextValue(this.stocksProfitLabel, value);
   }
 
-  public setKarma(value: string) {
-    this.setTextValue(this.karmaLabel, value);
+  public setGangIncome(value: string) {
+    if (value.at(0) !== '$') {
+      value = `$${value}`;
+    }
+    this.setTextValue(this.gangIncomeLabel, value);
   }
 
   private setTextValue(element: HTMLElement, value: string) {
@@ -280,15 +286,12 @@ function updatePolledMetrics(
 
   logWriter.writeLine('Retrieving location & player metrics...');
   const playerInfo = netscript.getPlayer();
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  const karma = (netscript as any).heart.break();
 
   logWriter.writeLine('Updating location, script & player metrics...');
   hudExtensions.setCity(playerInfo.city);
   hudExtensions.setLocation(playerInfo.location);
   hudExtensions.setScriptIncome(netscript.formatNumber(totalScriptIncome));
   hudExtensions.setScriptExp(netscript.formatNumber(totalScriptExp));
-  hudExtensions.setKarma(netscript.formatNumber(karma));
   logWriter.writeLine(ENTRY_DIVIDER);
 }
 
@@ -329,6 +332,22 @@ function updateStockMetrics(
   logWriter.writeLine(ENTRY_DIVIDER);
 }
 
+function updateGangMetrics(
+  eventData: GangInfoChangedEvent,
+  netscript: NS,
+  logWriter: Logger,
+  hudExtensions: HudExtensions
+) {
+  if (!eventData.gangInfo) {
+    return;
+  }
+
+  logWriter.writeLine('Updating gang metrics...');
+  hudExtensions.setGangIncome(
+    netscript.formatNumber(eventData.gangInfo.moneyGainRate)
+  );
+}
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
   initializeScript(netscript, SUBSCRIBER_NAME);
@@ -347,8 +366,8 @@ export async function main(netscript: NS) {
   const excludeStockMetrics = cmdArgs[
     CMD_FLAG_EXCLUDE_STOCK_METRICS
   ].valueOf() as boolean;
-  const excludePlayerMetrics = cmdArgs[
-    CMD_FLAG_EXCLUDE_PLAYER_METRICS
+  const excludeGangMetrics = cmdArgs[
+    CMD_FLAG_EXCLUDE_GANG_METRICS
   ].valueOf() as boolean;
 
   terminalWriter.writeLine(
@@ -356,26 +375,20 @@ export async function main(netscript: NS) {
   );
   terminalWriter.writeLine(`Exclude Script Metrics : ${excludeScriptMetrics}`);
   terminalWriter.writeLine(`Exclude Stock Metrics : ${excludeStockMetrics}`);
-  terminalWriter.writeLine(`Exclude Player Metrics : ${excludePlayerMetrics}`);
+  terminalWriter.writeLine(`Exclude Gang Metrics: ${excludeGangMetrics}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
-  if (
-    excludeLocationMetrics &&
-    excludeScriptMetrics &&
-    excludeStockMetrics &&
-    excludePlayerMetrics
-  ) {
+  if (excludeLocationMetrics && excludeScriptMetrics && excludeStockMetrics) {
     terminalWriter.writeLine(
       'All HUD extension disabled.  No UI to render or update.'
     );
     return;
   }
 
-  if (!excludeStockMetrics && !runTicker(netscript)) {
+  if (!excludeStockMetrics && !runStockTicker(netscript)) {
     terminalWriter.writeLine(
       'Failed to find or execute a Stock Forecasting script!'
     );
-    return;
   }
 
   const uiTheme = netscript.ui.getTheme();
@@ -384,7 +397,7 @@ export async function main(netscript: NS) {
     excludeLocationMetrics,
     excludeScriptMetrics,
     excludeStockMetrics,
-    excludePlayerMetrics
+    excludeGangMetrics
   );
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
@@ -396,6 +409,13 @@ export async function main(netscript: NS) {
   eventListener.addListener(
     StocksTickerEvent,
     updateStockMetrics,
+    netscript,
+    scriptLogWriter,
+    hudExtensions
+  );
+  eventListener.addListener(
+    GangInfoChangedEvent,
+    updateGangMetrics,
     netscript,
     scriptLogWriter,
     hudExtensions

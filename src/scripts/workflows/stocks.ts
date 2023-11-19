@@ -48,7 +48,7 @@ const FIFTY_PERCENT = 0.5;
 const COMMISSION = 100000;
 const TOTAL_STOCKS = 33;
 
-function runTicker(netscript: NS) {
+function runStockTicker(netscript: NS) {
   let stockForecastPid = -1;
   if (
     !netscript.isRunning(STOCKS_TICKER_HISTORY_SCRIPT) &&
@@ -157,7 +157,7 @@ export {
   FIFTY_PERCENT,
   COMMISSION,
   TOTAL_STOCKS,
-  runTicker,
+  runStockTicker,
   getPosition,
   buyStock,
   sellStock,
