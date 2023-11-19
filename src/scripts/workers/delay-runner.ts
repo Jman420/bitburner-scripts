@@ -43,7 +43,7 @@ export async function main(netscript: NS) {
   }
 
   logWriter.writeLine(`Waiting ${delay} milliseconds...`);
-  await netscript.sleep(delay);
+  await netscript.asleep(delay);
   logWriter.writeLine(`Executing script : ${scriptPath} ${scriptArgs}`);
   if (netscript.run(scriptPath, threadCount, ...scriptArgs)) {
     logWriter.writeLine('Script executed successfully!');

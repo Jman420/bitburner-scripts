@@ -47,8 +47,8 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 const MODULE_NAME = 'stocks-trader';
 const SUBSCRIBER_NAME = 'stocks-trader';
 
-const TAIL_X_POS = 1470;
-const TAIL_Y_POS = 620;
+const TAIL_X_POS = 1231;
+const TAIL_Y_POS = 120;
 const TAIL_WIDTH = 1090;
 const TAIL_HEIGHT = 490;
 

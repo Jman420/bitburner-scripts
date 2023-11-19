@@ -13,8 +13,8 @@ import {openTail} from '/scripts/workflows/ui';
 const MODULE_NAME = 'hacknet-manager';
 const SUBSCRIBER_NAME = 'hacknet-manager';
 
-const TAIL_X_POS = 250;
-const TAIL_Y_POS = 0;
+const TAIL_X_POS = 1651;
+const TAIL_Y_POS = 54;
 const TAIL_WIDTH = 670;
 const TAIL_HEIGHT = 515;
 

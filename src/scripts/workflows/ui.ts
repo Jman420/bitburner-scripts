@@ -62,10 +62,10 @@ function openTail(
 ) {
   netscript.tail(scriptPid);
   if (xPos !== undefined && yPos !== undefined) {
-    netscript.moveTail(xPos, yPos);
+    netscript.moveTail(xPos, yPos, scriptPid);
   }
   if (width !== undefined && height !== undefined) {
-    netscript.resizeTail(width, height);
+    netscript.resizeTail(width, height, scriptPid);
   }
 }
 
