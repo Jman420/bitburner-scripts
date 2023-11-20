@@ -1,12 +1,26 @@
+/* eslint-disable-next-line node/no-extraneous-import */
+import ReactNamespace from 'react/index';
+/* eslint-disable-next-line node/no-extraneous-import */
+import ReactDomNamespace from 'react-dom';
+
 import {NS} from '@ns';
+
+interface ReactModel {
+  reactDOM: typeof ReactDomNamespace;
+  reactNS: typeof ReactNamespace;
+}
+
+type ReactSetStateFunction<TData> = React.Dispatch<React.SetStateAction<TData>>;
 
 interface HudHooks {
   labelsElement?: HTMLElement;
   valuesElement?: HTMLElement;
+  extrasElement?: HTMLElement;
 }
 
 const HUD_LABELS_ELEMENT_NAME = 'overview-extra-hook-0';
 const HUD_VALUES_ELEMENT_NAME = 'overview-extra-hook-1';
+const HUD_EXTRAS_ELEMENT_NAME = 'overview-extra-hook-2';
 
 // NOTE : DO NOT NAME THE VARIABLE YOU STORE THE RESULT IN 'window' OR ELSE YOU WILL INCUR THE USUAL 25GB RAM USAGE
 function getWindow() {
@@ -18,11 +32,20 @@ function getDocument() {
   return globalThis['document'];
 }
 
-function getHUD(): HudHooks {
+function getReactModel() {
+  const result: ReactModel = {
+    reactDOM: globalThis.ReactDOM,
+    reactNS: globalThis.React,
+  };
+  return result;
+}
+
+function getHudHooks(): HudHooks {
   const doc = getDocument();
   return {
     labelsElement: doc.getElementById(HUD_LABELS_ELEMENT_NAME) ?? undefined,
     valuesElement: doc.getElementById(HUD_VALUES_ELEMENT_NAME) ?? undefined,
+    extrasElement: doc.getElementById(HUD_EXTRAS_ELEMENT_NAME) ?? undefined,
   };
 }
 
@@ -70,10 +93,13 @@ function openTail(
 }
 
 export {
+  ReactModel,
+  ReactSetStateFunction,
   HudHooks,
   getWindow,
   getDocument,
-  getHUD,
+  getReactModel,
+  getHudHooks,
   getHtmlElement,
   runTerminalCommand,
   openTail,
