@@ -24,8 +24,6 @@ let availableFactions: string[];
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  availableFactions = netscript.getPlayer().factions;
-
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Gang Creator');
@@ -38,10 +36,15 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine(`Faction Name : ${factionName}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
-  const gangCreated = netscript.gang.createGang(factionName);
-  terminalWriter.writeLine(
-    `Gang with faction ${factionName} creation success : ${gangCreated}`
-  );
+  terminalWriter.writeLine('Autocomplete initialized successfully.');
+  availableFactions = netscript.getPlayer().factions;
+
+  if (factionName) {
+    const gangCreated = netscript.gang.createGang(factionName);
+    terminalWriter.writeLine(
+      `Gang with faction ${factionName} creation success : ${gangCreated}`
+    );
+  }
 }
 
 export function autocomplete(data: AutocompleteData, args: string[]) {

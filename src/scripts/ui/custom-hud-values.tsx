@@ -115,22 +115,22 @@ function updatePolledMetrics(
 }
 
 function CustomHudValues({
+  uiTheme,
   netscript,
   eventListener,
   logWriter,
   updateDelay,
-  uiTheme,
   excludeLocationMetrics,
   excludeScriptsMetrics,
   excludeGangMetrics,
   excludeStocksMetrics,
   excludePlayerMetrics,
 }: {
+  uiTheme: UserInterfaceTheme;
   netscript: NS;
   eventListener: EventListener;
   logWriter: Logger;
   updateDelay: number | undefined;
-  uiTheme: UserInterfaceTheme;
   excludeLocationMetrics: boolean;
   excludeScriptsMetrics: boolean;
   excludeGangMetrics: boolean;

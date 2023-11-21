@@ -32,8 +32,9 @@ function obtainRoot(netscript: NS, hostname: string) {
     const availableTools = getRootTools(netscript);
     if (requiredPorts <= availableTools.length) {
       logWriter.writeLine('Opening required ports to obtain root access...');
-      for (const tool of availableTools) {
-        tool(hostname);
+      for (let toolCounter = 0; toolCounter < availableTools.length && toolCounter < requiredPorts; toolCounter++) {
+        const toolFunc = availableTools[toolCounter];
+        toolFunc(hostname);
       }
       netscript.nuke(hostname);
       rootAccess = netscript.hasRootAccess(hostname);
@@ -45,9 +46,4 @@ function obtainRoot(netscript: NS, hostname: string) {
   return rootAccess;
 }
 
-function installBackdoor(netscript: NS, hostname: string) {
-  netscript.singularity.connect(hostname);
-  netscript.singularity.installBackdoor();
-}
-
-export {getRootTools, obtainRoot, installBackdoor};
+export {getRootTools, obtainRoot};

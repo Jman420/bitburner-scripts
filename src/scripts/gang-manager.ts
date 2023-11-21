@@ -347,10 +347,11 @@ function handleEnemiesChangedEvent(
     gangNameIndex++
   ) {
     const gangName = otherGangNames[gangNameIndex];
-    formWarParty = formWarParty || otherGangsInfo[gangName].territory > 0;
+    const gangTerritory = otherGangsInfo[gangName].territory;
+    formWarParty = formWarParty || gangTerritory > 0;
     engageWarfare =
       engageWarfare ||
-      netscript.gang.getChanceToWinClash(gangName) >= WARTIME_CHANCE_LIMIT;
+      (gangTerritory > 0 && netscript.gang.getChanceToWinClash(gangName) >= WARTIME_CHANCE_LIMIT);
   }
 }
 

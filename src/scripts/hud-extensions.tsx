@@ -16,6 +16,7 @@ import {CustomHudLabels} from '/scripts/ui/custom-hud-labels';
 import {EventListener} from '/scripts/comms/event-comms';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
 import {CustomHudValues} from '/scripts/ui/custom-hud-values';
+import {runGangMonitor} from '/scripts/workflows/gangs';
 
 const reactModel = getReactModel();
 const React = reactModel.reactNS;
@@ -108,6 +109,12 @@ export async function main(netscript: NS) {
   if (!excludeStockMetrics && !runStockTicker(netscript)) {
     terminalWriter.writeLine(
       'Failed to find or execute a Stock Forecasting script!'
+    );
+    return;
+  }
+  if (!excludeGangMetrics && !runGangMonitor(netscript)) {
+    terminalWriter.writeLine(
+      'Failed to find or execute a Gang Monitor script!'
     );
     return;
   }

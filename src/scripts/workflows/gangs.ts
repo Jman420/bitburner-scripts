@@ -43,7 +43,7 @@ interface TrainingStatus {
   charismaSkillLimitReached: boolean;
 }
 
-const GANGS_MONITOR_SCRIPT = '/scripts/gangs-monitor.js';
+const GANGS_MONITOR_SCRIPT = '/scripts/gang-monitor.js';
 
 const ASCENSION_COMBAT_PROPERTIES: Array<keyof GangMemberInfo> = [
   'agi_asc_mult',
@@ -88,7 +88,7 @@ const ASCENSION_CHECKS: Array<keyof GangMemberAscension> =
     ASCENSION_CHARISMA_CHECKS
   );
 
-const AUGMENTATIONS_UPGRADES_TYPE = 'Augmentations';
+const AUGMENTATIONS_UPGRADES_TYPE = 'Augmentation';
 
 const COMBAT_TRAINING_TASK = 'Train Combat';
 const HACKING_TRAINING_TASK = 'Train Hacking';
