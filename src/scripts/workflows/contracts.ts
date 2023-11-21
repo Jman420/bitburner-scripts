@@ -30,6 +30,7 @@ import {
   totalWaysToSum,
 } from '/scripts/workflows/contracts/math';
 import {generateIpAddresses} from '/scripts/workflows/contracts/ip-addresses';
+import { sanitizeParenthesis } from '/scripts/workflows/contracts/sanitization';
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 type ParseInputFunction = (data: CodingContractData) => any[];
@@ -99,6 +100,7 @@ const CONTRACT_SOLUTION_MAP = new Map<string, ContractSolver>([
     new ContractSolver(getTotalPaths, data => [...data]),
   ],
   ['Unique Paths in a Grid II', new ContractSolver(getTotalPathsObsticles)],
+  ['Sanitize Parentheses in Expression', new ContractSolver(sanitizeParenthesis, data => [data])],
   [
     'Find All Valid Math Expressions',
     new ContractSolver(data =>
