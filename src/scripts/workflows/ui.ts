@@ -22,6 +22,12 @@ const HUD_LABELS_ELEMENT_NAME = 'overview-extra-hook-0';
 const HUD_VALUES_ELEMENT_NAME = 'overview-extra-hook-1';
 const HUD_EXTRAS_ELEMENT_NAME = 'overview-extra-hook-2';
 
+// NOTE : These values are pulled from the Game's Debug Console ; the css-****** values on the end apply themed styling and seem to be randomly generated at compile time, but are consistent between game executions
+const DIV_BORDER_CSS_CLASS = 'css-tlze81';
+const BUTTON_CSS_CLASS = 'css-13ak5e0';
+const TOGGLE_BUTTON_CSS_CLASS = 'css-1k9ietj';
+const TOGGLE_BUTTON_SELECTED_CSS_CLASS = 'Mui-selected';
+
 // NOTE : DO NOT NAME THE VARIABLE YOU STORE THE RESULT IN 'window' OR ELSE YOU WILL INCUR THE USUAL 25GB RAM USAGE
 function getWindow() {
   return globalThis['window'] as Window;
@@ -96,6 +102,10 @@ export {
   ReactModel,
   ReactSetStateFunction,
   HudHooks,
+  DIV_BORDER_CSS_CLASS,
+  BUTTON_CSS_CLASS,
+  TOGGLE_BUTTON_CSS_CLASS,
+  TOGGLE_BUTTON_SELECTED_CSS_CLASS,
   getWindow,
   getDocument,
   getReactModel,

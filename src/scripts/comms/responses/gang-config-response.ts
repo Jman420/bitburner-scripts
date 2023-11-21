@@ -1,10 +1,10 @@
-import {EventBase} from '/scripts/comms/event-base';
+import {ResponseBase} from '/scripts/comms/response-base';
 
 import {GangManagerConfig} from '/scripts/workflows/gangs';
 
-const MESSAGE_TYPE = 'gangUpdateSettingsEvent';
+const MESSAGE_TYPE = 'gangConfigResponse';
 
-class GangUpdateSettingsEvent extends EventBase {
+class GangConfigResponse extends ResponseBase {
   readonly config?: GangManagerConfig;
 
   constructor(config?: GangManagerConfig) {
@@ -14,4 +14,4 @@ class GangUpdateSettingsEvent extends EventBase {
   }
 }
 
-export {GangUpdateSettingsEvent};
+export {GangConfigResponse};

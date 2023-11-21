@@ -10,7 +10,7 @@ import {
   CMD_FLAG_TARGETS_CSV,
 } from '/scripts/workers/shared';
 
-import {sendEvent} from '/scripts/comms/event-comms';
+import {sendMessage} from '/scripts/comms/event-comms';
 import {WeakenEvent, WeakenStatus} from '/scripts/comms/events/weaken-event';
 import {GrowEvent, GrowStatus} from '/scripts/comms/events/grow-event';
 import {HackEvent, HackStatus} from '/scripts/comms/events/hack-event';
@@ -33,7 +33,7 @@ async function weakenHost(
   includeHomeAttacker = false,
   influenceStocks = false
 ) {
-  sendEvent(new WeakenEvent(hostDetails.hostname, WeakenStatus.IN_PROGRESS));
+  sendMessage(new WeakenEvent(hostDetails.hostname, WeakenStatus.IN_PROGRESS));
 
   while (hostDetails.securityLevel > hostDetails.minSecurityLevel) {
     const targetWeaknessReduction =
@@ -59,7 +59,7 @@ async function weakenHost(
     hostDetails = analyzeHost(netscript, hostDetails.hostname);
   }
 
-  sendEvent(new WeakenEvent(hostDetails.hostname, WeakenStatus.COMPLETE));
+  sendMessage(new WeakenEvent(hostDetails.hostname, WeakenStatus.COMPLETE));
   return hostDetails;
 }
 
@@ -80,7 +80,7 @@ async function growHost(
   maxFundsWeight = 1,
   influenceStocks = false
 ) {
-  sendEvent(new GrowEvent(hostDetails.hostname, GrowStatus.IN_PROGRESS));
+  sendMessage(new GrowEvent(hostDetails.hostname, GrowStatus.IN_PROGRESS));
 
   const maxFundsLimit = maxFundsWeight * hostDetails.maxFunds;
   while (hostDetails.availableFunds < maxFundsLimit) {
@@ -110,7 +110,7 @@ async function growHost(
     hostDetails = analyzeHost(netscript, hostDetails.hostname);
   }
 
-  sendEvent(new GrowEvent(hostDetails.hostname, GrowStatus.COMPLETE));
+  sendMessage(new GrowEvent(hostDetails.hostname, GrowStatus.COMPLETE));
   return hostDetails;
 }
 
@@ -130,7 +130,7 @@ async function hackHost(
   hackPercent = 0.75,
   influenceStocks = false
 ) {
-  sendEvent(new HackEvent(hostDetails.hostname, HackStatus.IN_PROGRESS));
+  sendMessage(new HackEvent(hostDetails.hostname, HackStatus.IN_PROGRESS));
 
   const prehackFunds = hostDetails.availableFunds;
   const targetHackFunds = prehackFunds * hackPercent;
@@ -156,7 +156,7 @@ async function hackHost(
   );
   await waitForScripts(netscript, scriptPids);
 
-  sendEvent(new HackEvent(hostDetails.hostname, HackStatus.COMPLETE));
+  sendMessage(new HackEvent(hostDetails.hostname, HackStatus.COMPLETE));
   hostDetails = analyzeHost(netscript, hostDetails.hostname);
   return {
     hostDetails: hostDetails,

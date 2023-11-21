@@ -1,11 +1,12 @@
 import {GangGenInfo} from '@ns';
 
-import {MessageBase} from '/scripts/comms/msg-base';
+import {EventBase} from '/scripts/comms/event-base';
+
 import {MemberDetails} from '/scripts/workflows/gangs';
 
 const MESSAGE_TYPE = 'gangInfoChangedEvent';
 
-class GangInfoChangedEvent extends MessageBase {
+class GangInfoChangedEvent extends EventBase {
   readonly gangInfo?: GangGenInfo;
   readonly gangMembers?: MemberDetails[];
 

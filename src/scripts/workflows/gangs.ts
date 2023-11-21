@@ -13,6 +13,12 @@ enum TaskFocus {
   MONEY = 'money',
 }
 
+interface GangManagerConfig {
+  purchaseAugmentations: boolean;
+  purchaseEquipment: boolean;
+  taskFocus: TaskFocus;
+}
+
 interface EquipmentCost {
   name: string;
   cost: number;
@@ -415,6 +421,7 @@ function getCriminalTaskDetails(netscript: NS, taskName?: string) {
 
 export {
   TaskFocus,
+  GangManagerConfig,
   EquipmentCost,
   MemberDetails,
   GANGS_MONITOR_SCRIPT,

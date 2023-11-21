@@ -124,9 +124,9 @@ class EventListener {
   }
 }
 
-async function sendEvent<TData extends MessageBase>(
+async function sendMessage<TData extends MessageBase>(
   data: TData,
-  subscriber?: string
+  recipient?: string
 ) {
   if (!data.messageType) {
     return false;
@@ -138,8 +138,8 @@ async function sendEvent<TData extends MessageBase>(
   }
 
   let subscribers: SubscriberDetails<TData, CallbackFunc<TData>>[];
-  if (subscriber) {
-    subscribers = subscriberMap.get(subscriber) ?? [];
+  if (recipient) {
+    subscribers = subscriberMap.get(recipient) ?? [];
   } else {
     subscribers = [];
     for (const subscriberFuncs of subscriberMap.values()) {
@@ -156,4 +156,4 @@ async function sendEvent<TData extends MessageBase>(
   return true;
 }
 
-export {CallbackFunc, EventListener, sendEvent};
+export {CallbackFunc, EventListener, sendMessage};

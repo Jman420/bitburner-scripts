@@ -29,11 +29,11 @@ import {
   getHostnamesFromSymbol,
 } from '/scripts/workflows/stocks';
 
-import {EventListener, sendEvent} from '/scripts/comms/event-comms';
+import {EventListener, sendMessage} from '/scripts/comms/event-comms';
 import {StocksPurchasedEvent} from '/scripts/comms/events/stocks-purchased-event';
 import {StocksSoldEvent} from '/scripts/comms/events/stocks-sold-event';
-import {StockListingsResponse} from '/scripts/comms/events/stocks-listing-response';
-import {StockListingsRequest} from '/scripts/comms/events/stocks-listing-request';
+import {StockListingsResponse} from '/scripts/comms/responses/stocks-listing-response';
+import {StockListingsRequest} from '/scripts/comms/requests/stocks-listing-request';
 
 import {analyzeHost} from '/scripts/workflows/recon';
 import {growHost, hackHost} from '/scripts/workflows/orchestration';
@@ -213,7 +213,7 @@ export async function main(netscript: NS) {
     scriptLogWriter,
     targetTransactions
   );
-  sendEvent(new StockListingsRequest(SUBSCRIBER_NAME));
+  sendMessage(new StockListingsRequest(SUBSCRIBER_NAME));
 
   await infiniteLoop(
     netscript,

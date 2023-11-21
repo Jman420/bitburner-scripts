@@ -11,7 +11,7 @@ import {
   scanWideNetwork,
 } from '/scripts/workflows/recon';
 
-import {EventListener, sendEvent} from '/scripts/comms/event-comms';
+import {EventListener, sendMessage} from '/scripts/comms/event-comms';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
@@ -138,7 +138,7 @@ async function runGWH(
 }
 
 function initializeScript(netscript: NS, subscriberName: string) {
-  netscript.atExit(() => sendEvent(new ExitEvent(), subscriberName));
+  netscript.atExit(() => sendMessage(new ExitEvent(), subscriberName));
 }
 
 async function delayedInfiniteLoop<FuncType extends LoopableFunction>(

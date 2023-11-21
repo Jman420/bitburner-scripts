@@ -1,10 +1,10 @@
-import {MessageBase} from '/scripts/comms/msg-base';
+import {EventBase} from '/scripts/comms/event-base';
 
 import {PurchaseTransaction} from '/scripts/workflows/stocks';
 
 const MESSAGE_TYPE = 'stocksPurchasedEvent';
 
-class StocksPurchasedEvent extends MessageBase {
+class StocksPurchasedEvent extends EventBase {
   readonly transactions?: PurchaseTransaction[];
 
   constructor(transactions?: PurchaseTransaction[]) {

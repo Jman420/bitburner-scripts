@@ -5,13 +5,15 @@ import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {
   CmdArgsSchema,
+  getCmdFlag,
+  getLastCmdFlag,
   getSchemaFlags,
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
 import {eventLoop, initializeScript} from '/scripts/workflows/execution';
 
-import {EventListener} from '/scripts/comms/event-comms';
+import {EventListener, sendMessage} from '/scripts/comms/event-comms';
 import {GangInfoChangedEvent} from '/scripts/comms/events/gang-info-changed-event';
 import {GangEnemiesChangedEvent} from '/scripts/comms/events/gang-enemies-changed-event';
 import {GangUpdateSettingsEvent} from '/scripts/comms/events/gang-update-settings-event';
@@ -37,11 +39,14 @@ import {
   TaskFocus,
   getRespectGainIncrease,
   getWantedLevelGainIncrease,
+  GangManagerConfig,
 } from '/scripts/workflows/gangs';
 
 import {openTail} from '/scripts/workflows/ui';
+import {GangConfigRequest} from '/scripts/comms/requests/gang-config-request';
+import {GangConfigResponse} from '/scripts/comms/responses/gang-config-response';
 
-const CMG_FLAG_MEMBER_NAME_PREFIX = 'memberNamePrefix';
+const CMD_FLAG_MEMBER_NAME_PREFIX = 'memberNamePrefix';
 const CMD_FLAG_PURCHASE_AUGMENTATIONS = 'purchaseAugmentations';
 const CMD_FLAG_PURCHASE_EQUIPMENT = 'purchaseEquipment';
 const CMD_FLAG_TASK_FOCUS = 'taskFocus';
@@ -49,7 +54,7 @@ const TASK_FOCUS_RESPECT = 'respect';
 const TASK_FOCUS_MONEY = 'money';
 const TASK_FOCUS_OPTIONS = [TASK_FOCUS_RESPECT, TASK_FOCUS_MONEY];
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
-  [CMG_FLAG_MEMBER_NAME_PREFIX, 'henchman-'],
+  [CMD_FLAG_MEMBER_NAME_PREFIX, 'henchman-'],
   [CMD_FLAG_PURCHASE_AUGMENTATIONS, false],
   [CMD_FLAG_PURCHASE_EQUIPMENT, false],
   [CMD_FLAG_TASK_FOCUS, TASK_FOCUS_OPTIONS[0]],
@@ -354,13 +359,28 @@ function handleUpdateSettingsEvent(
   logWriter: Logger
 ) {
   logWriter.writeLine('Update settings event received...');
-  purchaseAugmentations = eventData.purchaseAugmentations ?? false;
-  purchaseEquipment = eventData.purchaseEquipment ?? false;
-  taskFocus = eventData.taskFocus ?? TaskFocus.RESPECT;
+  purchaseAugmentations = eventData.config?.purchaseAugmentations ?? false;
+  purchaseEquipment = eventData.config?.purchaseEquipment ?? false;
+  taskFocus = eventData.config?.taskFocus ?? TaskFocus.RESPECT;
 
   logWriter.writeLine(`  Purchase Augmentations : ${purchaseAugmentations}`);
   logWriter.writeLine(`  Purchase Equipment : ${purchaseEquipment}`);
   logWriter.writeLine(`  Task Focus : ${taskFocus}`);
+}
+
+function handleGangConfigRequest(
+  requestData: GangConfigRequest,
+  logWriter: Logger
+) {
+  logWriter.writeLine(
+    `Sending gang manager config response to ${requestData.sender}`
+  );
+  const config: GangManagerConfig = {
+    purchaseAugmentations: purchaseAugmentations,
+    purchaseEquipment: purchaseEquipment,
+    taskFocus: taskFocus,
+  };
+  sendMessage(new GangConfigResponse(config), requestData.sender);
 }
 
 /** @param {NS} netscript */
@@ -373,7 +393,7 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
   const memberNamePrefix = cmdArgs[
-    CMG_FLAG_MEMBER_NAME_PREFIX
+    CMD_FLAG_MEMBER_NAME_PREFIX
   ].valueOf() as string;
   purchaseEquipment = cmdArgs[CMD_FLAG_PURCHASE_EQUIPMENT].valueOf() as boolean;
   purchaseEquipment = cmdArgs[CMD_FLAG_PURCHASE_EQUIPMENT].valueOf() as boolean;
@@ -404,6 +424,9 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('See script logs for on-going gang details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
+  formWarParty = false;
+  engageWarfare = false;
+
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const eventListener = new EventListener(SUBSCRIBER_NAME);
   eventListener.addListener(
@@ -423,11 +446,23 @@ export async function main(netscript: NS) {
     handleUpdateSettingsEvent,
     scriptLogWriter
   );
+  eventListener.addListener(
+    GangConfigRequest,
+    handleGangConfigRequest,
+    scriptLogWriter
+  );
 
   await eventLoop(netscript, eventListener);
 }
 
 /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 export function autocomplete(data: AutocompleteData, args: string[]) {
+  const lastCmdFlag = getLastCmdFlag(args);
+  if (lastCmdFlag === getCmdFlag(CMD_FLAG_MEMBER_NAME_PREFIX)) {
+    return ['henchman-', 'lacky-', 'goon-'];
+  }
+  if (lastCmdFlag === getCmdFlag(CMD_FLAG_TASK_FOCUS)) {
+    return TASK_FOCUS_OPTIONS;
+  }
   return CMD_FLAGS;
 }

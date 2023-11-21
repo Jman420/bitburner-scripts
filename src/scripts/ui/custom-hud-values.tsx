@@ -5,13 +5,14 @@ import {ENTRY_DIVIDER} from '/scripts/logging/logOutput';
 
 import {EventListener} from '/scripts/comms/event-comms';
 import {StocksTickerEvent} from '/scripts/comms/events/stocks-ticker-event';
+import {GangInfoChangedEvent} from '/scripts/comms/events/gang-info-changed-event';
 
 import {getReactModel, ReactSetStateFunction} from '/scripts/workflows/ui';
-import {scanWideNetwork} from '/scripts/workflows/recon';
-import {TOTAL_STOCKS} from '/scripts/workflows/stocks';
-import {GangInfoChangedEvent} from '/scripts/comms/events/gang-info-changed-event';
 import {useInterval} from '/scripts/ui/hooks/use-interval';
 import {useEffectOnce} from '/scripts/ui/hooks/use-effect-once';
+
+import {scanWideNetwork} from '/scripts/workflows/recon';
+import {TOTAL_STOCKS} from '/scripts/workflows/stocks';
 
 const React = getReactModel().reactNS;
 const useState = React.useState;
@@ -21,7 +22,8 @@ function updateStocksMetrics(
   netscript: NS,
   logWriter: Logger,
   setStocksValue: ReactSetStateFunction<string>,
-  setStocksProfit: ReactSetStateFunction<string>
+  setStocksProfit: ReactSetStateFunction<string>,
+  setPlayerTotalValue: ReactSetStateFunction<string>
 ) {
   if (
     !eventData.stockListings ||
@@ -51,6 +53,11 @@ function updateStocksMetrics(
   logWriter.writeLine('Updating stock portfolio metrics...');
   setStocksValue(`$${netscript.formatNumber(totalValue)}`);
   setStocksProfit(`$${netscript.formatNumber(totalProfit)}`);
+
+  logWriter.writeLine('Updating Total Player Value...');
+  const playerInfo = netscript.getPlayer();
+  const totalPlayerValue = playerInfo.money + totalValue;
+  setPlayerTotalValue(`$${netscript.formatNumber(totalPlayerValue)}`);
   logWriter.writeLine(ENTRY_DIVIDER);
 }
 
@@ -102,8 +109,8 @@ function updatePolledMetrics(
   logWriter.writeLine('Updating location & script...');
   setCity(playerInfo.city);
   setLocation(playerInfo.location);
-  setScriptsIncome(`$${netscript.formatNumber(totalScriptIncome)}`);
   setScriptsExp(netscript.formatNumber(totalScriptExp));
+  setScriptsIncome(`$${netscript.formatNumber(totalScriptIncome)}`);
   logWriter.writeLine(ENTRY_DIVIDER);
 }
 
@@ -115,8 +122,9 @@ function CustomHudValues({
   uiTheme,
   excludeLocationMetrics,
   excludeScriptsMetrics,
-  excludeStocksMetrics,
   excludeGangMetrics,
+  excludeStocksMetrics,
+  excludePlayerMetrics,
 }: {
   netscript: NS;
   eventListener: EventListener;
@@ -125,16 +133,18 @@ function CustomHudValues({
   uiTheme: UserInterfaceTheme;
   excludeLocationMetrics: boolean;
   excludeScriptsMetrics: boolean;
-  excludeStocksMetrics: boolean;
   excludeGangMetrics: boolean;
+  excludeStocksMetrics: boolean;
+  excludePlayerMetrics: boolean;
 }) {
   const [city, setCity] = useState('');
   const [location, setLocation] = useState('');
   const [scriptsExp, setScriptsExp] = useState('');
   const [scriptsIncome, setScriptsIncome] = useState('');
-  const [stocksPortfolioValue, setStocksPortfolioValue] = useState('');
-  const [stocksProfit, setStocksProfit] = useState('');
   const [gangIncome, setGangIncome] = useState('');
+  const [stocksProfit, setStocksProfit] = useState('');
+  const [stocksPortfolioValue, setStocksPortfolioValue] = useState('');
+  const [playerTotalValue, setPlayerTotalValue] = useState('');
 
   useEffectOnce(() => {
     updatePolledMetrics(
@@ -164,7 +174,8 @@ function CustomHudValues({
       netscript,
       logWriter,
       setStocksPortfolioValue,
-      setStocksProfit
+      setStocksProfit,
+      setPlayerTotalValue
     );
   });
   useEffectOnce(() => {
@@ -221,15 +232,15 @@ function CustomHudValues({
       </label>
       <br style={{display: excludeScriptsMetrics ? 'none' : ''}} />
       <label
-        id="stocksPortfolioValue"
+        id="gangIncomeValue"
         style={{
           color: uiTheme['money'],
-          display: excludeStocksMetrics ? 'none' : '',
+          display: excludeGangMetrics ? 'none' : '',
         }}
       >
-        {stocksPortfolioValue}
+        {gangIncome}
       </label>
-      <br style={{display: excludeStocksMetrics ? 'none' : ''}} />
+      <br style={{display: excludeGangMetrics ? 'none' : ''}} />
       <label
         id="stocksProfitValue"
         style={{
@@ -241,15 +252,25 @@ function CustomHudValues({
       </label>
       <br style={{display: excludeStocksMetrics ? 'none' : ''}} />
       <label
-        id="gangIncomeValue"
+        id="stocksPortfolioValue"
         style={{
           color: uiTheme['money'],
-          display: excludeGangMetrics ? 'none' : '',
+          display: excludeStocksMetrics ? 'none' : '',
         }}
       >
-        {gangIncome}
+        {stocksPortfolioValue}
       </label>
-      <br style={{display: excludeGangMetrics ? 'none' : ''}} />
+      <br style={{display: excludeStocksMetrics ? 'none' : ''}} />
+      <label
+        id="playerTotalValue"
+        style={{
+          color: uiTheme['money'],
+          display: excludePlayerMetrics ? 'none' : '',
+        }}
+      >
+        {playerTotalValue}
+      </label>
+      <br style={{display: excludePlayerMetrics ? 'none' : ''}} />
     </div>
   );
 }

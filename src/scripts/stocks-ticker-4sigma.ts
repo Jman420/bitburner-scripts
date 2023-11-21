@@ -15,10 +15,10 @@ import {
   StockListing,
 } from '/scripts/workflows/stocks';
 
-import {EventListener, sendEvent} from '/scripts/comms/event-comms';
+import {EventListener, sendMessage} from '/scripts/comms/event-comms';
 import {StocksTickerEvent} from '/scripts/comms/events/stocks-ticker-event';
-import {StockListingsRequest} from '/scripts/comms/events/stocks-listing-request';
-import {StockListingsResponse} from '/scripts/comms/events/stocks-listing-response';
+import {StockListingsRequest} from '/scripts/comms/requests/stocks-listing-request';
+import {StockListingsResponse} from '/scripts/comms/responses/stocks-listing-response';
 
 const MODULE_NAME = 'stocks-ticker-4sigma';
 const SUBSCRIBER_NAME = 'stocks-ticker-4sigma';
@@ -71,7 +71,7 @@ function updateStockListings(netscript: NS, logWriter: Logger) {
   }
 
   if (updatedSymbols.length > 0) {
-    sendEvent(new StocksTickerEvent(updatedSymbols));
+    sendMessage(new StocksTickerEvent(updatedSymbols));
     logWriter.writeLine(`Updated ${updatedSymbols.length} stock listings.`);
   } else {
     logWriter.writeLine('No stock listings updated.');
@@ -87,7 +87,7 @@ function sendListings(eventData: StockListingsRequest) {
       result.push(stockListing);
     }
   }
-  sendEvent(new StockListingsResponse(result), eventData.subscriber);
+  sendMessage(new StockListingsResponse(result), eventData.sender);
 }
 
 /** @param {NS} netscript */

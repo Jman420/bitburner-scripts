@@ -1,4 +1,4 @@
-import {MessageBase} from '/scripts/comms/msg-base';
+import {EventBase} from '/scripts/comms/event-base';
 
 enum WeakenStatus {
   IN_PROGRESS,
@@ -7,7 +7,7 @@ enum WeakenStatus {
 
 const MESSAGE_TYPE = 'weakenEvent';
 
-class WeakenEvent extends MessageBase {
+class WeakenEvent extends EventBase {
   readonly hostname?: string;
   readonly status?: WeakenStatus;
 

@@ -1,10 +1,10 @@
 import {GangOtherInfo} from '@ns';
 
-import {MessageBase} from '/scripts/comms/msg-base';
+import {EventBase} from '/scripts/comms/event-base';
 
 const MESSAGE_TYPE = 'gangEnemiesChangedEvent';
 
-class GangEnemiesChangedEvent extends MessageBase {
+class GangEnemiesChangedEvent extends EventBase {
   readonly enemiesInfo?: GangOtherInfo;
   readonly enemyNames?: string[];
 

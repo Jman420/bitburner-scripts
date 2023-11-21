@@ -8,14 +8,16 @@ function CustomHudLabels({
   uiTheme,
   excludeLocationMetrics,
   excludeScriptsMetrics,
-  excludeStocksMetrics,
   excludeGangMetrics,
+  excludeStocksMetrics,
+  excludePlayerMetrics,
 }: {
   uiTheme: UserInterfaceTheme;
   excludeLocationMetrics: boolean;
   excludeScriptsMetrics: boolean;
-  excludeStocksMetrics: boolean;
   excludeGangMetrics: boolean;
+  excludeStocksMetrics: boolean;
+  excludePlayerMetrics: boolean;
 }) {
   return (
     <div>
@@ -61,15 +63,15 @@ function CustomHudLabels({
       </label>
       <br style={{display: excludeScriptsMetrics ? 'none' : ''}} />
       <label
-        title="Total value of stock portfolio"
+        title="Gang income per second"
         style={{
           color: uiTheme['money'],
-          display: excludeStocksMetrics ? 'none' : '',
+          display: excludeGangMetrics ? 'none' : '',
         }}
       >
-        Stocks Val
+        Gang Inc
       </label>
-      <br style={{display: excludeStocksMetrics ? 'none' : ''}} />
+      <br style={{display: excludeGangMetrics ? 'none' : ''}} />
       <label
         title="Total profit from stock portfolio"
         style={{
@@ -81,15 +83,25 @@ function CustomHudLabels({
       </label>
       <br style={{display: excludeStocksMetrics ? 'none' : ''}} />
       <label
-        title="Gang income per second"
+        title="Total value of stock portfolio"
         style={{
           color: uiTheme['money'],
-          display: excludeGangMetrics ? 'none' : '',
+          display: excludeStocksMetrics ? 'none' : '',
         }}
       >
-        Gang Inc
+        Stocks Val
       </label>
-      <br style={{display: excludeGangMetrics ? 'none' : ''}} />
+      <br style={{display: excludeStocksMetrics ? 'none' : ''}} />
+      <label
+        title="Total player money"
+        style={{
+          color: uiTheme['money'],
+          display: excludeStocksMetrics ? 'none' : '',
+        }}
+      >
+        Player Val
+      </label>
+      <br style={{display: excludePlayerMetrics ? 'none' : ''}} />
     </div>
   );
 }

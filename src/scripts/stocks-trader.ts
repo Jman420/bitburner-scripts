@@ -26,12 +26,13 @@ import {
   sellStock,
 } from '/scripts/workflows/stocks';
 
-import {EventListener, sendEvent} from '/scripts/comms/event-comms';
+import {EventListener, sendMessage} from '/scripts/comms/event-comms';
 import {StocksTickerEvent} from '/scripts/comms/events/stocks-ticker-event';
 import {StocksSoldEvent} from '/scripts/comms/events/stocks-sold-event';
 import {StocksPurchasedEvent} from '/scripts/comms/events/stocks-purchased-event';
-import {StockListingsResponse} from '/scripts/comms/events/stocks-listing-response';
-import {StockListingsRequest} from '/scripts/comms/events/stocks-listing-request';
+import {StockListingsResponse} from '/scripts/comms/responses/stocks-listing-response';
+import {StockListingsRequest} from '/scripts/comms/requests/stocks-listing-request';
+
 import {TerminalLogger} from '/scripts/logging/terminalLogger';
 import {ScriptLogger} from '/scripts/logging/scriptLogger';
 import {openTail} from '/scripts/workflows/ui';
@@ -113,7 +114,7 @@ function tradeStocks(
         totalSaleProfits
       )} profit`
     );
-    sendEvent(new StocksSoldEvent(soldStocks));
+    sendMessage(new StocksSoldEvent(soldStocks));
   }
 
   // Handle Purchase Transactions
@@ -181,7 +182,7 @@ function tradeStocks(
         totalPurchaseCosts
       )} cost`
     );
-    sendEvent(new StocksPurchasedEvent(purchasedStocks));
+    sendMessage(new StocksPurchasedEvent(purchasedStocks));
   }
 
   if (soldStocks.length + purchasedStocks.length > 0) {
@@ -311,7 +312,7 @@ export async function main(netscript: NS) {
     fundsLimitPercent,
     shortEnabled
   );
-  sendEvent(new StockListingsRequest(SUBSCRIBER_NAME));
+  sendMessage(new StockListingsRequest(SUBSCRIBER_NAME));
 
   await eventLoop(netscript, eventListener);
 }

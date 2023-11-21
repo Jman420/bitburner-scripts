@@ -8,7 +8,7 @@ import {
   initializeScript,
 } from '/scripts/workflows/execution';
 
-import {sendEvent} from '/scripts/comms/event-comms';
+import {sendMessage} from '/scripts/comms/event-comms';
 import {GangInfoChangedEvent} from '/scripts/comms/events/gang-info-changed-event';
 import {GangEnemiesChangedEvent} from '/scripts/comms/events/gang-enemies-changed-event';
 
@@ -89,7 +89,7 @@ async function updateGangDetails(netscript: NS, logWriter: Logger) {
     logWriter.writeLine('Found gang metrics changed.  Sending event...');
     currentGangInfo = gangInfo;
     currentGangMembers = gangMembers;
-    sendEvent(new GangInfoChangedEvent(currentGangInfo, currentGangMembers));
+    sendMessage(new GangInfoChangedEvent(currentGangInfo, currentGangMembers));
   }
 
   logWriter.writeLine('Checking for enemy gang metrics changes...');
@@ -123,7 +123,7 @@ async function updateGangDetails(netscript: NS, logWriter: Logger) {
     logWriter.writeLine('Found enemy gang metrics changed.  Sending event...');
     currentEnemiesInfo = enemiesInfo;
     currentEnemyNames = enemyNames;
-    sendEvent(
+    sendMessage(
       new GangEnemiesChangedEvent(currentEnemiesInfo, currentEnemyNames)
     );
   }
@@ -140,11 +140,13 @@ export async function main(netscript: NS) {
   logWriter.writeLine('Initializing & sending initial events...');
   currentGangInfo = netscript.gang.getGangInformation();
   currentGangMembers = getMemberDetails(netscript);
-  sendEvent(new GangInfoChangedEvent(currentGangInfo, currentGangMembers));
+  sendMessage(new GangInfoChangedEvent(currentGangInfo, currentGangMembers));
 
   currentEnemiesInfo = netscript.gang.getOtherGangInformation();
   currentEnemyNames = Object.keys(currentEnemiesInfo);
-  sendEvent(new GangEnemiesChangedEvent(currentEnemiesInfo, currentEnemyNames));
+  sendMessage(
+    new GangEnemiesChangedEvent(currentEnemiesInfo, currentEnemyNames)
+  );
   logWriter.writeLine(SECTION_DIVIDER);
 
   await delayedInfiniteLoop(

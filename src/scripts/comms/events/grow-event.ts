@@ -1,4 +1,4 @@
-import {MessageBase} from '/scripts/comms/msg-base';
+import {EventBase} from '/scripts/comms/event-base';
 
 enum GrowStatus {
   IN_PROGRESS,
@@ -7,7 +7,7 @@ enum GrowStatus {
 
 const MESSAGE_TYPE = 'growEvent';
 
-class GrowEvent extends MessageBase {
+class GrowEvent extends EventBase {
   readonly hostname?: string;
   readonly status?: GrowStatus;
 
