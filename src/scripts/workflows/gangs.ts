@@ -6,8 +6,6 @@ import {
   NS,
 } from '@ns';
 
-import {runScript} from '/scripts/workflows/execution';
-
 enum TaskFocus {
   RESPECT = 'respect',
   MONEY = 'money',
@@ -108,18 +106,6 @@ const SPECIAL_CASE_TASKS = [
   WAR_PARTY_TASK,
   UNASSIGNED_TASK,
 ];
-
-function runGangMonitor(netscript: NS) {
-  let monitorPid = -1;
-  if (!netscript.isRunning(GANGS_MONITOR_SCRIPT)) {
-    monitorPid = runScript(
-      netscript,
-      GANGS_MONITOR_SCRIPT,
-      netscript.getHostname()
-    );
-  }
-  return monitorPid !== 0;
-}
 
 function recruitAvailableMembers(
   netscript: NS,
@@ -441,7 +427,6 @@ export {
   WAR_PARTY_TASK,
   UNASSIGNED_TASK,
   SPECIAL_CASE_TASKS,
-  runGangMonitor,
   recruitAvailableMembers,
   getMemberDetails,
   memberStatsSatisfyLimit,

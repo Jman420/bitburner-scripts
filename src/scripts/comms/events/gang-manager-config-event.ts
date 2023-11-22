@@ -4,7 +4,7 @@ import {GangManagerConfig} from '/scripts/workflows/gangs';
 
 const MESSAGE_TYPE = 'gangUpdateSettingsEvent';
 
-class GangUpdateSettingsEvent extends EventBase {
+class GangManagerConfigEvent extends EventBase {
   readonly config?: GangManagerConfig;
 
   constructor(config?: GangManagerConfig) {
@@ -14,4 +14,4 @@ class GangUpdateSettingsEvent extends EventBase {
   }
 }
 
-export {GangUpdateSettingsEvent};
+export {GangManagerConfigEvent};

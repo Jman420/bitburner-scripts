@@ -32,7 +32,11 @@ function obtainRoot(netscript: NS, hostname: string) {
     const availableTools = getRootTools(netscript);
     if (requiredPorts <= availableTools.length) {
       logWriter.writeLine('Opening required ports to obtain root access...');
-      for (let toolCounter = 0; toolCounter < availableTools.length && toolCounter < requiredPorts; toolCounter++) {
+      for (
+        let toolCounter = 0;
+        toolCounter < availableTools.length && toolCounter < requiredPorts;
+        toolCounter++
+      ) {
         const toolFunc = availableTools[toolCounter];
         toolFunc(hostname);
       }

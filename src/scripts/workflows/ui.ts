@@ -27,6 +27,7 @@ const DIV_BORDER_CSS_CLASS = 'css-tlze81';
 const BUTTON_CSS_CLASS = 'css-13ak5e0';
 const TOGGLE_BUTTON_CSS_CLASS = 'css-1k9ietj';
 const TOGGLE_BUTTON_SELECTED_CSS_CLASS = 'Mui-selected';
+const TEXTBOX_CSS_CLASS = 'css-1oaunmp';
 
 // NOTE : DO NOT NAME THE VARIABLE YOU STORE THE RESULT IN 'window' OR ELSE YOU WILL INCUR THE USUAL 25GB RAM USAGE
 function getWindow() {
@@ -106,6 +107,7 @@ export {
   BUTTON_CSS_CLASS,
   TOGGLE_BUTTON_CSS_CLASS,
   TOGGLE_BUTTON_SELECTED_CSS_CLASS,
+  TEXTBOX_CSS_CLASS,
   getWindow,
   getDocument,
   getReactModel,

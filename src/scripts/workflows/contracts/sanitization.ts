@@ -22,16 +22,18 @@ function sanitizeParenthesis(data: string) {
     if (currentChar === ')' && unclosedParenthesis <= 0) {
       const newVariants = new Set<string>();
       for (const fixVariant of closeFixVariants) {
-        getParenthesisVariants(`${fixVariant}${currentChar}`, currentChar).forEach(value => newVariants.add(value));
+        getParenthesisVariants(
+          `${fixVariant}${currentChar}`,
+          currentChar
+        ).forEach(value => newVariants.add(value));
       }
       closeFixVariants = [...newVariants];
       continue;
     }
-    
+
     if (currentChar === ')') {
       unclosedParenthesis--;
-    }
-    else if (currentChar === '(') {
+    } else if (currentChar === '(') {
       unclosedParenthesis++;
     }
     closeFixVariants = closeFixVariants.map(value => `${value}${currentChar}`);
@@ -39,16 +41,23 @@ function sanitizeParenthesis(data: string) {
 
   // Fix missing open parenthesis
   const result = [];
-  for (let closeVariant of closeFixVariants) {
+  for (const closeVariant of closeFixVariants) {
     const lastChar = closeVariant.charAt(closeVariant.length - 1);
     let unopenedParenthesis = lastChar === ')' ? 1 : 0;
     let openFixVariants = [lastChar];
-    for (let charCounter = closeVariant.length - 2; charCounter >= 0; charCounter--) {
+    for (
+      let charCounter = closeVariant.length - 2;
+      charCounter >= 0;
+      charCounter--
+    ) {
       const currentChar = closeVariant.charAt(charCounter);
       if (currentChar === '(' && unopenedParenthesis <= 0) {
         const newVariants = new Set<string>();
         for (const fixVariant of openFixVariants) {
-          getParenthesisVariants(`${currentChar}${fixVariant}`, currentChar).forEach(value => newVariants.add(value));
+          getParenthesisVariants(
+            `${currentChar}${fixVariant}`,
+            currentChar
+          ).forEach(value => newVariants.add(value));
         }
         openFixVariants = [...newVariants];
         continue;
@@ -56,8 +65,7 @@ function sanitizeParenthesis(data: string) {
 
       if (currentChar === ')') {
         unopenedParenthesis++;
-      }
-      else if (currentChar === '(') {
+      } else if (currentChar === '(') {
         unopenedParenthesis--;
       }
       openFixVariants = openFixVariants.map(value => `${currentChar}${value}`);

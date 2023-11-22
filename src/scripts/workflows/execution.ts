@@ -34,11 +34,15 @@ function getRequiredRam(netscript: NS, scriptPath: string, threadCount = 1) {
 function runScript(
   netscript: NS,
   scriptName: string,
-  hostname: string,
+  hostname?: string,
   threadCount = 1,
   useMaxThreads = false,
   ...args: (string | number | boolean)[]
 ) {
+  if (!hostname) {
+    hostname = netscript.getHostname();
+  }
+
   if (netscript.isRunning(scriptName, hostname)) {
     return -1;
   }
@@ -51,6 +55,19 @@ function runScript(
     ? maxScriptThreads(netscript, hostname, scriptName, false)
     : threadCount;
   return netscript.exec(scriptName, hostname, threadCount, ...args);
+}
+
+function ensureRunning(
+  netscript: NS,
+  scriptPath: string,
+  hostname?: string,
+  ...args: string[]
+) {
+  let scriptPid = -1;
+  if (!netscript.isRunning(scriptPath, hostname)) {
+    scriptPid = runScript(netscript, scriptPath, hostname, 1, false, ...args);
+  }
+  return scriptPid !== 0;
 }
 
 function runWorkerScript(
@@ -184,6 +201,7 @@ export {
   MAX_LOOP_DELAY_MILLISEC,
   getRequiredRam,
   runScript,
+  ensureRunning,
   runWorkerScript,
   waitForScripts,
   runGWH,

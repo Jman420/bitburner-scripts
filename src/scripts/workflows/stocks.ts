@@ -9,6 +9,12 @@ enum TransactionPosition {
   SHORT = 'SHORT',
 }
 
+interface StocksTraderConfig {
+  shortSales: boolean;
+  purchaseStocks: boolean;
+  fundsLimit: number;
+}
+
 interface StockPosition {
   longShares: number;
   longPrice: number;
@@ -146,6 +152,7 @@ function getHostnamesFromSymbol(netscript: NS, symbol: string) {
 
 export {
   TransactionPosition,
+  StocksTraderConfig,
   StockPosition,
   StockListing,
   StockTransaction,

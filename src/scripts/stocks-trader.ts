@@ -20,6 +20,7 @@ import {
   FIFTY_PERCENT,
   PurchaseTransaction,
   SaleTransaction,
+  StocksTraderConfig,
   TransactionPosition,
   buyStock,
   runStockTicker,
@@ -36,6 +37,9 @@ import {StockListingsRequest} from '/scripts/comms/requests/stocks-listing-reque
 import {TerminalLogger} from '/scripts/logging/terminalLogger';
 import {ScriptLogger} from '/scripts/logging/scriptLogger';
 import {openTail} from '/scripts/workflows/ui';
+import {StocksTraderConfigEvent} from '/scripts/comms/events/stocks-trader-config-event';
+import {StocksTraderConfigRequest} from '/scripts/comms/requests/stocks-trader-config-request';
+import {StocksTraderConfigResponse} from '/scripts/comms/responses/stocks-trader-config-response';
 
 const CMD_FLAG_FUNDS_SAFETY_LIMIT = 'fundsSafetyLimit';
 const CMD_FLAG_ENABLE_SHORT_SALES = 'enableShort';
@@ -55,12 +59,12 @@ const TAIL_HEIGHT = 490;
 
 const PURCHASE_FORECAST_MARGIN = 0.1;
 
+let traderConfig: StocksTraderConfig;
+
 function tradeStocks(
   eventData: StocksTickerEvent,
   netscript: NS,
-  logWriter: Logger,
-  shortEnabled: boolean,
-  fundsLimit: number
+  logWriter: Logger
 ) {
   const stockListings = eventData.stockListings ?? [];
   if (stockListings.length < 1) {
@@ -123,11 +127,12 @@ function tradeStocks(
   const purchasedStocks = new Array<PurchaseTransaction>();
   for (
     let stockCounter = 0;
+    traderConfig.purchaseStocks &&
     stockCounter < stockListings.length &&
-    playerMoney > fundsLimit + COMMISSION;
+    playerMoney > traderConfig.fundsLimit + COMMISSION;
     stockCounter++
   ) {
-    const availableFunds = playerMoney - fundsLimit;
+    const availableFunds = playerMoney - traderConfig.fundsLimit;
     const stockDetails = stockListings[stockCounter];
     if (
       stockDetails.forecast > FIFTY_PERCENT + PURCHASE_FORECAST_MARGIN &&
@@ -151,7 +156,7 @@ function tradeStocks(
         purchasedStocks.push(purchaseTransaction);
       }
     } else if (
-      shortEnabled &&
+      traderConfig.shortSales &&
       stockDetails.forecast < FIFTY_PERCENT - PURCHASE_FORECAST_MARGIN &&
       stockDetails.bidPrice + COMMISSION < availableFunds
     ) {
@@ -196,8 +201,7 @@ function setupStockTrader(
   eventListener: EventListener,
   terminalWriter: TerminalLogger,
   scriptLogWriter: ScriptLogger,
-  fundsLimitPercent: number,
-  shortEnabled: boolean
+  fundsLimitPercent: number
 ) {
   eventListener.removeListeners(StockListingsResponse, setupStockTrader);
 
@@ -243,6 +247,7 @@ function setupStockTrader(
     );
     netscript.exit();
   }
+  traderConfig.fundsLimit = fundsLimit;
 
   const successMsg = `Stock trader setup successfully with funds limit $${netscript.formatNumber(
     fundsLimit
@@ -254,14 +259,38 @@ function setupStockTrader(
     StocksTickerEvent,
     tradeStocks,
     netscript,
-    scriptLogWriter,
-    shortEnabled,
-    fundsLimit
+    scriptLogWriter
   );
 
   terminalWriter.writeLine(successMsg);
   terminalWriter.writeLine('See script logs for on-going trade details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
+}
+
+function handleStocksTraderConfigEvent(
+  eventData: StocksTraderConfigEvent,
+  logWriter: Logger
+) {
+  if (!eventData.config) {
+    return;
+  }
+
+  logWriter.writeLine('Update settings event received...');
+  traderConfig = eventData.config;
+
+  logWriter.writeLine(`  Short Sales Enabled : ${traderConfig.shortSales}`);
+  logWriter.writeLine(`  Purchase Stocks : ${traderConfig.purchaseStocks}`);
+  logWriter.writeLine(`  Funds Limit : ${traderConfig.fundsLimit}`);
+}
+
+function handleStocksTraderConfigRequest(
+  requestData: StocksTraderConfigRequest,
+  logWriter: Logger
+) {
+  logWriter.writeLine(
+    `Sending stocks trader config response to ${requestData.sender}`
+  );
+  sendMessage(new StocksTraderConfigResponse(traderConfig), requestData.sender);
 }
 
 /** @param {NS} netscript */
@@ -283,7 +312,7 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine(
     `Funds Safety Limit Percent : ${netscript.formatPercent(fundsLimitPercent)}`
   );
-  terminalWriter.writeLine(`Enable Short Sales : ${shortEnabled}`);
+  terminalWriter.writeLine(`Short Sales Enabled : ${shortEnabled}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
   if (!netscript.stock.hasWSEAccount() || !netscript.stock.hasTIXAPIAccess()) {
@@ -300,8 +329,25 @@ export async function main(netscript: NS) {
     return;
   }
 
+  traderConfig = {
+    shortSales: shortEnabled,
+    purchaseStocks: true,
+    fundsLimit: 0,
+  };
+
   const eventListener = new EventListener(SUBSCRIBER_NAME);
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
+  eventListener.addListener(
+    StocksTraderConfigRequest,
+    handleStocksTraderConfigRequest,
+    scriptLogWriter
+  );
+  eventListener.addListener(
+    StocksTraderConfigEvent,
+    handleStocksTraderConfigEvent,
+    scriptLogWriter
+  );
+
   eventListener.addListener(
     StockListingsResponse,
     setupStockTrader,
@@ -309,8 +355,7 @@ export async function main(netscript: NS) {
     eventListener,
     terminalWriter,
     scriptLogWriter,
-    fundsLimitPercent,
-    shortEnabled
+    fundsLimitPercent
   );
   sendMessage(new StockListingsRequest(SUBSCRIBER_NAME));
 

@@ -11,12 +11,16 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
-import {eventLoop, initializeScript} from '/scripts/workflows/execution';
+import {
+  ensureRunning,
+  eventLoop,
+  initializeScript,
+} from '/scripts/workflows/execution';
 
 import {EventListener, sendMessage} from '/scripts/comms/event-comms';
 import {GangInfoChangedEvent} from '/scripts/comms/events/gang-info-changed-event';
 import {GangEnemiesChangedEvent} from '/scripts/comms/events/gang-enemies-changed-event';
-import {GangUpdateSettingsEvent} from '/scripts/comms/events/gang-update-settings-event';
+import {GangManagerConfigEvent} from '/scripts/comms/events/gang-manager-config-event';
 
 import {
   MemberDetails,
@@ -26,7 +30,6 @@ import {
   WAR_PARTY_TASK,
   ASCENSION_SCORE_PROPERTIES,
   AUGMENTATIONS_UPGRADES_TYPE,
-  runGangMonitor,
   recruitAvailableMembers,
   memberStatsSatisfyLimit,
   ascendEligible,
@@ -40,6 +43,7 @@ import {
   getRespectGainIncrease,
   getWantedLevelGainIncrease,
   GangManagerConfig,
+  GANGS_MONITOR_SCRIPT,
 } from '/scripts/workflows/gangs';
 
 import {openTail} from '/scripts/workflows/ui';
@@ -75,10 +79,7 @@ const TRAINING_SKILL_LIMIT = 1000;
 const WARTIME_CHANCE_LIMIT = 0.85;
 const WAR_PARTY_SIZE = 6;
 
-let purchaseAugmentations = false;
-let purchaseEquipment = false;
-let taskFocus = TaskFocus.RESPECT;
-
+let gangConfig: GangManagerConfig;
 let formWarParty = false;
 let engageWarfare = false;
 
@@ -120,10 +121,10 @@ function manageGang(
     (taskA, taskB) => {
       let scoreA = 0;
       let scoreB = 0;
-      if (taskFocus === TaskFocus.RESPECT) {
+      if (gangConfig.taskFocus === TaskFocus.RESPECT) {
         scoreA = taskA.baseRespect;
         scoreB = taskB.baseRespect;
-      } else if (taskFocus === TaskFocus.MONEY) {
+      } else if (gangConfig.taskFocus === TaskFocus.MONEY) {
         scoreA = taskA.baseMoney;
         scoreB = taskB.baseMoney;
       }
@@ -155,7 +156,7 @@ function manageGang(
       value => !memberDetails.augmentations.includes(value.name)
     );
     while (
-      purchaseAugmentations &&
+      gangConfig.purchaseAugmentations &&
       remainingAugmentations.length > 0 &&
       remainingAugmentations[0].cost <= netscript.getPlayer().money
     ) {
@@ -175,7 +176,7 @@ function manageGang(
       value => !memberDetails.upgrades.includes(value.name)
     );
     while (
-      purchaseEquipment &&
+      gangConfig.purchaseEquipment &&
       remainingUpgrades.length > 0 &&
       remainingUpgrades[0].cost <= netscript.getPlayer().money &&
       memberStatsSatisfyLimit(
@@ -356,17 +357,21 @@ function handleEnemiesChangedEvent(
 }
 
 function handleUpdateSettingsEvent(
-  eventData: GangUpdateSettingsEvent,
+  eventData: GangManagerConfigEvent,
   logWriter: Logger
 ) {
-  logWriter.writeLine('Update settings event received...');
-  purchaseAugmentations = eventData.config?.purchaseAugmentations ?? false;
-  purchaseEquipment = eventData.config?.purchaseEquipment ?? false;
-  taskFocus = eventData.config?.taskFocus ?? TaskFocus.RESPECT;
+  if (!eventData.config) {
+    return;
+  }
 
-  logWriter.writeLine(`  Purchase Augmentations : ${purchaseAugmentations}`);
-  logWriter.writeLine(`  Purchase Equipment : ${purchaseEquipment}`);
-  logWriter.writeLine(`  Task Focus : ${taskFocus}`);
+  logWriter.writeLine('Update settings event received...');
+  gangConfig = eventData.config;
+
+  logWriter.writeLine(
+    `  Purchase Augmentations : ${gangConfig.purchaseAugmentations}`
+  );
+  logWriter.writeLine(`  Purchase Equipment : ${gangConfig.purchaseEquipment}`);
+  logWriter.writeLine(`  Task Focus : ${gangConfig.taskFocus}`);
 }
 
 function handleGangConfigRequest(
@@ -376,12 +381,7 @@ function handleGangConfigRequest(
   logWriter.writeLine(
     `Sending gang manager config response to ${requestData.sender}`
   );
-  const config: GangManagerConfig = {
-    purchaseAugmentations: purchaseAugmentations,
-    purchaseEquipment: purchaseEquipment,
-    taskFocus: taskFocus,
-  };
-  sendMessage(new GangConfigResponse(config), requestData.sender);
+  sendMessage(new GangConfigResponse(gangConfig), requestData.sender);
 }
 
 /** @param {NS} netscript */
@@ -396,14 +396,19 @@ export async function main(netscript: NS) {
   const memberNamePrefix = cmdArgs[
     CMD_FLAG_MEMBER_NAME_PREFIX
   ].valueOf() as string;
-  purchaseEquipment = cmdArgs[CMD_FLAG_PURCHASE_EQUIPMENT].valueOf() as boolean;
-  purchaseEquipment = cmdArgs[CMD_FLAG_PURCHASE_EQUIPMENT].valueOf() as boolean;
+  const purchaseAugmentations = cmdArgs[
+    CMD_FLAG_PURCHASE_AUGMENTATIONS
+  ].valueOf() as boolean;
+  const purchaseEquipment = cmdArgs[
+    CMD_FLAG_PURCHASE_EQUIPMENT
+  ].valueOf() as boolean;
   const taskFocusFlag = (
     cmdArgs[CMD_FLAG_TASK_FOCUS].valueOf() as string
   ).toUpperCase() as keyof typeof TaskFocus;
-  taskFocus = TaskFocus[taskFocusFlag];
+  const taskFocus = TaskFocus[taskFocusFlag];
 
   terminalWriter.writeLine(`New Member Name Prefix : ${memberNamePrefix}`);
+  terminalWriter.writeLine(`Purchase Augmentations : ${purchaseAugmentations}`);
   terminalWriter.writeLine(`Purchase Equipment : ${purchaseEquipment}`);
   terminalWriter.writeLine(`Task Focus : ${taskFocus}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
@@ -415,7 +420,7 @@ export async function main(netscript: NS) {
     return;
   }
 
-  if (!runGangMonitor(netscript)) {
+  if (!ensureRunning(netscript, GANGS_MONITOR_SCRIPT)) {
     terminalWriter.writeLine(
       'Failed to find or execute the Gang Monitor script!'
     );
@@ -425,6 +430,11 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('See script logs for on-going gang details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
+  gangConfig = {
+    purchaseAugmentations: purchaseAugmentations,
+    purchaseEquipment: purchaseEquipment,
+    taskFocus: taskFocus,
+  };
   formWarParty = false;
   engageWarfare = false;
 
@@ -443,7 +453,7 @@ export async function main(netscript: NS) {
     netscript
   );
   eventListener.addListener(
-    GangUpdateSettingsEvent,
+    GangManagerConfigEvent,
     handleUpdateSettingsEvent,
     scriptLogWriter
   );

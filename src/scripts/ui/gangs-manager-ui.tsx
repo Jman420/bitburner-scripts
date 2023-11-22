@@ -10,10 +10,17 @@ import {
 import {GangManagerConfig, TaskFocus} from '/scripts/workflows/gangs';
 
 import {EventListener, sendMessage} from '/scripts/comms/event-comms';
-import {GangUpdateSettingsEvent} from '/scripts/comms/events/gang-update-settings-event';
+import {GangManagerConfigEvent} from '../comms/events/gang-manager-config-event';
 import {useEffectOnce} from '/scripts/ui/hooks/use-effect-once';
 import {GangConfigResponse} from '/scripts/comms/responses/gang-config-response';
 import {GangConfigRequest} from '/scripts/comms/requests/gang-config-request';
+
+interface InterfaceControls {
+  buyAugmentations: HTMLElement | null;
+  buyEquipment: HTMLElement | null;
+  focusRespect: HTMLElement | null;
+  focusMoney: HTMLElement | null;
+}
 
 const React = getReactModel().reactNS;
 
@@ -33,6 +40,63 @@ const DIV_STYLE: React.CSSProperties = {
   alignItems: 'center',
   textAlign: 'center',
 };
+
+function getInterfaceControls() {
+  const doc = getDocument();
+  const result: InterfaceControls = {
+    buyAugmentations: doc.getElementById(BUY_AUGMENTATIONS_BUTTON_ID),
+    buyEquipment: doc.getElementById(BUY_EQUIPMENT_BUTTON_ID),
+    focusRespect: doc.getElementById(FOCUS_RESPECT_BUTTON_ID),
+    focusMoney: doc.getElementById(FOCUS_MONEY_BUTTON_ID),
+  };
+  return result;
+}
+
+function handleGangConfigResponse(
+  responseData: GangConfigResponse,
+  eventListener: EventListener
+) {
+  if (!responseData.config) {
+    return;
+  }
+  eventListener.removeListeners(GangConfigResponse, handleGangConfigResponse);
+
+  const interfaceControls = getInterfaceControls();
+  interfaceControls.buyAugmentations?.classList.remove(
+    TOGGLE_BUTTON_SELECTED_CSS_CLASS
+  );
+  interfaceControls.buyEquipment?.classList.remove(
+    TOGGLE_BUTTON_SELECTED_CSS_CLASS
+  );
+  interfaceControls.focusRespect?.classList.remove(
+    TOGGLE_BUTTON_SELECTED_CSS_CLASS
+  );
+  interfaceControls.focusMoney?.classList.remove(
+    TOGGLE_BUTTON_SELECTED_CSS_CLASS
+  );
+
+  const config = responseData.config;
+  if (config.purchaseAugmentations) {
+    interfaceControls.buyAugmentations?.classList.add(
+      TOGGLE_BUTTON_SELECTED_CSS_CLASS
+    );
+  }
+  if (config.purchaseEquipment) {
+    interfaceControls.buyEquipment?.classList.add(
+      TOGGLE_BUTTON_SELECTED_CSS_CLASS
+    );
+  }
+
+  if (config.taskFocus === TaskFocus.RESPECT) {
+    interfaceControls.focusRespect?.classList.add(
+      TOGGLE_BUTTON_SELECTED_CSS_CLASS
+    );
+  } else if (config.taskFocus === TaskFocus.MONEY) {
+    interfaceControls.focusMoney?.classList.add(
+      TOGGLE_BUTTON_SELECTED_CSS_CLASS
+    );
+  }
+}
 
 function handlePurchaseUpgradesClick(
   eventData: React.MouseEvent<HTMLButtonElement, MouseEvent>
@@ -66,23 +130,23 @@ function handleMembersFocusClick(
 }
 
 function sendGangManagerConfig() {
-  const doc = getDocument();
+  const interfaceControls = getInterfaceControls();
   const buyAugmentations =
-    doc
-      .getElementById(BUY_AUGMENTATIONS_BUTTON_ID)
-      ?.classList.contains(TOGGLE_BUTTON_SELECTED_CSS_CLASS) ?? false;
+    interfaceControls.buyAugmentations?.classList.contains(
+      TOGGLE_BUTTON_SELECTED_CSS_CLASS
+    ) ?? false;
   const buyEquipment =
-    doc
-      .getElementById(BUY_EQUIPMENT_BUTTON_ID)
-      ?.classList.contains(TOGGLE_BUTTON_SELECTED_CSS_CLASS) ?? false;
+    interfaceControls.buyEquipment?.classList.contains(
+      TOGGLE_BUTTON_SELECTED_CSS_CLASS
+    ) ?? false;
   const focusRespect =
-    doc
-      .getElementById(FOCUS_RESPECT_BUTTON_ID)
-      ?.classList.contains(TOGGLE_BUTTON_SELECTED_CSS_CLASS) ?? false;
+    interfaceControls.focusRespect?.classList.contains(
+      TOGGLE_BUTTON_SELECTED_CSS_CLASS
+    ) ?? false;
   const focusMoney =
-    doc
-      .getElementById(FOCUS_MONEY_BUTTON_ID)
-      ?.classList.contains(TOGGLE_BUTTON_SELECTED_CSS_CLASS) ?? false;
+    interfaceControls.focusMoney?.classList.contains(
+      TOGGLE_BUTTON_SELECTED_CSS_CLASS
+    ) ?? false;
   let taskFocus = TaskFocus.MONEY;
   if (focusRespect) {
     taskFocus = TaskFocus.RESPECT;
@@ -95,42 +159,7 @@ function sendGangManagerConfig() {
     purchaseEquipment: buyEquipment,
     taskFocus: taskFocus,
   };
-  sendMessage(new GangUpdateSettingsEvent(config));
-}
-
-function handleGangConfigResponse(
-  responseData: GangConfigResponse,
-  eventListener: EventListener
-) {
-  if (!responseData.config) {
-    return;
-  }
-  eventListener.removeListeners(GangConfigResponse, handleGangConfigResponse);
-
-  const doc = getDocument();
-  const buyAugmentations = doc.getElementById(BUY_AUGMENTATIONS_BUTTON_ID);
-  const buyEquipment = doc.getElementById(BUY_EQUIPMENT_BUTTON_ID);
-  const focusRespect = doc.getElementById(FOCUS_RESPECT_BUTTON_ID);
-  const focusMoney = doc.getElementById(FOCUS_MONEY_BUTTON_ID);
-
-  buyAugmentations?.classList.remove(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
-  buyEquipment?.classList.remove(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
-  focusRespect?.classList.remove(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
-  focusMoney?.classList.remove(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
-
-  const config = responseData.config;
-  if (config.purchaseAugmentations) {
-    buyAugmentations?.classList.add(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
-  }
-  if (config.purchaseEquipment) {
-    buyEquipment?.classList.add(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
-  }
-
-  if (config.taskFocus === TaskFocus.RESPECT) {
-    focusRespect?.classList.add(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
-  } else if (config.taskFocus === TaskFocus.MONEY) {
-    focusMoney?.classList.add(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
-  }
+  sendMessage(new GangManagerConfigEvent(config));
 }
 
 function GangsManagerUI({

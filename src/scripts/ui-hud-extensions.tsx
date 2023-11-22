@@ -10,13 +10,17 @@ import {
 } from '/scripts/workflows/cmd-args';
 
 import {HudHooks, getHudHooks, getReactModel} from '/scripts/workflows/ui';
-import {eventLoop, initializeScript} from '/scripts/workflows/execution';
+import {
+  ensureRunning,
+  eventLoop,
+  initializeScript,
+} from '/scripts/workflows/execution';
 import {runStockTicker} from '/scripts/workflows/stocks';
 import {CustomHudLabels} from '/scripts/ui/custom-hud-labels';
 import {EventListener} from '/scripts/comms/event-comms';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
 import {CustomHudValues} from '/scripts/ui/custom-hud-values';
-import {runGangMonitor} from '/scripts/workflows/gangs';
+import {GANGS_MONITOR_SCRIPT} from '/scripts/workflows/gangs';
 
 const reactModel = getReactModel();
 const React = reactModel.reactNS;
@@ -35,8 +39,8 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
-const MODULE_NAME = 'hud-extensions';
-const SUBSCRIBER_NAME = 'hud-extensions';
+const MODULE_NAME = 'ui-hud-extensions';
+const SUBSCRIBER_NAME = 'ui-hud-extensions';
 const HUD_REFRESH_DELAY = 3000;
 
 /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
@@ -112,7 +116,7 @@ export async function main(netscript: NS) {
     );
     return;
   }
-  if (!excludeGangMetrics && !runGangMonitor(netscript)) {
+  if (!excludeGangMetrics && !ensureRunning(netscript, GANGS_MONITOR_SCRIPT)) {
     terminalWriter.writeLine(
       'Failed to find or execute a Gang Monitor script!'
     );
