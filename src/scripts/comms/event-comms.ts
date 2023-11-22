@@ -1,3 +1,5 @@
+import {NS} from '@ns';
+
 import {MessageBase} from '/scripts/comms/msg-base';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
 
@@ -134,7 +136,7 @@ async function sendMessage<TData extends MessageBase>(
 
   const subscriberMap = EVENT_LISTENER_MAP.get(data.messageType);
   if (!subscriberMap) {
-    return true;
+    return false;
   }
 
   let subscribers: SubscriberDetails<TData, CallbackFunc<TData>>[];
@@ -146,6 +148,9 @@ async function sendMessage<TData extends MessageBase>(
       subscribers.push(...subscriberFuncs);
     }
   }
+  if (subscribers.length < 1) {
+    return false;
+  }
 
   for (const subscriberDetails of subscribers) {
     await subscriberDetails.callbackFunc(
@@ -156,4 +161,27 @@ async function sendMessage<TData extends MessageBase>(
   return true;
 }
 
-export {CallbackFunc, EventListener, sendMessage};
+async function sendMessageRetry<TData extends MessageBase>(
+  netscript: NS,
+  data: TData,
+  recipient?: string,
+  retryCount = 5,
+  retryDelay = 500
+) {
+  if (!data.messageType) {
+    return false;
+  }
+
+  let sendSuccess = await sendMessage(data, recipient);
+  for (
+    let tryCounter = 0;
+    tryCounter < retryCount && !sendSuccess;
+    tryCounter++
+  ) {
+    await netscript.asleep(retryDelay);
+    sendSuccess = await sendMessage(data, recipient);
+  }
+  return sendSuccess;
+}
+
+export {CallbackFunc, EventListener, sendMessage, sendMessageRetry};

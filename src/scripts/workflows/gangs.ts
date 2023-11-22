@@ -211,7 +211,7 @@ function ascendEligible(
       checksPassed++;
     }
   }
-  return checksPassed > ASCENSION_CHECKS.length / 2;
+  return checksPassed >= 2;
 }
 
 function ascendMember(netscript: NS, memberName: string) {

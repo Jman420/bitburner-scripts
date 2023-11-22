@@ -139,7 +139,7 @@ function manageGang(
   let itemsPurchased = 0;
   let purchasedCost = 0;
   gangMembers.sort(
-    (memberA, memberB) => memberA.ascensionScore - memberB.ascensionScore
+    (memberA, memberB) => memberB.ascensionScore - memberA.ascensionScore
   );
   for (let memberDetails of gangMembers) {
     // Handle Ascension
@@ -211,7 +211,7 @@ function manageGang(
   const criminalCrew = new Array<MemberDetails>();
   const unassignedMembers = new Array<MemberDetails>();
   gangMembers.sort(
-    (memberA, memberB) => memberA.skillScore - memberB.skillScore
+    (memberA, memberB) => memberB.skillScore - memberA.skillScore
   );
   for (const memberDetails of gangMembers) {
     const ascensionResult = netscript.gang.getAscensionResult(
@@ -263,7 +263,7 @@ function manageGang(
     }
 
     // Handle Vigilantes
-    else if (gangInfo.wantedLevelGainRate > 0) {
+    else if (gangInfo.wantedLevelGainRate > 0 || gangInfo.wantedPenalty > 0) {
       netscript.gang.setMemberTask(
         memberDetails.name,
         vigilanteTaskDetails.name
@@ -352,7 +352,8 @@ function handleEnemiesChangedEvent(
     formWarParty = formWarParty || gangTerritory > 0;
     engageWarfare =
       engageWarfare ||
-      (gangTerritory > 0 && netscript.gang.getChanceToWinClash(gangName) >= WARTIME_CHANCE_LIMIT);
+      (gangTerritory > 0 &&
+        netscript.gang.getChanceToWinClash(gangName) >= WARTIME_CHANCE_LIMIT);
   }
 }
 

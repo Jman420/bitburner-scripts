@@ -27,7 +27,11 @@ import {
   sellStock,
 } from '/scripts/workflows/stocks';
 
-import {EventListener, sendMessage} from '/scripts/comms/event-comms';
+import {
+  EventListener,
+  sendMessage,
+  sendMessageRetry,
+} from '/scripts/comms/event-comms';
 import {StocksTickerEvent} from '/scripts/comms/events/stocks-ticker-event';
 import {StocksSoldEvent} from '/scripts/comms/events/stocks-sold-event';
 import {StocksPurchasedEvent} from '/scripts/comms/events/stocks-purchased-event';
@@ -357,7 +361,16 @@ export async function main(netscript: NS) {
     scriptLogWriter,
     fundsLimitPercent
   );
-  sendMessage(new StockListingsRequest(SUBSCRIBER_NAME));
+  const portfolioListingsRequestSent = await sendMessageRetry(
+    netscript,
+    new StockListingsRequest(SUBSCRIBER_NAME)
+  );
+  if (!portfolioListingsRequestSent) {
+    terminalWriter.writeLine(
+      'Failed to send request for current stock portfolio listings.  Try re-running this script.'
+    );
+    return;
+  }
 
   await eventLoop(netscript, eventListener);
 }

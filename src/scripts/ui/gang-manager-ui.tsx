@@ -2,6 +2,9 @@ import {UserInterfaceTheme} from '@ns';
 
 import {
   DIV_BORDER_CSS_CLASS,
+  PLAY_ICON_SVG_PATH,
+  SVG_BUTTON_CSS_CLASS,
+  SVG_PLAY_ICON_CSS_CLASS,
   TOGGLE_BUTTON_CSS_CLASS,
   TOGGLE_BUTTON_SELECTED_CSS_CLASS,
   getDocument,
@@ -10,10 +13,15 @@ import {
 import {GangManagerConfig, TaskFocus} from '/scripts/workflows/gangs';
 
 import {EventListener, sendMessage} from '/scripts/comms/event-comms';
-import {GangManagerConfigEvent} from '../comms/events/gang-manager-config-event';
+import {GangManagerConfigEvent} from '/scripts/comms/events/gang-manager-config-event';
 import {useEffectOnce} from '/scripts/ui/hooks/use-effect-once';
 import {GangConfigResponse} from '/scripts/comms/responses/gang-config-response';
 import {GangConfigRequest} from '/scripts/comms/requests/gang-config-request';
+import {
+  RunScriptButton,
+  RunScriptFunction,
+} from '/scripts/ui/components/run-script-button';
+import {MouseEventHandler} from 'react';
 
 interface InterfaceControls {
   buyAugmentations: HTMLElement | null;
@@ -165,9 +173,11 @@ function sendGangManagerConfig() {
 function GangsManagerUI({
   uiTheme,
   eventListener,
+  runManagerCallback,
 }: {
   uiTheme: UserInterfaceTheme;
   eventListener: EventListener;
+  runManagerCallback: RunScriptFunction;
 }) {
   useEffectOnce(() => {
     eventListener.addListener(
@@ -180,9 +190,22 @@ function GangsManagerUI({
 
   return (
     <div>
-      <label color={uiTheme.info} style={LABEL_STYLE}>
-        Purchase Member Upgrades
-      </label>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
+        <label style={{textAlign: 'center', fontSize: '14pt', margin: 'auto'}}>
+          Gang Manager Controls
+        </label>
+        <RunScriptButton
+          title="Run gang manager script"
+          runScriptFunc={runManagerCallback}
+        />
+      </div>
+      <label style={LABEL_STYLE}>Purchase Member Upgrades</label>
       <div className={DIV_BORDER_CSS_CLASS} style={DIV_STYLE}>
         <button
           id={BUY_AUGMENTATIONS_BUTTON_ID}
