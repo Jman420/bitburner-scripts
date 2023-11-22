@@ -1,27 +1,29 @@
-import {UserInterfaceTheme} from '@ns';
+import {NS, UserInterfaceTheme} from '@ns';
 
 import {
   DIV_BORDER_CSS_CLASS,
-  PLAY_ICON_SVG_PATH,
-  SVG_BUTTON_CSS_CLASS,
-  SVG_PLAY_ICON_CSS_CLASS,
   TOGGLE_BUTTON_CSS_CLASS,
   TOGGLE_BUTTON_SELECTED_CSS_CLASS,
   getDocument,
   getReactModel,
 } from '/scripts/workflows/ui';
-import {GangManagerConfig, TaskFocus} from '/scripts/workflows/gangs';
+import {
+  GANGS_MANAGER_SCRIPT,
+  GangManagerConfig,
+  TaskFocus,
+} from '/scripts/workflows/gangs';
 
-import {EventListener, sendMessage} from '/scripts/comms/event-comms';
+import {
+  EventListener,
+  sendMessage,
+  sendMessageRetry,
+} from '/scripts/comms/event-comms';
 import {GangManagerConfigEvent} from '/scripts/comms/events/gang-manager-config-event';
 import {useEffectOnce} from '/scripts/ui/hooks/use-effect-once';
 import {GangConfigResponse} from '/scripts/comms/responses/gang-config-response';
 import {GangConfigRequest} from '/scripts/comms/requests/gang-config-request';
-import {
-  RunScriptButton,
-  RunScriptFunction,
-} from '/scripts/ui/components/run-script-button';
-import {MouseEventHandler} from 'react';
+import {RunScriptButton} from '/scripts/ui/components/run-script-button';
+import {ensureRunning} from '/scripts/workflows/execution';
 
 interface InterfaceControls {
   buyAugmentations: HTMLElement | null;
@@ -70,18 +72,12 @@ function handleGangConfigResponse(
   eventListener.removeListeners(GangConfigResponse, handleGangConfigResponse);
 
   const interfaceControls = getInterfaceControls();
-  interfaceControls.buyAugmentations?.classList.remove(
-    TOGGLE_BUTTON_SELECTED_CSS_CLASS
-  );
-  interfaceControls.buyEquipment?.classList.remove(
-    TOGGLE_BUTTON_SELECTED_CSS_CLASS
-  );
-  interfaceControls.focusRespect?.classList.remove(
-    TOGGLE_BUTTON_SELECTED_CSS_CLASS
-  );
-  interfaceControls.focusMoney?.classList.remove(
-    TOGGLE_BUTTON_SELECTED_CSS_CLASS
-  );
+  for (const propertyKey of Object.keys(interfaceControls) as Array<
+    keyof InterfaceControls
+  >) {
+    const uiControl = interfaceControls[propertyKey];
+    uiControl?.classList.remove(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
+  }
 
   const config = responseData.config;
   if (config.purchaseAugmentations) {
@@ -147,6 +143,7 @@ function sendGangManagerConfig() {
     interfaceControls.buyEquipment?.classList.contains(
       TOGGLE_BUTTON_SELECTED_CSS_CLASS
     ) ?? false;
+
   const focusRespect =
     interfaceControls.focusRespect?.classList.contains(
       TOGGLE_BUTTON_SELECTED_CSS_CLASS
@@ -170,14 +167,40 @@ function sendGangManagerConfig() {
   sendMessage(new GangManagerConfigEvent(config));
 }
 
+async function handleToggleGangManager(
+  netscript: NS,
+  eventListener: EventListener,
+  scriptRunning: boolean
+) {
+  if (scriptRunning) {
+    netscript.scriptKill(GANGS_MANAGER_SCRIPT, netscript.getHostname());
+    return false;
+  }
+
+  if (!ensureRunning(netscript, GANGS_MANAGER_SCRIPT)) {
+    return false;
+  }
+
+  eventListener.addListener(
+    GangConfigResponse,
+    handleGangConfigResponse,
+    eventListener
+  );
+  await sendMessageRetry(
+    netscript,
+    new GangConfigRequest(eventListener.subscriberName)
+  );
+  return true;
+}
+
 function GangsManagerUI({
+  netscript,
   uiTheme,
   eventListener,
-  runManagerCallback,
 }: {
+  netscript: NS;
   uiTheme: UserInterfaceTheme;
   eventListener: EventListener;
-  runManagerCallback: RunScriptFunction;
 }) {
   useEffectOnce(() => {
     eventListener.addListener(
@@ -185,7 +208,10 @@ function GangsManagerUI({
       handleGangConfigResponse,
       eventListener
     );
-    sendMessage(new GangConfigRequest(eventListener.subscriberName));
+    sendMessageRetry(
+      netscript,
+      new GangConfigRequest(eventListener.subscriberName)
+    );
   });
 
   return (
@@ -198,11 +224,15 @@ function GangsManagerUI({
         }}
       >
         <label style={{textAlign: 'center', fontSize: '14pt', margin: 'auto'}}>
-          Gang Manager Controls
+          Gang Manager
         </label>
         <RunScriptButton
           title="Run gang manager script"
-          runScriptFunc={runManagerCallback}
+          runScriptFunc={handleToggleGangManager.bind(
+            undefined,
+            netscript,
+            eventListener
+          )}
         />
       </div>
       <label style={LABEL_STYLE}>Purchase Member Upgrades</label>

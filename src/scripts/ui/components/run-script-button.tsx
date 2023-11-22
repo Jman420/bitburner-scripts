@@ -1,4 +1,3 @@
-import {MouseEventHandler} from 'react';
 import {
   PLAY_ICON_SVG_PATH,
   ReactSetStateFunction,
@@ -9,12 +8,12 @@ import {
   getReactModel,
 } from '/scripts/workflows/ui';
 
-type RunScriptFunction = (scriptRunning: boolean) => void;
+type RunScriptFunction = (scriptRunning: boolean) => Promise<boolean>;
 
 const React = getReactModel().reactNS;
 const useState = React.useState;
 
-function handleButtonClick(
+async function handleButtonClick(
   setIconClassName: ReactSetStateFunction<string>,
   setIconSvgPath: ReactSetStateFunction<string>,
   callback: RunScriptFunction,
@@ -25,17 +24,20 @@ function handleButtonClick(
   let scriptRunning = false;
   const svgClassName = iconSvg.classList.value;
   if (svgClassName === SVG_PLAY_ICON_CSS_CLASS) {
-    setIconClassName(SVG_STOP_ICON_CSS_CLASS);
-    setIconSvgPath(STOP_ICON_SVG_PATH);
     scriptRunning = false;
   } else if (svgClassName === SVG_STOP_ICON_CSS_CLASS) {
-    setIconClassName(SVG_PLAY_ICON_CSS_CLASS);
-    setIconSvgPath(PLAY_ICON_SVG_PATH);
     scriptRunning = true;
   }
 
   if (callback) {
-    callback(scriptRunning);
+    const scriptExecuted = await callback(scriptRunning);
+    if (scriptExecuted) {
+      setIconClassName(SVG_STOP_ICON_CSS_CLASS);
+      setIconSvgPath(STOP_ICON_SVG_PATH);
+    } else {
+      setIconClassName(SVG_PLAY_ICON_CSS_CLASS);
+      setIconSvgPath(PLAY_ICON_SVG_PATH);
+    }
   }
 }
 

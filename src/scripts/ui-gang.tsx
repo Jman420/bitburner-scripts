@@ -1,13 +1,9 @@
 import {NS} from '@ns';
 
-import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
+import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
-import {
-  ensureRunning,
-  eventLoop,
-  initializeScript,
-} from '/scripts/workflows/execution';
+import {eventLoop, initializeScript} from '/scripts/workflows/execution';
 
 import {getReactModel, openTail} from '/scripts/workflows/ui';
 import {GangsManagerUI} from '/scripts/ui/gang-manager-ui';
@@ -22,21 +18,7 @@ const SUBSCRIBER_NAME = 'ui-gang';
 const TAIL_X_POS = 1340;
 const TAIL_Y_POS = 18;
 const TAIL_WIDTH = 330;
-const TAIL_HEIGHT = 235;
-
-const GANGS_MANAGER_SCRIPT = '/scripts/gang-manager.js';
-
-function runGangManager(
-  netscript: NS,
-  logWriter: Logger,
-  scriptRunning: boolean
-) {
-  if (!scriptRunning && !ensureRunning(netscript, GANGS_MANAGER_SCRIPT)) {
-    logWriter.writeLine('Failed to find or execute the Gang Manager script!');
-  } else if (scriptRunning) {
-    netscript.scriptKill(GANGS_MANAGER_SCRIPT, netscript.getHostname());
-  }
-}
+const TAIL_HEIGHT = 270;
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
@@ -53,13 +35,9 @@ export async function main(netscript: NS) {
   netscript.printRaw(
     <React.StrictMode>
       <GangsManagerUI
+        netscript={netscript}
         uiTheme={netscript.ui.getTheme()}
         eventListener={eventListener}
-        runManagerCallback={runGangManager.bind(
-          undefined,
-          netscript,
-          terminalWriter
-        )}
       />
     </React.StrictMode>
   );

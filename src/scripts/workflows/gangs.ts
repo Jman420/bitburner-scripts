@@ -42,6 +42,7 @@ interface TrainingStatus {
 }
 
 const GANGS_MONITOR_SCRIPT = '/scripts/gang-monitor.js';
+const GANGS_MANAGER_SCRIPT = '/scripts/gang-manager.js';
 
 const ASCENSION_COMBAT_PROPERTIES: Array<keyof GangMemberInfo> = [
   'agi_asc_mult',
@@ -411,6 +412,7 @@ export {
   EquipmentCost,
   MemberDetails,
   GANGS_MONITOR_SCRIPT,
+  GANGS_MANAGER_SCRIPT,
   ASCENSION_COMBAT_PROPERTIES,
   ASCENSION_HACKING_PROPERTIES,
   ASCENSION_CHARISMA_PROPERTIES,
