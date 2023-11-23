@@ -4,7 +4,7 @@ import {
   SVG_BUTTON_CSS_CLASS,
   SVG_PLAY_ICON_CSS_CLASS,
   SVG_STOP_ICON_CSS_CLASS,
-} from '/scripts/ui/style-sheet';
+} from '/scripts/controls/style-sheet';
 import {ReactSetStateFunction, getReactModel} from '/scripts/workflows/ui';
 
 type RunScriptFunction = (scriptRunning: boolean) => Promise<boolean>;

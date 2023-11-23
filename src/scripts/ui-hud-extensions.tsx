@@ -16,11 +16,13 @@ import {
   initializeScript,
 } from '/scripts/workflows/execution';
 import {runStockTicker} from '/scripts/workflows/stocks';
-import {CustomHudLabels} from '/scripts/ui/custom-hud-labels';
+import {GANGS_MONITOR_SCRIPT} from '/scripts/workflows/gangs';
+
+import {CustomHudLabels} from '/scripts/controls/custom-hud-labels';
+import {CustomHudValues} from '/scripts/controls/custom-hud-values';
+
 import {EventListener} from '/scripts/comms/event-comms';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
-import {CustomHudValues} from '/scripts/ui/custom-hud-values';
-import {GANGS_MONITOR_SCRIPT} from '/scripts/workflows/gangs';
 
 const reactModel = getReactModel();
 const React = reactModel.reactNS;

@@ -12,20 +12,22 @@ import {
   sendMessage,
   sendMessageRetry,
 } from '/scripts/comms/event-comms';
+
+import {ensureRunning} from '/scripts/workflows/execution';
+
 import {GangManagerConfigEvent} from '/scripts/comms/events/gang-manager-config-event';
-import {useEffectOnce} from '/scripts/ui/hooks/use-effect-once';
 import {GangConfigResponse} from '/scripts/comms/responses/gang-config-response';
 import {GangConfigRequest} from '/scripts/comms/requests/gang-config-request';
 
-import {RunScriptButton} from '/scripts/ui/components/run-script-button';
-import {ensureRunning} from '/scripts/workflows/execution';
+import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
+import {RunScriptButton} from '/scripts/controls/components/run-script-button';
 import {
   DIV_BORDER_CSS_CLASS,
   HEADER_DIV_STYLE,
   HEADER_LABEL_STYLE,
   TOGGLE_BUTTON_CSS_CLASS,
   TOGGLE_BUTTON_SELECTED_CSS_CLASS,
-} from '/scripts/ui/style-sheet';
+} from '/scripts/controls/style-sheet';
 
 interface InterfaceControls {
   buyAugmentations: HTMLElement | null;

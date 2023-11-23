@@ -8,7 +8,7 @@ import {eventLoop, initializeScript} from '/scripts/workflows/execution';
 import {getReactModel, openTail} from '/scripts/workflows/ui';
 
 import {EventListener} from '/scripts/comms/event-comms';
-import {StocksTraderUI} from '/scripts/ui/stocks-trader-ui';
+import {StocksTraderUI} from '/scripts/controls/stocks-trader-ui';
 
 const React = getReactModel().reactNS;
 

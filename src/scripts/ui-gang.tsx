@@ -6,7 +6,7 @@ import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 import {eventLoop, initializeScript} from '/scripts/workflows/execution';
 
 import {getReactModel, openTail} from '/scripts/workflows/ui';
-import {GangsManagerUI} from '/scripts/ui/gang-manager-ui';
+import {GangsManagerUI} from '/scripts/controls/gang-manager-ui';
 
 import {EventListener} from '/scripts/comms/event-comms';
 

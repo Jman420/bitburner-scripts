@@ -9,22 +9,20 @@ import {
   handleNumericInputChange,
 } from '/scripts/workflows/ui';
 
-import {useEffectOnce} from '/scripts/ui/hooks/use-effect-once';
-
 import {
   EventListener,
   sendMessage,
   sendMessageRetry,
 } from '/scripts/comms/event-comms';
-import {StocksTraderConfigResponse} from '/scripts/comms/responses/stocks-trader-config-response';
-import {StocksTraderConfigRequest} from '/scripts/comms/requests/stocks-trader-config-request';
-import {StocksTraderConfigEvent} from '/scripts/comms/events/stocks-trader-config-event';
+import {HacknetConfigRequest} from '/scripts/comms/requests/hacknet-config-request';
+import {HacknetConfigResponse} from '/scripts/comms/responses/hacknet-config-response';
+import {HacknetManagerConfigEvent} from '/scripts/comms/events/hacknet-manager-config-event';
 
 import {
-  STOCKS_TRADER_SCRIPT,
-  StocksTraderConfig,
-} from '/scripts/workflows/stocks';
-import {RunScriptButton} from '/scripts/ui/components/run-script-button';
+  HACKNET_MANAGER_SCRIPT,
+  HacknetManagerConfig,
+} from '/scripts/workflows/hacknet';
+import {RunScriptButton} from '/scripts/controls/components/run-script-button';
 import {ensureRunning} from '/scripts/workflows/execution';
 
 import {
@@ -35,16 +33,17 @@ import {
   TEXTBOX_CSS_CLASS,
   TOGGLE_BUTTON_CSS_CLASS,
   TOGGLE_BUTTON_SELECTED_CSS_CLASS,
-} from '/scripts/ui/style-sheet';
-
-interface InterfaceControls {
-  shortSales: HTMLButtonElement | undefined;
-  purchaseStocks: HTMLButtonElement | undefined;
-  fundsLimit: HTMLInputElement | undefined;
-}
+} from '/scripts/controls/style-sheet';
+import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
 
 const React = getReactModel().reactNS;
 const useState = React.useState;
+
+interface InterfaceControls {
+  purchaseNodes: HTMLButtonElement | undefined;
+  purchaseUpgrades: HTMLButtonElement | undefined;
+  fundsLimit: HTMLInputElement | undefined;
+}
 
 const DIV_STYLE: React.CSSProperties = {
   alignItems: 'center',
@@ -61,18 +60,17 @@ const INPUT_STYLE: React.CSSProperties = {
   display: 'block',
 };
 
-const SHORT_SALES_BUTTON_ID = 'shortSales';
-const PURCHASE_STOCKS_BUTTON_ID = 'purchaseStocks';
+const PURCHASE_NODES_BUTTON_ID = 'purchaseNodes';
+const PURCHASE_UPGRADES_BUTTON_ID = 'purchaseUpgrades';
 const FUNDS_LIMIT_INPUT_ID = 'fundsLimit';
 const SET_FUNDS_LIMIT_BUTTON_ID = 'setFundsLimit';
 
 function getInterfaceControls() {
   const doc = getDocument();
   const result: InterfaceControls = {
-    shortSales: (doc.getElementById(SHORT_SALES_BUTTON_ID) ?? undefined) as
-      | HTMLButtonElement
-      | undefined,
-    purchaseStocks: (doc.getElementById(PURCHASE_STOCKS_BUTTON_ID) ??
+    purchaseNodes: (doc.getElementById(PURCHASE_NODES_BUTTON_ID) ??
+      undefined) as HTMLButtonElement | undefined,
+    purchaseUpgrades: (doc.getElementById(PURCHASE_UPGRADES_BUTTON_ID) ??
       undefined) as HTMLButtonElement | undefined,
     fundsLimit: (doc.getElementById(FUNDS_LIMIT_INPUT_ID) ?? undefined) as
       | HTMLInputElement
@@ -81,8 +79,8 @@ function getInterfaceControls() {
   return result;
 }
 
-function handleStocksTraderConfigResponse(
-  responseData: StocksTraderConfigResponse,
+function handleHacknetConfigResponse(
+  responseData: HacknetConfigResponse,
   netscript: NS,
   eventListener: EventListener,
   setFundsLimit: ReactSetStateFunction<string>
@@ -91,33 +89,33 @@ function handleStocksTraderConfigResponse(
     return;
   }
   eventListener.removeListeners(
-    StocksTraderConfigResponse,
-    handleStocksTraderConfigResponse
+    HacknetConfigResponse,
+    handleHacknetConfigResponse
   );
 
   const interfaceControls = getInterfaceControls();
-  interfaceControls.shortSales?.classList.remove(
+  interfaceControls.purchaseNodes?.classList.remove(
     TOGGLE_BUTTON_SELECTED_CSS_CLASS
   );
-  interfaceControls.purchaseStocks?.classList.remove(
+  interfaceControls.purchaseUpgrades?.classList.remove(
     TOGGLE_BUTTON_SELECTED_CSS_CLASS
   );
 
   const config = responseData.config;
-  if (config.shortSales) {
-    interfaceControls.shortSales?.classList.add(
+  if (config.purchaseNodes) {
+    interfaceControls.purchaseNodes?.classList.add(
       TOGGLE_BUTTON_SELECTED_CSS_CLASS
     );
   }
-  if (config.purchaseStocks) {
-    interfaceControls.purchaseStocks?.classList.add(
+  if (config.purchaseUpgrades) {
+    interfaceControls.purchaseUpgrades?.classList.add(
       TOGGLE_BUTTON_SELECTED_CSS_CLASS
     );
   }
   setFundsLimit(netscript.formatNumber(config.fundsLimit));
 }
 
-function handleTradeSettingsClick(
+function handlePurchaseSettingsClick(
   eventData: React.MouseEvent<HTMLButtonElement, MouseEvent>
 ) {
   const targetClassList = eventData.currentTarget.classList;
@@ -127,7 +125,7 @@ function handleTradeSettingsClick(
     targetClassList.add(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
   }
 
-  sendStockTraderConfig();
+  sendHacknetManagerConfig();
 }
 
 function handleSetFundsLimitClick(
@@ -143,10 +141,10 @@ function handleSetFundsLimitClick(
     return;
   }
 
-  sendStockTraderConfig();
+  sendHacknetManagerConfig();
 }
 
-function sendStockTraderConfig() {
+function sendHacknetManagerConfig() {
   const interfaceControls = getInterfaceControls();
 
   let fundsLimit = parseInt(
@@ -156,50 +154,50 @@ function sendStockTraderConfig() {
     fundsLimit = 0;
   }
 
-  const traderConfig: StocksTraderConfig = {
-    shortSales:
-      interfaceControls.shortSales?.classList.contains(
+  const managerConfig: HacknetManagerConfig = {
+    purchaseNodes:
+      interfaceControls.purchaseNodes?.classList.contains(
         TOGGLE_BUTTON_SELECTED_CSS_CLASS
       ) ?? false,
-    purchaseStocks:
-      interfaceControls.purchaseStocks?.classList.contains(
+    purchaseUpgrades:
+      interfaceControls.purchaseUpgrades?.classList.contains(
         TOGGLE_BUTTON_SELECTED_CSS_CLASS
       ) ?? false,
     fundsLimit: fundsLimit,
   };
-  sendMessage(new StocksTraderConfigEvent(traderConfig));
+  sendMessage(new HacknetManagerConfigEvent(managerConfig));
 }
 
-async function handleToggleStockTrader(
+async function handleToggleHacknetManager(
   netscript: NS,
   eventListener: EventListener,
   setFundsLimit: ReactSetStateFunction<string>,
   scriptRunning: boolean
 ) {
   if (scriptRunning) {
-    netscript.scriptKill(STOCKS_TRADER_SCRIPT, netscript.getHostname());
+    netscript.scriptKill(HACKNET_MANAGER_SCRIPT, netscript.getHostname());
     return false;
   }
 
-  if (!ensureRunning(netscript, STOCKS_TRADER_SCRIPT)) {
+  if (!ensureRunning(netscript, HACKNET_MANAGER_SCRIPT)) {
     return false;
   }
 
   eventListener.addListener(
-    StocksTraderConfigResponse,
-    handleStocksTraderConfigResponse,
+    HacknetConfigResponse,
+    handleHacknetConfigResponse,
     netscript,
     eventListener,
     setFundsLimit
   );
   await sendMessageRetry(
     netscript,
-    new StocksTraderConfigRequest(eventListener.subscriberName)
+    new HacknetConfigRequest(eventListener.subscriberName)
   );
   return true;
 }
 
-function StocksTraderUI({
+function HacknetManagerUI({
   netscript,
   eventListener,
 }: {
@@ -210,25 +208,25 @@ function StocksTraderUI({
 
   useEffectOnce(() => {
     eventListener.addListener(
-      StocksTraderConfigResponse,
-      handleStocksTraderConfigResponse,
+      HacknetConfigResponse,
+      handleHacknetConfigResponse,
       netscript,
       eventListener,
       setFundsLimit
     );
     sendMessageRetry(
       netscript,
-      new StocksTraderConfigRequest(eventListener.subscriberName)
+      new HacknetConfigRequest(eventListener.subscriberName)
     );
   });
 
   return (
     <div>
       <div style={HEADER_DIV_STYLE}>
-        <label style={HEADER_LABEL_STYLE}>Stock Trader</label>
+        <label style={HEADER_LABEL_STYLE}>Hacknet Manager</label>
         <RunScriptButton
-          title="Run stock trader script"
-          runScriptFunc={handleToggleStockTrader.bind(
+          title="Run hacknet manager script"
+          runScriptFunc={handleToggleHacknetManager.bind(
             undefined,
             netscript,
             eventListener,
@@ -236,21 +234,21 @@ function StocksTraderUI({
           )}
         />
       </div>
-      <label style={LABEL_STYLE}>Trading Settings</label>
+      <label style={LABEL_STYLE}>Purchase Settings</label>
       <div className={DIV_BORDER_CSS_CLASS} style={DIV_STYLE}>
         <button
-          id={SHORT_SALES_BUTTON_ID}
+          id={PURCHASE_NODES_BUTTON_ID}
           className={TOGGLE_BUTTON_CSS_CLASS}
-          onClick={handleTradeSettingsClick}
+          onClick={handlePurchaseSettingsClick}
         >
-          Short Sales
+          New Nodes
         </button>
         <button
-          id={PURCHASE_STOCKS_BUTTON_ID}
+          id={PURCHASE_UPGRADES_BUTTON_ID}
           className={TOGGLE_BUTTON_CSS_CLASS}
-          onClick={handleTradeSettingsClick}
+          onClick={handlePurchaseSettingsClick}
         >
-          Purchase Stocks
+          Node Upgrades
         </button>
       </div>
       <div style={DIV_STYLE}>
@@ -276,4 +274,4 @@ function StocksTraderUI({
   );
 }
 
-export {StocksTraderUI};
+export {HacknetManagerUI};

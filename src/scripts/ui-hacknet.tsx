@@ -6,9 +6,9 @@ import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 import {eventLoop, initializeScript} from '/scripts/workflows/execution';
 
 import {getReactModel, openTail} from '/scripts/workflows/ui';
+import {HacknetManagerUI} from '/scripts/controls/hacknet-manager-ui';
 
 import {EventListener} from '/scripts/comms/event-comms';
-import {HacknetManagerUI} from '/scripts/ui/hacknet-manager-ui';
 
 const React = getReactModel().reactNS;
 
