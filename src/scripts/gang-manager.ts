@@ -78,10 +78,12 @@ const TRAINING_ASCENSION_LIMIT = 8;
 const TRAINING_SKILL_LIMIT = 1000;
 const WARTIME_CHANCE_LIMIT = 0.85;
 const WAR_PARTY_SIZE = 6;
+const WANTED_PENALTY_LIMIT = 0.15;
 
-let gangConfig: GangManagerConfig;
+let managerConfig: GangManagerConfig;
 let formWarParty = false;
 let engageWarfare = false;
+let reduceWantedPenalty = false;
 
 function manageGang(
   eventData: GangInfoChangedEvent,
@@ -121,10 +123,10 @@ function manageGang(
     (taskA, taskB) => {
       let scoreA = 0;
       let scoreB = 0;
-      if (gangConfig.taskFocus === TaskFocus.RESPECT) {
+      if (managerConfig.taskFocus === TaskFocus.RESPECT) {
         scoreA = taskA.baseRespect;
         scoreB = taskB.baseRespect;
-      } else if (gangConfig.taskFocus === TaskFocus.MONEY) {
+      } else if (managerConfig.taskFocus === TaskFocus.MONEY) {
         scoreA = taskA.baseMoney;
         scoreB = taskB.baseMoney;
       }
@@ -132,6 +134,9 @@ function manageGang(
       return scoreB - scoreA || taskA.difficulty - taskB.difficulty;
     }
   );
+  reduceWantedPenalty =
+    gangInfo.wantedPenalty <= 1 - WANTED_PENALTY_LIMIT ||
+    (reduceWantedPenalty && gangInfo.wantedLevel > 1);
 
   logWriter.writeLine(`  Managing ${gangMembers.length} gang members...`);
   let membersAscended = 0;
@@ -156,7 +161,7 @@ function manageGang(
       value => !memberDetails.augmentations.includes(value.name)
     );
     while (
-      gangConfig.purchaseAugmentations &&
+      managerConfig.purchaseAugmentations &&
       remainingAugmentations.length > 0 &&
       remainingAugmentations[0].cost <= netscript.getPlayer().money
     ) {
@@ -176,7 +181,7 @@ function manageGang(
       value => !memberDetails.upgrades.includes(value.name)
     );
     while (
-      gangConfig.purchaseEquipment &&
+      managerConfig.purchaseEquipment &&
       remainingUpgrades.length > 0 &&
       remainingUpgrades[0].cost <= netscript.getPlayer().money &&
       memberStatsSatisfyLimit(
@@ -252,6 +257,15 @@ function manageGang(
       trainingTeam.push(memberDetails);
     }
 
+    // Handle Vigilantes
+    else if (reduceWantedPenalty) {
+      netscript.gang.setMemberTask(
+        memberDetails.name,
+        vigilanteTaskDetails.name
+      );
+      vigilanteGroup.push(memberDetails);
+    }
+
     // Handle War Party
     else if (
       formWarParty &&
@@ -260,20 +274,6 @@ function manageGang(
     ) {
       netscript.gang.setMemberTask(memberDetails.name, WAR_PARTY_TASK);
       warParty.push(memberDetails);
-    }
-
-    // Handle Vigilantes
-    else if (gangInfo.wantedLevelGainRate > 0 || gangInfo.wantedPenalty > 0) {
-      netscript.gang.setMemberTask(
-        memberDetails.name,
-        vigilanteTaskDetails.name
-      );
-      vigilanteGroup.push(memberDetails);
-      gangInfo.wantedLevelGainRate += getWantedLevelGainIncrease(
-        gangInfo,
-        memberDetails,
-        vigilanteTaskDetails
-      );
     }
 
     // Handle Criminal Tasks
@@ -299,11 +299,6 @@ function manageGang(
 
       if (taskAssigned && crimeTask) {
         criminalCrew.push(memberDetails);
-        gangInfo.wantedLevelGainRate += getWantedLevelGainIncrease(
-          gangInfo,
-          memberDetails,
-          crimeTask
-        );
       } else {
         unassignedMembers.push(memberDetails);
       }
@@ -366,13 +361,15 @@ function handleUpdateSettingsEvent(
   }
 
   logWriter.writeLine('Update settings event received...');
-  gangConfig = eventData.config;
+  managerConfig = eventData.config;
 
   logWriter.writeLine(
-    `  Purchase Augmentations : ${gangConfig.purchaseAugmentations}`
+    `  Purchase Augmentations : ${managerConfig.purchaseAugmentations}`
   );
-  logWriter.writeLine(`  Purchase Equipment : ${gangConfig.purchaseEquipment}`);
-  logWriter.writeLine(`  Task Focus : ${gangConfig.taskFocus}`);
+  logWriter.writeLine(
+    `  Purchase Equipment : ${managerConfig.purchaseEquipment}`
+  );
+  logWriter.writeLine(`  Task Focus : ${managerConfig.taskFocus}`);
 }
 
 function handleGangConfigRequest(
@@ -382,7 +379,7 @@ function handleGangConfigRequest(
   logWriter.writeLine(
     `Sending gang manager config response to ${requestData.sender}`
   );
-  sendMessage(new GangConfigResponse(gangConfig), requestData.sender);
+  sendMessage(new GangConfigResponse(managerConfig), requestData.sender);
 }
 
 /** @param {NS} netscript */
@@ -431,13 +428,14 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('See script logs for on-going gang details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  gangConfig = {
+  managerConfig = {
     purchaseAugmentations: purchaseAugmentations,
     purchaseEquipment: purchaseEquipment,
     taskFocus: taskFocus,
   };
   formWarParty = false;
   engageWarfare = false;
+  reduceWantedPenalty = false;
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const eventListener = new EventListener(SUBSCRIBER_NAME);

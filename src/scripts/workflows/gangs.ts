@@ -114,15 +114,18 @@ function recruitAvailableMembers(
   memberCount: number
 ) {
   const membersRecruited = new Array<MemberDetails>();
-  for (
-    let newMemberName = `${memberNamePrefix}${memberCount}`;
-    netscript.gang.recruitMember(newMemberName);
-    newMemberName = `${memberNamePrefix}${memberCount}`
-  ) {
-    const memberDetails = getMemberDetails(netscript, newMemberName);
-    membersRecruited.push(...memberDetails);
-    memberCount++;
+  let counter = 0;
+  let memberRecruited = true;
+  while (counter < memberCount + 1 || memberRecruited) {
+    const newMemberName = `${memberNamePrefix}${counter}`;
+    memberRecruited = netscript.gang.recruitMember(newMemberName);
+    if (memberRecruited) {
+      const memberDetails = getMemberDetails(netscript, newMemberName);
+      membersRecruited.push(...memberDetails);
+    }
+    counter++;
   }
+
   return membersRecruited;
 }
 

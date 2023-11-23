@@ -15,10 +15,10 @@ const React = getReactModel().reactNS;
 const MODULE_NAME = 'ui-stocks';
 const SUBSCRIBER_NAME = 'ui-stocks';
 
-const TAIL_X_POS = 1340;
-const TAIL_Y_POS = 18;
+const TAIL_X_POS = 900;
+const TAIL_Y_POS = 120;
 const TAIL_WIDTH = 330;
-const TAIL_HEIGHT = 200;
+const TAIL_HEIGHT = 245;
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
@@ -34,10 +34,7 @@ export async function main(netscript: NS) {
   netscript.disableLog('ALL');
   netscript.printRaw(
     <React.StrictMode>
-      <StocksTraderUI
-        uiTheme={netscript.ui.getTheme()}
-        eventListener={eventListener}
-      />
+      <StocksTraderUI netscript={netscript} eventListener={eventListener} />
     </React.StrictMode>
   );
 

@@ -34,11 +34,7 @@ export async function main(netscript: NS) {
   netscript.disableLog('ALL');
   netscript.printRaw(
     <React.StrictMode>
-      <GangsManagerUI
-        netscript={netscript}
-        uiTheme={netscript.ui.getTheme()}
-        eventListener={eventListener}
-      />
+      <GangsManagerUI netscript={netscript} eventListener={eventListener} />
     </React.StrictMode>
   );
 

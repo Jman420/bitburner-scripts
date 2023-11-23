@@ -45,10 +45,10 @@ import {StocksTraderConfigEvent} from '/scripts/comms/events/stocks-trader-confi
 import {StocksTraderConfigRequest} from '/scripts/comms/requests/stocks-trader-config-request';
 import {StocksTraderConfigResponse} from '/scripts/comms/responses/stocks-trader-config-response';
 
-const CMD_FLAG_FUNDS_SAFETY_LIMIT = 'fundsSafetyLimit';
+const CMD_FLAG_FUNDS_LIMIT_PERCENT = 'fundsLimitPercent';
 const CMD_FLAG_ENABLE_SHORT_SALES = 'enableShort';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
-  [CMD_FLAG_FUNDS_SAFETY_LIMIT, 0.25],
+  [CMD_FLAG_FUNDS_LIMIT_PERCENT, 0.25],
   [CMD_FLAG_ENABLE_SHORT_SALES, false],
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
@@ -63,7 +63,7 @@ const TAIL_HEIGHT = 490;
 
 const PURCHASE_FORECAST_MARGIN = 0.1;
 
-let traderConfig: StocksTraderConfig;
+let managerConfig: StocksTraderConfig;
 
 function tradeStocks(
   eventData: StocksTickerEvent,
@@ -131,12 +131,12 @@ function tradeStocks(
   const purchasedStocks = new Array<PurchaseTransaction>();
   for (
     let stockCounter = 0;
-    traderConfig.purchaseStocks &&
+    managerConfig.purchaseStocks &&
     stockCounter < stockListings.length &&
-    playerMoney > traderConfig.fundsLimit + COMMISSION;
+    playerMoney > managerConfig.fundsLimit + COMMISSION;
     stockCounter++
   ) {
-    const availableFunds = playerMoney - traderConfig.fundsLimit;
+    const availableFunds = playerMoney - managerConfig.fundsLimit;
     const stockDetails = stockListings[stockCounter];
     if (
       stockDetails.forecast > FIFTY_PERCENT + PURCHASE_FORECAST_MARGIN &&
@@ -160,7 +160,7 @@ function tradeStocks(
         purchasedStocks.push(purchaseTransaction);
       }
     } else if (
-      traderConfig.shortSales &&
+      managerConfig.shortSales &&
       stockDetails.forecast < FIFTY_PERCENT - PURCHASE_FORECAST_MARGIN &&
       stockDetails.bidPrice + COMMISSION < availableFunds
     ) {
@@ -251,7 +251,7 @@ function setupStockTrader(
     );
     netscript.exit();
   }
-  traderConfig.fundsLimit = fundsLimit;
+  managerConfig.fundsLimit = fundsLimit;
 
   const successMsg = `Stock trader setup successfully with funds limit $${netscript.formatNumber(
     fundsLimit
@@ -273,6 +273,7 @@ function setupStockTrader(
 
 function handleStocksTraderConfigEvent(
   eventData: StocksTraderConfigEvent,
+  netscript: NS,
   logWriter: Logger
 ) {
   if (!eventData.config) {
@@ -280,11 +281,13 @@ function handleStocksTraderConfigEvent(
   }
 
   logWriter.writeLine('Update settings event received...');
-  traderConfig = eventData.config;
+  managerConfig = eventData.config;
 
-  logWriter.writeLine(`  Short Sales Enabled : ${traderConfig.shortSales}`);
-  logWriter.writeLine(`  Purchase Stocks : ${traderConfig.purchaseStocks}`);
-  logWriter.writeLine(`  Funds Limit : ${traderConfig.fundsLimit}`);
+  logWriter.writeLine(`  Short Sales Enabled : ${managerConfig.shortSales}`);
+  logWriter.writeLine(`  Purchase Stocks : ${managerConfig.purchaseStocks}`);
+  logWriter.writeLine(
+    `  Funds Limit : $${netscript.formatNumber(managerConfig.fundsLimit)}`
+  );
 }
 
 function handleStocksTraderConfigRequest(
@@ -294,7 +297,10 @@ function handleStocksTraderConfigRequest(
   logWriter.writeLine(
     `Sending stocks trader config response to ${requestData.sender}`
   );
-  sendMessage(new StocksTraderConfigResponse(traderConfig), requestData.sender);
+  sendMessage(
+    new StocksTraderConfigResponse(managerConfig),
+    requestData.sender
+  );
 }
 
 /** @param {NS} netscript */
@@ -307,7 +313,7 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
   const fundsLimitPercent = cmdArgs[
-    CMD_FLAG_FUNDS_SAFETY_LIMIT
+    CMD_FLAG_FUNDS_LIMIT_PERCENT
   ].valueOf() as number;
   const shortEnabled = cmdArgs[
     CMD_FLAG_ENABLE_SHORT_SALES
@@ -333,7 +339,7 @@ export async function main(netscript: NS) {
     return;
   }
 
-  traderConfig = {
+  managerConfig = {
     shortSales: shortEnabled,
     purchaseStocks: true,
     fundsLimit: 0,
@@ -349,6 +355,7 @@ export async function main(netscript: NS) {
   eventListener.addListener(
     StocksTraderConfigEvent,
     handleStocksTraderConfigEvent,
+    netscript,
     scriptLogWriter
   );
 
@@ -377,7 +384,7 @@ export async function main(netscript: NS) {
 
 export function autocomplete(data: AutocompleteData, args: string[]) {
   const lastCmdFlag = getLastCmdFlag(args);
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_FUNDS_SAFETY_LIMIT)) {
+  if (lastCmdFlag === getCmdFlag(CMD_FLAG_FUNDS_LIMIT_PERCENT)) {
     return PERCENT_AUTOCOMPLETE;
   }
   return CMD_FLAGS;

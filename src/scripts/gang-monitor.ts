@@ -27,6 +27,7 @@ const UPDATE_DELAY = 1500;
 const MONITORED_GANG_INFO_PROPERTIES: Array<keyof GangGenInfo> = [
   'faction',
   'wantedLevelGainRate',
+  'wantedLevel',
   'wantedPenalty',
   'moneyGainRate',
 ];

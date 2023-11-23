@@ -155,7 +155,9 @@ async function runGWH(
 }
 
 function initializeScript(netscript: NS, subscriberName: string) {
-  netscript.atExit(() => sendMessage(new ExitEvent(), subscriberName));
+  netscript.atExit(
+    async () => await sendMessage(new ExitEvent(), subscriberName)
+  );
 }
 
 async function delayedInfiniteLoop<FuncType extends LoopableFunction>(

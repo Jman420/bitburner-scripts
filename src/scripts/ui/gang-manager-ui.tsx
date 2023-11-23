@@ -1,12 +1,6 @@
-import {NS, UserInterfaceTheme} from '@ns';
+import {NS} from '@ns';
 
-import {
-  DIV_BORDER_CSS_CLASS,
-  TOGGLE_BUTTON_CSS_CLASS,
-  TOGGLE_BUTTON_SELECTED_CSS_CLASS,
-  getDocument,
-  getReactModel,
-} from '/scripts/workflows/ui';
+import {getDocument, getReactModel} from '/scripts/workflows/ui';
 import {
   GANGS_MANAGER_SCRIPT,
   GangManagerConfig,
@@ -22,8 +16,16 @@ import {GangManagerConfigEvent} from '/scripts/comms/events/gang-manager-config-
 import {useEffectOnce} from '/scripts/ui/hooks/use-effect-once';
 import {GangConfigResponse} from '/scripts/comms/responses/gang-config-response';
 import {GangConfigRequest} from '/scripts/comms/requests/gang-config-request';
+
 import {RunScriptButton} from '/scripts/ui/components/run-script-button';
 import {ensureRunning} from '/scripts/workflows/execution';
+import {
+  DIV_BORDER_CSS_CLASS,
+  HEADER_DIV_STYLE,
+  HEADER_LABEL_STYLE,
+  TOGGLE_BUTTON_CSS_CLASS,
+  TOGGLE_BUTTON_SELECTED_CSS_CLASS,
+} from '/scripts/ui/style-sheet';
 
 interface InterfaceControls {
   buyAugmentations: HTMLElement | null;
@@ -54,10 +56,16 @@ const DIV_STYLE: React.CSSProperties = {
 function getInterfaceControls() {
   const doc = getDocument();
   const result: InterfaceControls = {
-    buyAugmentations: doc.getElementById(BUY_AUGMENTATIONS_BUTTON_ID),
-    buyEquipment: doc.getElementById(BUY_EQUIPMENT_BUTTON_ID),
-    focusRespect: doc.getElementById(FOCUS_RESPECT_BUTTON_ID),
-    focusMoney: doc.getElementById(FOCUS_MONEY_BUTTON_ID),
+    buyAugmentations: doc.getElementById(
+      BUY_AUGMENTATIONS_BUTTON_ID
+    ) as HTMLButtonElement,
+    buyEquipment: doc.getElementById(
+      BUY_EQUIPMENT_BUTTON_ID
+    ) as HTMLButtonElement,
+    focusRespect: doc.getElementById(
+      FOCUS_RESPECT_BUTTON_ID
+    ) as HTMLButtonElement,
+    focusMoney: doc.getElementById(FOCUS_MONEY_BUTTON_ID) as HTMLButtonElement,
   };
   return result;
 }
@@ -195,11 +203,9 @@ async function handleToggleGangManager(
 
 function GangsManagerUI({
   netscript,
-  uiTheme,
   eventListener,
 }: {
   netscript: NS;
-  uiTheme: UserInterfaceTheme;
   eventListener: EventListener;
 }) {
   useEffectOnce(() => {
@@ -216,16 +222,8 @@ function GangsManagerUI({
 
   return (
     <div>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <label style={{textAlign: 'center', fontSize: '14pt', margin: 'auto'}}>
-          Gang Manager
-        </label>
+      <div style={HEADER_DIV_STYLE}>
+        <label style={HEADER_LABEL_STYLE}>Gang Manager</label>
         <RunScriptButton
           title="Run gang manager script"
           runScriptFunc={handleToggleGangManager.bind(
@@ -252,9 +250,7 @@ function GangsManagerUI({
           Equipment
         </button>
       </div>
-      <label color={uiTheme.info} style={LABEL_STYLE}>
-        Member Task Focus
-      </label>
+      <label style={LABEL_STYLE}>Member Task Focus</label>
       <div className={DIV_BORDER_CSS_CLASS} style={DIV_STYLE}>
         <button
           id={FOCUS_RESPECT_BUTTON_ID}

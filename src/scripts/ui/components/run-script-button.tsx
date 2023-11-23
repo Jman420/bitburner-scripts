@@ -1,12 +1,11 @@
 import {
   PLAY_ICON_SVG_PATH,
-  ReactSetStateFunction,
   STOP_ICON_SVG_PATH,
   SVG_BUTTON_CSS_CLASS,
   SVG_PLAY_ICON_CSS_CLASS,
   SVG_STOP_ICON_CSS_CLASS,
-  getReactModel,
-} from '/scripts/workflows/ui';
+} from '/scripts/ui/style-sheet';
+import {ReactSetStateFunction, getReactModel} from '/scripts/workflows/ui';
 
 type RunScriptFunction = (scriptRunning: boolean) => Promise<boolean>;
 
