@@ -90,12 +90,12 @@ function handleGangConfigResponse(
   }
 
   const config = responseData.config;
-  if (config.purchaseAugmentations) {
+  if (config.buyAugmentations) {
     interfaceControls.buyAugmentations?.classList.add(
       TOGGLE_BUTTON_SELECTED_CSS_CLASS
     );
   }
-  if (config.purchaseEquipment) {
+  if (config.buyEquipment) {
     interfaceControls.buyEquipment?.classList.add(
       TOGGLE_BUTTON_SELECTED_CSS_CLASS
     );
@@ -170,8 +170,8 @@ function sendGangManagerConfig() {
   }
 
   const config: GangManagerConfig = {
-    purchaseAugmentations: buyAugmentations,
-    purchaseEquipment: buyEquipment,
+    buyAugmentations: buyAugmentations,
+    buyEquipment: buyEquipment,
     taskFocus: taskFocus,
   };
   sendMessage(new GangManagerConfigEvent(config));

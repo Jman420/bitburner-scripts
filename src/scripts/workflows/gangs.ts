@@ -12,8 +12,8 @@ enum TaskFocus {
 }
 
 interface GangManagerConfig {
-  purchaseAugmentations: boolean;
-  purchaseEquipment: boolean;
+  buyAugmentations: boolean;
+  buyEquipment: boolean;
   taskFocus: TaskFocus;
 }
 

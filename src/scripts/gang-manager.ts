@@ -167,7 +167,7 @@ function manageGang(
       value => !memberDetails.augmentations.includes(value.name)
     );
     while (
-      managerConfig.purchaseAugmentations &&
+      managerConfig.buyAugmentations &&
       remainingAugmentations.length > 0 &&
       remainingAugmentations[0].cost <= netscript.getPlayer().money
     ) {
@@ -190,7 +190,7 @@ function manageGang(
       value => !memberDetails.upgrades.includes(value.name)
     );
     while (
-      managerConfig.purchaseEquipment &&
+      managerConfig.buyEquipment &&
       remainingEquipment.length > 0 &&
       remainingEquipment[0].cost <= netscript.getPlayer().money &&
       memberStatsSatisfyLimit(
@@ -381,10 +381,10 @@ function handleUpdateSettingsEvent(
   managerConfig = eventData.config;
 
   logWriter.writeLine(
-    `  Purchase Augmentations : ${managerConfig.purchaseAugmentations}`
+    `  Purchase Augmentations : ${managerConfig.buyAugmentations}`
   );
   logWriter.writeLine(
-    `  Purchase Equipment : ${managerConfig.purchaseEquipment}`
+    `  Purchase Equipment : ${managerConfig.buyEquipment}`
   );
   logWriter.writeLine(`  Task Focus : ${managerConfig.taskFocus}`);
 }
@@ -446,8 +446,8 @@ export async function main(netscript: NS) {
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
   managerConfig = {
-    purchaseAugmentations: purchaseAugmentations,
-    purchaseEquipment: purchaseEquipment,
+    buyAugmentations: purchaseAugmentations,
+    buyEquipment: purchaseEquipment,
     taskFocus: taskFocus,
   };
   formWarParty = false;
