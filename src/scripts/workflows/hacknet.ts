@@ -10,6 +10,12 @@ enum HacknetResources {
   ALL = 'All',
 }
 
+interface HacknetManagerConfig {
+  purchaseNodes: boolean;
+  purchaseUpgrades: boolean;
+  fundsLimit: number;
+}
+
 interface HacknetOrder {
   nodeIndex: number;
   resource: HacknetResources;
@@ -22,6 +28,8 @@ interface HacknetPurchaseDetails {
   costFunc: CostFunction;
   purchaseFunc: PurchaseFunction;
 }
+
+const HACKNET_MANAGER_SCRIPT = '/scripts/hacknet-manager.js';
 
 function getNodeUpgradeOrders(
   hacknetApi: Hacknet,
@@ -78,4 +86,11 @@ function getNodeUpgradeOrders(
   return upgradeOrders;
 }
 
-export {PurchaseFunction, HacknetResources, HacknetOrder, getNodeUpgradeOrders};
+export {
+  PurchaseFunction,
+  HacknetManagerConfig,
+  HacknetResources,
+  HacknetOrder,
+  HACKNET_MANAGER_SCRIPT,
+  getNodeUpgradeOrders,
+};
