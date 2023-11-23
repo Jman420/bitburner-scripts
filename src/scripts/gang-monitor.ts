@@ -37,6 +37,7 @@ const MONITORED_GANG_MEMBER_PROPERTIES: Array<keyof MemberDetails> = (
   .concat(SKILL_SCORE_PROPERTIES)
   .concat(['name', 'ascensionScore', 'earnedRespect', 'skillScore']);
 const MONITORED_ENEMIES_INFO_PROPERTIES: Array<keyof GangOtherInfoObject> = [
+  'power',
   'territory',
 ];
 

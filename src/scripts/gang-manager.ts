@@ -137,12 +137,18 @@ function manageGang(
   reduceWantedPenalty =
     gangInfo.wantedPenalty <= 1 - WANTED_PENALTY_LIMIT ||
     (reduceWantedPenalty && gangInfo.wantedLevel > 1);
+  if (gangInfo.territory >= 1) {
+    formWarParty = false;
+    engageWarfare = false;
+  }
 
   logWriter.writeLine(`  Managing ${gangMembers.length} gang members...`);
   let membersAscended = 0;
   let ascendedRespect = 0;
-  let itemsPurchased = 0;
-  let purchasedCost = 0;
+  let augmentationsPurchased = 0;
+  let augmentationsPurchasedCost = 0;
+  let equipmentPurchased = 0;
+  let equipmentPurchasedCost = 0;
   gangMembers.sort(
     (memberA, memberB) => memberB.ascensionScore - memberA.ascensionScore
   );
@@ -165,48 +171,59 @@ function manageGang(
       remainingAugmentations.length > 0 &&
       remainingAugmentations[0].cost <= netscript.getPlayer().money
     ) {
-      const upgradeDetails = remainingAugmentations.shift();
-      if (!upgradeDetails) {
+      const augmentationDetails = remainingAugmentations.shift();
+      if (!augmentationDetails) {
         break;
       }
 
-      netscript.gang.purchaseEquipment(memberDetails.name, upgradeDetails.name);
+      netscript.gang.purchaseEquipment(
+        memberDetails.name,
+        augmentationDetails.name
+      );
       memberDetails = getMemberDetails(netscript, memberDetails.name)[0];
-      itemsPurchased++;
-      purchasedCost += upgradeDetails.cost;
+      augmentationsPurchased++;
+      augmentationsPurchasedCost += augmentationDetails.cost;
     }
 
     // Purchase Equipment
-    const remainingUpgrades = equipmentCosts.filter(
+    const remainingEquipment = equipmentCosts.filter(
       value => !memberDetails.upgrades.includes(value.name)
     );
     while (
       managerConfig.purchaseEquipment &&
-      remainingUpgrades.length > 0 &&
-      remainingUpgrades[0].cost <= netscript.getPlayer().money &&
+      remainingEquipment.length > 0 &&
+      remainingEquipment[0].cost <= netscript.getPlayer().money &&
       memberStatsSatisfyLimit(
         memberDetails,
         ASCENSION_SCORE_PROPERTIES,
         TRAINING_ASCENSION_LIMIT
       )
     ) {
-      const upgradeDetails = remainingUpgrades.shift();
-      if (!upgradeDetails) {
+      const equipmentDetails = remainingEquipment.shift();
+      if (!equipmentDetails) {
         break;
       }
 
-      netscript.gang.purchaseEquipment(memberDetails.name, upgradeDetails.name);
+      netscript.gang.purchaseEquipment(
+        memberDetails.name,
+        equipmentDetails.name
+      );
       memberDetails = getMemberDetails(netscript, memberDetails.name)[0];
-      itemsPurchased++;
-      purchasedCost += upgradeDetails.cost;
+      equipmentPurchased++;
+      equipmentPurchasedCost += equipmentDetails.cost;
     }
   }
   logWriter.writeLine(
     `    Ascended ${membersAscended} members costing ${ascendedRespect} respect`
   );
   logWriter.writeLine(
-    `    Purchased ${itemsPurchased} for $${netscript.formatNumber(
-      purchasedCost
+    `    Purchased ${augmentationsPurchased} augmentation upgrades for $${netscript.formatNumber(
+      augmentationsPurchasedCost
+    )}`
+  );
+  logWriter.writeLine(
+    `    Purchased ${equipmentPurchased} equipment upgrades for $${netscript.formatNumber(
+      equipmentPurchasedCost
     )}`
   );
 
