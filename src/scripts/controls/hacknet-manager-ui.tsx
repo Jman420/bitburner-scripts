@@ -23,7 +23,7 @@ import {
   HacknetManagerConfig,
 } from '/scripts/workflows/hacknet';
 import {RunScriptButton} from '/scripts/controls/components/run-script-button';
-import {ensureRunning} from '/scripts/workflows/execution';
+import {getPid, runScript} from '/scripts/workflows/execution';
 
 import {
   BUTTON_CSS_CLASS,
@@ -31,10 +31,10 @@ import {
   HEADER_DIV_STYLE,
   HEADER_LABEL_STYLE,
   TEXTBOX_CSS_CLASS,
-  TOGGLE_BUTTON_CSS_CLASS,
   TOGGLE_BUTTON_SELECTED_CSS_CLASS,
 } from '/scripts/controls/style-sheet';
 import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
+import {ToggleButton} from '/scripts/controls/components/toggle-button';
 
 const React = getReactModel().reactNS;
 const useState = React.useState;
@@ -116,15 +116,9 @@ function handleHacknetConfigResponse(
 }
 
 function handlePurchaseSettingsClick(
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   eventData: React.MouseEvent<HTMLButtonElement, MouseEvent>
 ) {
-  const targetClassList = eventData.currentTarget.classList;
-  if (targetClassList.contains(TOGGLE_BUTTON_SELECTED_CSS_CLASS)) {
-    targetClassList.remove(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
-  } else {
-    targetClassList.add(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
-  }
-
   sendHacknetManagerConfig();
 }
 
@@ -176,30 +170,28 @@ function sendHacknetManagerConfig() {
 async function handleToggleHacknetManager(
   netscript: NS,
   eventListener: EventListener,
-  setFundsLimit: ReactSetStateFunction<string>,
-  scriptRunning: boolean
+  setFundsLimit: ReactSetStateFunction<string>
 ) {
-  if (scriptRunning) {
-    netscript.scriptKill(HACKNET_MANAGER_SCRIPT, netscript.getHostname());
-    return false;
+  let scriptPid = getPid(netscript, HACKNET_MANAGER_SCRIPT);
+  if (!scriptPid) {
+    scriptPid = runScript(netscript, HACKNET_MANAGER_SCRIPT);
+    const config = getHacknetManagerConfig();
+    await sendMessageRetry(netscript, new HacknetManagerConfigEvent(config));
+
+    eventListener.addListener(
+      HacknetConfigResponse,
+      handleHacknetConfigResponse,
+      netscript,
+      eventListener,
+      setFundsLimit
+    );
+    sendMessage(new HacknetConfigRequest());
+  } else {
+    netscript.kill(scriptPid);
+    scriptPid = 0;
   }
 
-  if (!ensureRunning(netscript, HACKNET_MANAGER_SCRIPT)) {
-    return false;
-  }
-
-  const config = getHacknetManagerConfig();
-  await sendMessageRetry(netscript, new HacknetManagerConfigEvent(config));
-
-  eventListener.addListener(
-    HacknetConfigResponse,
-    handleHacknetConfigResponse,
-    netscript,
-    eventListener,
-    setFundsLimit
-  );
-  sendMessage(new HacknetConfigRequest());
-  return true;
+  return scriptPid !== 0;
 }
 
 function HacknetManagerUI({
@@ -241,20 +233,18 @@ function HacknetManagerUI({
       </div>
       <label style={LABEL_STYLE}>Purchase Settings</label>
       <div className={DIV_BORDER_CSS_CLASS} style={DIV_STYLE}>
-        <button
+        <ToggleButton
           id={PURCHASE_NODES_BUTTON_ID}
-          className={TOGGLE_BUTTON_CSS_CLASS}
           onClick={handlePurchaseSettingsClick}
         >
           New Nodes
-        </button>
-        <button
+        </ToggleButton>
+        <ToggleButton
           id={PURCHASE_UPGRADES_BUTTON_ID}
-          className={TOGGLE_BUTTON_CSS_CLASS}
           onClick={handlePurchaseSettingsClick}
         >
           Node Upgrades
-        </button>
+        </ToggleButton>
       </div>
       <div style={DIV_STYLE}>
         <input

@@ -25,7 +25,7 @@ import {
   StocksTraderConfig,
 } from '/scripts/workflows/stocks';
 import {RunScriptButton} from '/scripts/controls/components/run-script-button';
-import {ensureRunning} from '/scripts/workflows/execution';
+import {getPid, runScript} from '/scripts/workflows/execution';
 
 import {
   BUTTON_CSS_CLASS,
@@ -33,9 +33,9 @@ import {
   HEADER_DIV_STYLE,
   HEADER_LABEL_STYLE,
   TEXTBOX_CSS_CLASS,
-  TOGGLE_BUTTON_CSS_CLASS,
   TOGGLE_BUTTON_SELECTED_CSS_CLASS,
 } from '/scripts/controls/style-sheet';
+import {ToggleButton} from '/scripts/controls/components/toggle-button';
 
 interface InterfaceControls {
   shortSales: HTMLButtonElement | undefined;
@@ -118,15 +118,9 @@ function handleStocksTraderConfigResponse(
 }
 
 function handleTradeSettingsClick(
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   eventData: React.MouseEvent<HTMLButtonElement, MouseEvent>
 ) {
-  const targetClassList = eventData.currentTarget.classList;
-  if (targetClassList.contains(TOGGLE_BUTTON_SELECTED_CSS_CLASS)) {
-    targetClassList.remove(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
-  } else {
-    targetClassList.add(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
-  }
-
   sendStockTraderConfig();
 }
 
@@ -178,30 +172,28 @@ function sendStockTraderConfig() {
 async function handleToggleStockTrader(
   netscript: NS,
   eventListener: EventListener,
-  setFundsLimit: ReactSetStateFunction<string>,
-  scriptRunning: boolean
+  setFundsLimit: ReactSetStateFunction<string>
 ) {
-  if (scriptRunning) {
-    netscript.scriptKill(STOCKS_TRADER_SCRIPT, netscript.getHostname());
-    return false;
+  let scriptPid = getPid(netscript, STOCKS_TRADER_SCRIPT);
+  if (!scriptPid) {
+    scriptPid = runScript(netscript, STOCKS_TRADER_SCRIPT);
+    const config = getStockTraderConfig();
+    await sendMessageRetry(netscript, new StocksTraderConfigEvent(config));
+
+    eventListener.addListener(
+      StocksTraderConfigResponse,
+      handleStocksTraderConfigResponse,
+      netscript,
+      eventListener,
+      setFundsLimit
+    );
+    sendMessage(new StocksTraderConfigRequest(eventListener.subscriberName));
+  } else {
+    netscript.kill(scriptPid);
+    scriptPid = 0;
   }
 
-  if (!ensureRunning(netscript, STOCKS_TRADER_SCRIPT)) {
-    return false;
-  }
-
-  const config = getStockTraderConfig();
-  await sendMessageRetry(netscript, new StocksTraderConfigEvent(config));
-
-  eventListener.addListener(
-    StocksTraderConfigResponse,
-    handleStocksTraderConfigResponse,
-    netscript,
-    eventListener,
-    setFundsLimit
-  );
-  sendMessage(new StocksTraderConfigRequest(eventListener.subscriberName));
-  return true;
+  return scriptPid !== 0;
 }
 
 function StocksTraderUI({
@@ -243,20 +235,18 @@ function StocksTraderUI({
       </div>
       <label style={LABEL_STYLE}>Trading Settings</label>
       <div className={DIV_BORDER_CSS_CLASS} style={DIV_STYLE}>
-        <button
+        <ToggleButton
           id={SHORT_SALES_BUTTON_ID}
-          className={TOGGLE_BUTTON_CSS_CLASS}
           onClick={handleTradeSettingsClick}
         >
           Short Sales
-        </button>
-        <button
+        </ToggleButton>
+        <ToggleButton
           id={PURCHASE_STOCKS_BUTTON_ID}
-          className={TOGGLE_BUTTON_CSS_CLASS}
           onClick={handleTradeSettingsClick}
         >
           Purchase Stocks
-        </button>
+        </ToggleButton>
       </div>
       <div style={DIV_STYLE}>
         <input

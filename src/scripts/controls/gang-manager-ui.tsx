@@ -2,7 +2,7 @@ import {NS} from '@ns';
 
 import {getDocument, getReactModel} from '/scripts/workflows/ui';
 import {
-  GANGS_MANAGER_SCRIPT,
+  GANG_MANAGER_SCRIPT,
   GangManagerConfig,
   TaskFocus,
 } from '/scripts/workflows/gangs';
@@ -13,7 +13,7 @@ import {
   sendMessageRetry,
 } from '/scripts/comms/event-comms';
 
-import {ensureRunning} from '/scripts/workflows/execution';
+import {getPid, runScript} from '/scripts/workflows/execution';
 
 import {GangManagerConfigEvent} from '/scripts/comms/events/gang-manager-config-event';
 import {GangConfigResponse} from '/scripts/comms/responses/gang-config-response';
@@ -28,6 +28,7 @@ import {
   TOGGLE_BUTTON_CSS_CLASS,
   TOGGLE_BUTTON_SELECTED_CSS_CLASS,
 } from '/scripts/controls/style-sheet';
+import {ToggleButton} from '/scripts/controls/components/toggle-button';
 
 interface InterfaceControls {
   buyAugmentations: HTMLElement | null;
@@ -113,15 +114,9 @@ function handleGangConfigResponse(
 }
 
 function handlePurchaseUpgradesClick(
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   eventData: React.MouseEvent<HTMLButtonElement, MouseEvent>
 ) {
-  const targetClassList = eventData.currentTarget.classList;
-  if (targetClassList.contains(TOGGLE_BUTTON_SELECTED_CSS_CLASS)) {
-    targetClassList.remove(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
-  } else {
-    targetClassList.add(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
-  }
-
   sendGangManagerConfig();
 }
 
@@ -182,19 +177,18 @@ function sendGangManagerConfig() {
   sendMessage(new GangManagerConfigEvent(config));
 }
 
-async function handleToggleGangManager(netscript: NS, scriptRunning: boolean) {
-  if (scriptRunning) {
-    netscript.scriptKill(GANGS_MANAGER_SCRIPT, netscript.getHostname());
-    return false;
+async function handleToggleGangManager(netscript: NS) {
+  let scriptPid = getPid(netscript, GANG_MANAGER_SCRIPT);
+  if (!scriptPid) {
+    scriptPid = runScript(netscript, GANG_MANAGER_SCRIPT);
+    const config = getGangManagerConfig();
+    await sendMessageRetry(netscript, new GangManagerConfigEvent(config));
+  } else {
+    netscript.kill(scriptPid);
+    scriptPid = 0;
   }
 
-  if (!ensureRunning(netscript, GANGS_MANAGER_SCRIPT)) {
-    return false;
-  }
-
-  const config = getGangManagerConfig();
-  await sendMessageRetry(netscript, new GangManagerConfigEvent(config));
-  return true;
+  return scriptPid !== 0;
 }
 
 function GangsManagerUI({
@@ -227,20 +221,18 @@ function GangsManagerUI({
       </div>
       <label style={LABEL_STYLE}>Purchase Member Upgrades</label>
       <div className={DIV_BORDER_CSS_CLASS} style={DIV_STYLE}>
-        <button
+        <ToggleButton
           id={BUY_AUGMENTATIONS_BUTTON_ID}
-          className={TOGGLE_BUTTON_CSS_CLASS}
           onClick={handlePurchaseUpgradesClick}
         >
           Augmentations
-        </button>
-        <button
+        </ToggleButton>
+        <ToggleButton
           id={BUY_EQUIPMENT_BUTTON_ID}
-          className={TOGGLE_BUTTON_CSS_CLASS}
           onClick={handlePurchaseUpgradesClick}
         >
           Equipment
-        </button>
+        </ToggleButton>
       </div>
       <label style={LABEL_STYLE}>Member Task Focus</label>
       <div className={DIV_BORDER_CSS_CLASS} style={DIV_STYLE}>

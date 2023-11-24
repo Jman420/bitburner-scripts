@@ -1,9 +1,9 @@
+import {NS} from '@ns';
+
 /* eslint-disable-next-line node/no-extraneous-import */
 import ReactNamespace from 'react/index';
 /* eslint-disable-next-line node/no-extraneous-import */
 import ReactDomNamespace from 'react-dom';
-
-import {NS} from '@ns';
 
 interface ReactModel {
   reactDOM: typeof ReactDomNamespace;

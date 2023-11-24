@@ -7,7 +7,7 @@ import {
 } from '/scripts/controls/style-sheet';
 import {ReactSetStateFunction, getReactModel} from '/scripts/workflows/ui';
 
-type RunScriptFunction = (scriptRunning: boolean) => Promise<boolean>;
+type RunScriptFunction = () => Promise<boolean>;
 
 const React = getReactModel().reactNS;
 const useState = React.useState;
@@ -16,20 +16,11 @@ async function handleButtonClick(
   setIconClassName: ReactSetStateFunction<string>,
   setIconSvgPath: ReactSetStateFunction<string>,
   callback: RunScriptFunction,
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   eventData: React.MouseEvent<SVGSVGElement, MouseEvent>
 ) {
-  const iconSvg = eventData.currentTarget;
-
-  let scriptRunning = false;
-  const svgClassName = iconSvg.classList.value;
-  if (svgClassName === SVG_PLAY_ICON_CSS_CLASS) {
-    scriptRunning = false;
-  } else if (svgClassName === SVG_STOP_ICON_CSS_CLASS) {
-    scriptRunning = true;
-  }
-
   if (callback) {
-    const scriptExecuted = await callback(scriptRunning);
+    const scriptExecuted = await callback();
     if (scriptExecuted) {
       setIconClassName(SVG_STOP_ICON_CSS_CLASS);
       setIconSvgPath(STOP_ICON_SVG_PATH);
@@ -43,12 +34,18 @@ async function handleButtonClick(
 function RunScriptButton({
   title,
   runScriptFunc,
+  scriptAlreadyRunning,
 }: {
   title?: string;
   runScriptFunc: RunScriptFunction;
+  scriptAlreadyRunning?: boolean;
 }) {
-  const [iconClassName, setIconClassName] = useState(SVG_PLAY_ICON_CSS_CLASS);
-  const [iconSvgPath, setIconSvgPath] = useState(PLAY_ICON_SVG_PATH);
+  const [iconClassName, setIconClassName] = useState(
+    scriptAlreadyRunning ? SVG_STOP_ICON_CSS_CLASS : SVG_PLAY_ICON_CSS_CLASS
+  );
+  const [iconSvgPath, setIconSvgPath] = useState(
+    scriptAlreadyRunning ? STOP_ICON_SVG_PATH : PLAY_ICON_SVG_PATH
+  );
 
   return (
     <button className={SVG_BUTTON_CSS_CLASS} title={title}>
