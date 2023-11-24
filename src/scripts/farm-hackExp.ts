@@ -16,7 +16,11 @@ import {
   CMD_FLAG_TARGETS_CSV,
 } from '/scripts/workers/shared';
 
-import {analyzeHost, scanWideNetwork} from '/scripts/workflows/recon';
+import {
+  analyzeHost,
+  filterHostsCanHack,
+  scanWideNetwork,
+} from '/scripts/workflows/recon';
 import {copyFiles} from '/scripts/workflows/propagation';
 import {WORKERS_PACKAGE} from '/scripts/workers/package';
 import {WEAKEN_WORKER_SCRIPT} from '/scripts/workflows/orchestration';
@@ -60,7 +64,8 @@ export async function main(netscript: NS) {
     logWriter.writeLine(
       'No target hosts provided.  Getting all rooted host targets...'
     );
-    targetHosts = scanWideNetwork(netscript, false, true, false, false, true);
+    targetHosts = scanWideNetwork(netscript, false, true, false, false);
+    targetHosts = filterHostsCanHack(netscript, targetHosts);
   }
   logWriter.writeLine('Sorting target hosts by optimality...');
   const targetsAnalysis = targetHosts.map(value =>

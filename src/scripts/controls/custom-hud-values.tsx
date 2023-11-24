@@ -124,7 +124,6 @@ function CustomHudValues({
   excludeScriptsMetrics,
   excludeGangMetrics,
   excludeStocksMetrics,
-  excludePlayerMetrics,
 }: {
   uiTheme: UserInterfaceTheme;
   netscript: NS;
@@ -135,7 +134,6 @@ function CustomHudValues({
   excludeScriptsMetrics: boolean;
   excludeGangMetrics: boolean;
   excludeStocksMetrics: boolean;
-  excludePlayerMetrics: boolean;
 }) {
   const [city, setCity] = useState('');
   const [location, setLocation] = useState('');
@@ -265,12 +263,12 @@ function CustomHudValues({
         id="playerTotalValue"
         style={{
           color: uiTheme['money'],
-          display: excludePlayerMetrics ? 'none' : '',
+          display: excludeStocksMetrics ? 'none' : '',
         }}
       >
         {playerTotalValue}
       </label>
-      <br style={{display: excludePlayerMetrics ? 'none' : ''}} />
+      <br style={{display: excludeStocksMetrics ? 'none' : ''}} />
     </div>
   );
 }

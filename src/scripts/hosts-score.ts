@@ -16,7 +16,11 @@ import {
 
 import {initializeScript} from '/scripts/workflows/execution';
 
-import {analyzeHost, scanWideNetwork} from '/scripts/workflows/recon';
+import {
+  analyzeHost,
+  filterHostsCanHack,
+  scanWideNetwork,
+} from '/scripts/workflows/recon';
 import {
   ServerDetailsExtended,
   scoreHostForExperience,
@@ -62,14 +66,8 @@ export async function main(netscript: NS) {
   logWriter.writeLine(`Score Function : ${scoreFunc}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
-  const targetHosts = scanWideNetwork(
-    netscript,
-    false,
-    true,
-    false,
-    true,
-    true
-  );
+  let targetHosts = scanWideNetwork(netscript, false, true, false, true);
+  targetHosts = filterHostsCanHack(netscript, targetHosts);
   const targetsAnalysis = targetHosts.map(hostname =>
     analyzeHost(netscript, hostname)
   );

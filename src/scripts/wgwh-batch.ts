@@ -26,6 +26,7 @@ import {
 } from '/scripts/workflows/execution';
 import {
   analyzeHost,
+  filterHostsCanHack,
   getTotalAvailableRam,
   getTotalMaxRam,
   scanWideNetwork,
@@ -91,7 +92,8 @@ async function attackTargets(
     logWriter.writeLine(
       'No target hosts provided.  Getting all rooted host targets...'
     );
-    targetHosts = scanWideNetwork(netscript, false, true, false, true, true);
+    targetHosts = scanWideNetwork(netscript, false, true, false, true);
+    targetHosts = filterHostsCanHack(netscript, targetHosts);
   }
   logWriter.writeLine('Sorting target hosts by optimality...');
   let targetsAnalysis = targetHosts.map(value => analyzeHost(netscript, value));

@@ -70,6 +70,27 @@ function ensureRunning(
   return scriptPid !== 0;
 }
 
+function getPid(
+  netscript: NS,
+  scriptPath: string,
+  targetHosts?: string[],
+  ...args: string[]
+) {
+  targetHosts = targetHosts
+    ? targetHosts
+    : scanWideNetwork(netscript, true, true, true);
+  for (const hostname of targetHosts) {
+    const hostProcesses = netscript.ps(hostname);
+    for (const process of hostProcesses) {
+      if (process.filename === scriptPath && args && process.args === args) {
+        return process.pid;
+      }
+    }
+  }
+
+  return 0;
+}
+
 function runWorkerScript(
   netscript: NS,
   scriptPath: string,
@@ -204,6 +225,7 @@ export {
   getRequiredRam,
   runScript,
   ensureRunning,
+  getPid,
   runWorkerScript,
   waitForScripts,
   runGWH,

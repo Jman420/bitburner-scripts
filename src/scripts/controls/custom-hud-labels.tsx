@@ -10,14 +10,12 @@ function CustomHudLabels({
   excludeScriptsMetrics,
   excludeGangMetrics,
   excludeStocksMetrics,
-  excludePlayerMetrics,
 }: {
   uiTheme: UserInterfaceTheme;
   excludeLocationMetrics: boolean;
   excludeScriptsMetrics: boolean;
   excludeGangMetrics: boolean;
   excludeStocksMetrics: boolean;
-  excludePlayerMetrics: boolean;
 }) {
   return (
     <div>
@@ -101,7 +99,7 @@ function CustomHudLabels({
       >
         Player Val
       </label>
-      <br style={{display: excludePlayerMetrics ? 'none' : ''}} />
+      <br style={{display: excludeStocksMetrics ? 'none' : ''}} />
     </div>
   );
 }

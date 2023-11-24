@@ -39,9 +39,7 @@ function scanWideNetwork(
   includeHome = false,
   rootOnly = false,
   requireRam = false,
-  requireFunds = false,
-  canHack = false,
-  hackChanceLimit = 0.75
+  requireFunds = false
 ) {
   let availableHosts = [HOME_SERVER_NAME];
   for (const hostname of availableHosts) {
@@ -56,19 +54,26 @@ function scanWideNetwork(
     host =>
       (!rootOnly || (rootOnly && netscript.hasRootAccess(host))) &&
       (!requireRam || (requireRam && netscript.getServerMaxRam(host) > 0)) &&
-      (!requireFunds ||
-        (requireFunds && netscript.getServerMaxMoney(host) > 0)) &&
-      (!canHack ||
-        (canHack &&
-          netscript.getServerRequiredHackingLevel(host) <=
-            netscript.getHackingLevel() &&
-          netscript.hackAnalyzeChance(host) >= hackChanceLimit))
+      (!requireFunds || (requireFunds && netscript.getServerMaxMoney(host) > 0))
   );
   if (includeHome) {
     availableHosts.unshift(HOME_SERVER_NAME);
   }
 
   return availableHosts;
+}
+
+function filterHostsCanHack(
+  netscript: NS,
+  targetHosts: string[],
+  hackChanceLimit = 0.75
+) {
+  return targetHosts.filter(
+    host =>
+      netscript.getServerRequiredHackingLevel(host) <=
+        netscript.getHackingLevel() &&
+      netscript.hackAnalyzeChance(host) >= hackChanceLimit
+  );
 }
 
 function findHostPath(
@@ -212,6 +217,7 @@ export {
   ServerDetails,
   scanLocalNetwork,
   scanWideNetwork,
+  filterHostsCanHack,
   findHostPath,
   findServersForRam,
   getTotalMaxRam,

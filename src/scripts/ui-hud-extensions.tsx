@@ -31,13 +31,11 @@ const CMD_FLAG_EXCLUDE_LOCATION_METRICS = 'excludeLocation';
 const CMD_FLAG_EXCLUDE_SCRIPT_METRICS = 'excludeScripts';
 const CMD_FLAG_EXCLUDE_GANG_METRICS = 'excludeGang';
 const CMD_FLAG_EXCLUDE_STOCK_METRICS = 'excludeStocks';
-const CMD_FLAG_EXCLUDE_PLAYER_METRICS = 'excludePlayer';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_EXCLUDE_LOCATION_METRICS, false],
   [CMD_FLAG_EXCLUDE_SCRIPT_METRICS, false],
   [CMD_FLAG_EXCLUDE_STOCK_METRICS, false],
   [CMD_FLAG_EXCLUDE_GANG_METRICS, false],
-  [CMD_FLAG_EXCLUDE_PLAYER_METRICS, false],
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
@@ -76,9 +74,6 @@ export async function main(netscript: NS) {
   const excludeStockMetrics = cmdArgs[
     CMD_FLAG_EXCLUDE_STOCK_METRICS
   ].valueOf() as boolean;
-  const excludePlayerMetrics = cmdArgs[
-    CMD_FLAG_EXCLUDE_PLAYER_METRICS
-  ].valueOf() as boolean;
 
   terminalWriter.writeLine(
     `Exclude Location Metrics : ${excludeLocationMetrics}`
@@ -86,15 +81,13 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine(`Exclude Script Metrics : ${excludeScriptMetrics}`);
   terminalWriter.writeLine(`Exclude Gang Metrics: ${excludeGangMetrics}`);
   terminalWriter.writeLine(`Exclude Stock Metrics : ${excludeStockMetrics}`);
-  terminalWriter.writeLine(`Exclude Player Metrics : ${excludePlayerMetrics}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
   if (
     excludeLocationMetrics &&
     excludeScriptMetrics &&
     excludeStockMetrics &&
-    excludeGangMetrics &&
-    excludePlayerMetrics
+    excludeGangMetrics
   ) {
     terminalWriter.writeLine(
       'All HUD extension disabled.  No UI to render or update.'
@@ -137,7 +130,6 @@ export async function main(netscript: NS) {
         excludeScriptsMetrics={excludeScriptMetrics}
         excludeStocksMetrics={excludeStockMetrics}
         excludeGangMetrics={excludeGangMetrics}
-        excludePlayerMetrics={excludePlayerMetrics}
       />
     </React.StrictMode>,
     hudHooks.labelsElement
@@ -154,7 +146,6 @@ export async function main(netscript: NS) {
         excludeScriptsMetrics={excludeScriptMetrics}
         excludeStocksMetrics={excludeStockMetrics}
         excludeGangMetrics={excludeGangMetrics}
-        excludePlayerMetrics={excludePlayerMetrics}
       />
     </React.StrictMode>,
     hudHooks.valuesElement

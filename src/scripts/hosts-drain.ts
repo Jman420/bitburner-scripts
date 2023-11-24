@@ -19,7 +19,11 @@ import {
 
 import {initializeScript} from '/scripts/workflows/execution';
 
-import {analyzeHost, scanWideNetwork} from '/scripts/workflows/recon';
+import {
+  analyzeHost,
+  filterHostsCanHack,
+  scanWideNetwork,
+} from '/scripts/workflows/recon';
 import {hackHost} from '/scripts/workflows/orchestration';
 import {DEFAULT_NETSCRIPT_ENABLED_LOGGING} from '/scripts/logging/scriptLogger';
 import {openTail} from '/scripts/workflows/ui';
@@ -70,7 +74,8 @@ export async function main(netscript: NS) {
     scriptLogWriter.writeLine(
       'No target hosts provided.  Scanning wide network for targets...'
     );
-    targetHosts = scanWideNetwork(netscript, false, true, false, true, true);
+    targetHosts = scanWideNetwork(netscript, false, true, false, true);
+    targetHosts = filterHostsCanHack(netscript, targetHosts);
   }
 
   scriptLogWriter.writeLine(
