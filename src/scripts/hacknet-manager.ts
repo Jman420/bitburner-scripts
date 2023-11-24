@@ -30,12 +30,12 @@ import {HacknetManagerConfigEvent} from '/scripts/comms/events/hacknet-manager-c
 const MODULE_NAME = 'hacknet-manager';
 const SUBSCRIBER_NAME = 'hacknet-manager';
 
-const CMD_FLAG_DONT_PURCHASE_NODES = 'dontPurchaseNodes';
-const CMD_FLAG_DONT_PURCHASE_UPGRADES = 'dontPurchaseUpgrades';
+const CMD_FLAG_PURCHASE_NODES = 'purchaseNodes';
+const CMD_FLAG_PURCHASE_UPGRADES = 'purchaseUpgrades';
 const CMD_FLAG_FUNDS_LIMIT_PERCENT = 'fundsLimitPercent';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
-  [CMD_FLAG_DONT_PURCHASE_NODES, false],
-  [CMD_FLAG_DONT_PURCHASE_UPGRADES, false],
+  [CMD_FLAG_PURCHASE_NODES, false],
+  [CMD_FLAG_PURCHASE_UPGRADES, false],
   [CMD_FLAG_FUNDS_LIMIT_PERCENT, 0],
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
@@ -47,6 +47,7 @@ const TAIL_HEIGHT = 515;
 
 const LOOP_DELAY_MILLISEC = 5000;
 
+let fundsLimitPercent: number;
 let managerConfig: HacknetManagerConfig;
 
 function sortUpgradeOrders(upgradeOrders: Array<HacknetOrder>) {
@@ -80,7 +81,9 @@ function manageOrdersAndPurchases(
   if (
     managerConfig.purchaseNodes &&
     hacknetApi.numNodes() < hacknetApi.maxNumNodes() &&
-    (!upgradeOrders.length || nodeCost < upgradeOrders[0].cost) &&
+    (!managerConfig.purchaseUpgrades ||
+      !upgradeOrders.length ||
+      nodeCost < upgradeOrders[0].cost) &&
     nodeCost <= availableFunds
   ) {
     logWriter.writeLine(
@@ -146,6 +149,9 @@ function handleUpdateConfigEvent(
 
   logWriter.writeLine('Update settings event received...');
   managerConfig = eventData.config;
+  if (managerConfig.fundsLimit < 0) {
+    managerConfig.fundsLimit = netscript.getPlayer().money * fundsLimitPercent;
+  }
 
   logWriter.writeLine(`  Purchase Nodes : ${managerConfig.purchaseNodes}`);
   logWriter.writeLine(
@@ -175,26 +181,22 @@ export async function main(netscript: NS) {
 
   terminalWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
-  const dontPurchaseNodes = cmdArgs[
-    CMD_FLAG_DONT_PURCHASE_NODES
+  const purchaseNodes = cmdArgs[CMD_FLAG_PURCHASE_NODES].valueOf() as boolean;
+  const purchaseUpgrades = cmdArgs[
+    CMD_FLAG_PURCHASE_UPGRADES
   ].valueOf() as boolean;
-  const dontPurchaseUpgrades = cmdArgs[
-    CMD_FLAG_DONT_PURCHASE_UPGRADES
-  ].valueOf() as boolean;
-  const fundsLimitPercent = cmdArgs[
-    CMD_FLAG_FUNDS_LIMIT_PERCENT
-  ].valueOf() as number;
+  fundsLimitPercent = cmdArgs[CMD_FLAG_FUNDS_LIMIT_PERCENT].valueOf() as number;
   const fundsLimit = fundsLimitPercent * netscript.getPlayer().money;
 
-  terminalWriter.writeLine(`Dont Purchase Nodes : ${dontPurchaseNodes}`);
-  terminalWriter.writeLine(`Dont Purchase Upgrades : ${dontPurchaseUpgrades}`);
+  terminalWriter.writeLine(`Dont Purchase Nodes : ${purchaseNodes}`);
+  terminalWriter.writeLine(`Dont Purchase Upgrades : ${purchaseUpgrades}`);
   terminalWriter.writeLine(`Funds Limit Percent : ${fundsLimitPercent}`);
   terminalWriter.writeLine(`Funds Limit : ${fundsLimit}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
   managerConfig = {
-    purchaseNodes: !dontPurchaseNodes,
-    purchaseUpgrades: !dontPurchaseUpgrades,
+    purchaseNodes: purchaseNodes,
+    purchaseUpgrades: purchaseUpgrades,
     fundsLimit: fundsLimit,
   };
 

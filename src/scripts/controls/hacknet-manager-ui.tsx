@@ -144,17 +144,17 @@ function handleSetFundsLimitClick(
   sendHacknetManagerConfig();
 }
 
-function sendHacknetManagerConfig() {
+function getHacknetManagerConfig() {
   const interfaceControls = getInterfaceControls();
 
   let fundsLimit = parseInt(
     interfaceControls.fundsLimit?.value.replaceAll(',', '') ?? ''
   );
   if (isNaN(fundsLimit)) {
-    fundsLimit = 0;
+    fundsLimit = -1;
   }
 
-  const managerConfig: HacknetManagerConfig = {
+  const config: HacknetManagerConfig = {
     purchaseNodes:
       interfaceControls.purchaseNodes?.classList.contains(
         TOGGLE_BUTTON_SELECTED_CSS_CLASS
@@ -165,7 +165,12 @@ function sendHacknetManagerConfig() {
       ) ?? false,
     fundsLimit: fundsLimit,
   };
-  sendMessage(new HacknetManagerConfigEvent(managerConfig));
+  return config;
+}
+
+function sendHacknetManagerConfig() {
+  const config = getHacknetManagerConfig();
+  sendMessage(new HacknetManagerConfigEvent(config));
 }
 
 async function handleToggleHacknetManager(
@@ -183,6 +188,9 @@ async function handleToggleHacknetManager(
     return false;
   }
 
+  const config = getHacknetManagerConfig();
+  await sendMessageRetry(netscript, new HacknetManagerConfigEvent(config));
+
   eventListener.addListener(
     HacknetConfigResponse,
     handleHacknetConfigResponse,
@@ -190,10 +198,7 @@ async function handleToggleHacknetManager(
     eventListener,
     setFundsLimit
   );
-  await sendMessageRetry(
-    netscript,
-    new HacknetConfigRequest(eventListener.subscriberName)
-  );
+  sendMessage(new HacknetConfigRequest());
   return true;
 }
 

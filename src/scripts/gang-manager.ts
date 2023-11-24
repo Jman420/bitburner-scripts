@@ -369,7 +369,7 @@ function handleEnemiesChangedEvent(
   }
 }
 
-function handleUpdateSettingsEvent(
+function handleUpdateConfigEvent(
   eventData: GangManagerConfigEvent,
   logWriter: Logger
 ) {
@@ -383,9 +383,7 @@ function handleUpdateSettingsEvent(
   logWriter.writeLine(
     `  Purchase Augmentations : ${managerConfig.buyAugmentations}`
   );
-  logWriter.writeLine(
-    `  Purchase Equipment : ${managerConfig.buyEquipment}`
-  );
+  logWriter.writeLine(`  Purchase Equipment : ${managerConfig.buyEquipment}`);
   logWriter.writeLine(`  Task Focus : ${managerConfig.taskFocus}`);
 }
 
@@ -470,7 +468,7 @@ export async function main(netscript: NS) {
   );
   eventListener.addListener(
     GangManagerConfigEvent,
-    handleUpdateSettingsEvent,
+    handleUpdateConfigEvent,
     scriptLogWriter
   );
   eventListener.addListener(

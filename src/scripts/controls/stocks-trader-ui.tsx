@@ -146,17 +146,17 @@ function handleSetFundsLimitClick(
   sendStockTraderConfig();
 }
 
-function sendStockTraderConfig() {
+function getStockTraderConfig() {
   const interfaceControls = getInterfaceControls();
 
   let fundsLimit = parseInt(
     interfaceControls.fundsLimit?.value.replaceAll(',', '') ?? ''
   );
   if (isNaN(fundsLimit)) {
-    fundsLimit = 0;
+    fundsLimit = -1;
   }
 
-  const traderConfig: StocksTraderConfig = {
+  const config: StocksTraderConfig = {
     shortSales:
       interfaceControls.shortSales?.classList.contains(
         TOGGLE_BUTTON_SELECTED_CSS_CLASS
@@ -167,7 +167,12 @@ function sendStockTraderConfig() {
       ) ?? false,
     fundsLimit: fundsLimit,
   };
-  sendMessage(new StocksTraderConfigEvent(traderConfig));
+  return config;
+}
+
+function sendStockTraderConfig() {
+  const config = getStockTraderConfig();
+  sendMessage(new StocksTraderConfigEvent(config));
 }
 
 async function handleToggleStockTrader(
@@ -185,6 +190,9 @@ async function handleToggleStockTrader(
     return false;
   }
 
+  const config = getStockTraderConfig();
+  await sendMessageRetry(netscript, new StocksTraderConfigEvent(config));
+
   eventListener.addListener(
     StocksTraderConfigResponse,
     handleStocksTraderConfigResponse,
@@ -192,10 +200,7 @@ async function handleToggleStockTrader(
     eventListener,
     setFundsLimit
   );
-  await sendMessageRetry(
-    netscript,
-    new StocksTraderConfigRequest(eventListener.subscriberName)
-  );
+  sendMessage(new StocksTraderConfigRequest(eventListener.subscriberName));
   return true;
 }
 

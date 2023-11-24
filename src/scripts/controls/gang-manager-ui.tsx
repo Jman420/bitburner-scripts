@@ -143,7 +143,7 @@ function handleMembersFocusClick(
   sendGangManagerConfig();
 }
 
-function sendGangManagerConfig() {
+function getGangManagerConfig() {
   const interfaceControls = getInterfaceControls();
   const buyAugmentations =
     interfaceControls.buyAugmentations?.classList.contains(
@@ -174,14 +174,15 @@ function sendGangManagerConfig() {
     buyEquipment: buyEquipment,
     taskFocus: taskFocus,
   };
+  return config;
+}
+
+function sendGangManagerConfig() {
+  const config = getGangManagerConfig();
   sendMessage(new GangManagerConfigEvent(config));
 }
 
-async function handleToggleGangManager(
-  netscript: NS,
-  eventListener: EventListener,
-  scriptRunning: boolean
-) {
+async function handleToggleGangManager(netscript: NS, scriptRunning: boolean) {
   if (scriptRunning) {
     netscript.scriptKill(GANGS_MANAGER_SCRIPT, netscript.getHostname());
     return false;
@@ -191,15 +192,8 @@ async function handleToggleGangManager(
     return false;
   }
 
-  eventListener.addListener(
-    GangConfigResponse,
-    handleGangConfigResponse,
-    eventListener
-  );
-  await sendMessageRetry(
-    netscript,
-    new GangConfigRequest(eventListener.subscriberName)
-  );
+  const config = getGangManagerConfig();
+  await sendMessageRetry(netscript, new GangManagerConfigEvent(config));
   return true;
 }
 
@@ -228,11 +222,7 @@ function GangsManagerUI({
         <label style={HEADER_LABEL_STYLE}>Gang Manager</label>
         <RunScriptButton
           title="Run gang manager script"
-          runScriptFunc={handleToggleGangManager.bind(
-            undefined,
-            netscript,
-            eventListener
-          )}
+          runScriptFunc={handleToggleGangManager.bind(undefined, netscript)}
         />
       </div>
       <label style={LABEL_STYLE}>Purchase Member Upgrades</label>

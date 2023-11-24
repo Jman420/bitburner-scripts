@@ -63,6 +63,7 @@ const TAIL_HEIGHT = 490;
 
 const PURCHASE_FORECAST_MARGIN = 0.1;
 
+let fundsLimitPercent: number;
 let managerConfig: StocksTraderConfig;
 
 function tradeStocks(
@@ -271,7 +272,7 @@ function setupStockTrader(
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 }
 
-function handleStocksTraderConfigEvent(
+function handleUpdateConfigEvent(
   eventData: StocksTraderConfigEvent,
   netscript: NS,
   logWriter: Logger
@@ -282,6 +283,9 @@ function handleStocksTraderConfigEvent(
 
   logWriter.writeLine('Update settings event received...');
   managerConfig = eventData.config;
+  if (managerConfig.fundsLimit < 0) {
+    managerConfig.fundsLimit = netscript.getPlayer().money * fundsLimitPercent;
+  }
 
   logWriter.writeLine(`  Short Sales Enabled : ${managerConfig.shortSales}`);
   logWriter.writeLine(`  Purchase Stocks : ${managerConfig.purchaseStocks}`);
@@ -312,9 +316,7 @@ export async function main(netscript: NS) {
 
   terminalWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
-  const fundsLimitPercent = cmdArgs[
-    CMD_FLAG_FUNDS_LIMIT_PERCENT
-  ].valueOf() as number;
+  fundsLimitPercent = cmdArgs[CMD_FLAG_FUNDS_LIMIT_PERCENT].valueOf() as number;
   const shortEnabled = cmdArgs[
     CMD_FLAG_ENABLE_SHORT_SALES
   ].valueOf() as boolean;
@@ -354,7 +356,7 @@ export async function main(netscript: NS) {
   );
   eventListener.addListener(
     StocksTraderConfigEvent,
-    handleStocksTraderConfigEvent,
+    handleUpdateConfigEvent,
     netscript,
     scriptLogWriter
   );
