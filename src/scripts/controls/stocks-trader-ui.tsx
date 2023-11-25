@@ -204,6 +204,7 @@ function StocksTraderUI({
   eventListener: EventListener;
 }) {
   const [fundsLimit, setFundsLimit] = useState('');
+  const traderRunning = Boolean(getPid(netscript, STOCKS_TRADER_SCRIPT));
 
   useEffectOnce(() => {
     eventListener.addListener(
@@ -213,10 +214,7 @@ function StocksTraderUI({
       eventListener,
       setFundsLimit
     );
-    sendMessageRetry(
-      netscript,
-      new StocksTraderConfigRequest(eventListener.subscriberName)
-    );
+    sendMessage(new StocksTraderConfigRequest(eventListener.subscriberName));
   });
 
   return (
@@ -224,13 +222,14 @@ function StocksTraderUI({
       <div style={HEADER_DIV_STYLE}>
         <label style={HEADER_LABEL_STYLE}>Stock Trader</label>
         <RunScriptButton
-          title="Run stock trader script"
+          title="Toggle stock trader script"
           runScriptFunc={handleToggleStockTrader.bind(
             undefined,
             netscript,
             eventListener,
             setFundsLimit
           )}
+          scriptAlreadyRunning={traderRunning}
         />
       </div>
       <label style={LABEL_STYLE}>Trading Settings</label>

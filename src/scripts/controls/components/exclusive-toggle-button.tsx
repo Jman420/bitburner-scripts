@@ -37,21 +37,25 @@ function ExclusiveToggleButton({
   id,
   onClick,
   children,
+  selected
 }: {
   exclusiveGroup: string;
   id?: string;
   onClick?: ToggleButtonOnClickCallback;
   children: React.ReactNode;
+  selected?: boolean;
 }) {
   useEffectOnce(() => {
     exclusiveGroupClass = exclusiveGroup;
     onClickCallback = onClick;
   });
 
+  const selectedClass = selected ? TOGGLE_BUTTON_SELECTED_CSS_CLASS : '';
+
   return (
     <button
       id={id}
-      className={`${TOGGLE_BUTTON_CSS_CLASS} ${exclusiveGroup}`}
+      className={`${TOGGLE_BUTTON_CSS_CLASS} ${exclusiveGroup} ${selectedClass}`}
       onClick={toggleButtonState}
     >
       {children}

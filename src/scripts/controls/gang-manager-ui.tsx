@@ -25,10 +25,10 @@ import {
   DIV_BORDER_CSS_CLASS,
   HEADER_DIV_STYLE,
   HEADER_LABEL_STYLE,
-  TOGGLE_BUTTON_CSS_CLASS,
   TOGGLE_BUTTON_SELECTED_CSS_CLASS,
 } from '/scripts/controls/style-sheet';
 import {ToggleButton} from '/scripts/controls/components/toggle-button';
+import {ExclusiveToggleButton} from '/scripts/controls/components/exclusive-toggle-button';
 
 interface InterfaceControls {
   buyAugmentations: HTMLElement | null;
@@ -113,31 +113,6 @@ function handleGangConfigResponse(
   }
 }
 
-function handlePurchaseUpgradesClick(
-  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-  eventData: React.MouseEvent<HTMLButtonElement, MouseEvent>
-) {
-  sendGangManagerConfig();
-}
-
-function handleMembersFocusClick(
-  eventData: React.MouseEvent<HTMLButtonElement, MouseEvent>
-) {
-  const targetClassList = eventData.currentTarget.classList;
-  if (targetClassList.contains(TOGGLE_BUTTON_SELECTED_CSS_CLASS)) {
-    return;
-  }
-
-  const doc = getDocument();
-  const groupElements = doc.getElementsByClassName(MEMBER_FOCUS_GROUP_CLASS);
-  for (const exclusiveElement of groupElements) {
-    exclusiveElement.classList.remove(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
-  }
-  targetClassList.add(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
-
-  sendGangManagerConfig();
-}
-
 function getGangManagerConfig() {
   const interfaceControls = getInterfaceControls();
   const buyAugmentations =
@@ -177,12 +152,22 @@ function sendGangManagerConfig() {
   sendMessage(new GangManagerConfigEvent(config));
 }
 
-async function handleToggleGangManager(netscript: NS) {
+async function handleToggleGangManager(
+  netscript: NS,
+  eventListener: EventListener
+) {
   let scriptPid = getPid(netscript, GANG_MANAGER_SCRIPT);
   if (!scriptPid) {
     scriptPid = runScript(netscript, GANG_MANAGER_SCRIPT);
     const config = getGangManagerConfig();
     await sendMessageRetry(netscript, new GangManagerConfigEvent(config));
+
+    eventListener.addListener(
+      GangConfigResponse,
+      handleGangConfigResponse,
+      eventListener
+    );
+    sendMessage(new GangConfigRequest(eventListener.subscriberName));
   } else {
     netscript.kill(scriptPid);
     scriptPid = 0;
@@ -198,16 +183,15 @@ function GangsManagerUI({
   netscript: NS;
   eventListener: EventListener;
 }) {
+  const managerRunning = Boolean(getPid(netscript, GANG_MANAGER_SCRIPT));
+
   useEffectOnce(() => {
     eventListener.addListener(
       GangConfigResponse,
       handleGangConfigResponse,
       eventListener
     );
-    sendMessageRetry(
-      netscript,
-      new GangConfigRequest(eventListener.subscriberName)
-    );
+    sendMessage(new GangConfigRequest(eventListener.subscriberName));
   });
 
   return (
@@ -215,41 +199,46 @@ function GangsManagerUI({
       <div style={HEADER_DIV_STYLE}>
         <label style={HEADER_LABEL_STYLE}>Gang Manager</label>
         <RunScriptButton
-          title="Run gang manager script"
-          runScriptFunc={handleToggleGangManager.bind(undefined, netscript)}
+          title="Toggle gang manager script"
+          runScriptFunc={handleToggleGangManager.bind(
+            undefined,
+            netscript,
+            eventListener
+          )}
+          scriptAlreadyRunning={managerRunning}
         />
       </div>
       <label style={LABEL_STYLE}>Purchase Member Upgrades</label>
       <div className={DIV_BORDER_CSS_CLASS} style={DIV_STYLE}>
         <ToggleButton
           id={BUY_AUGMENTATIONS_BUTTON_ID}
-          onClick={handlePurchaseUpgradesClick}
+          onClick={sendGangManagerConfig}
         >
           Augmentations
         </ToggleButton>
         <ToggleButton
           id={BUY_EQUIPMENT_BUTTON_ID}
-          onClick={handlePurchaseUpgradesClick}
+          onClick={sendGangManagerConfig}
         >
           Equipment
         </ToggleButton>
       </div>
       <label style={LABEL_STYLE}>Member Task Focus</label>
       <div className={DIV_BORDER_CSS_CLASS} style={DIV_STYLE}>
-        <button
+        <ExclusiveToggleButton
           id={FOCUS_RESPECT_BUTTON_ID}
-          className={`${TOGGLE_BUTTON_CSS_CLASS} ${MEMBER_FOCUS_GROUP_CLASS}`}
-          onClick={handleMembersFocusClick}
+          exclusiveGroup={MEMBER_FOCUS_GROUP_CLASS}
+          onClick={sendGangManagerConfig}
         >
           Respect
-        </button>
-        <button
+        </ExclusiveToggleButton>
+        <ExclusiveToggleButton
           id={FOCUS_MONEY_BUTTON_ID}
-          className={`${TOGGLE_BUTTON_CSS_CLASS} ${MEMBER_FOCUS_GROUP_CLASS}`}
-          onClick={handleMembersFocusClick}
+          exclusiveGroup={MEMBER_FOCUS_GROUP_CLASS}
+          onClick={sendGangManagerConfig}
         >
           Money
-        </button>
+        </ExclusiveToggleButton>
       </div>
     </div>
   );

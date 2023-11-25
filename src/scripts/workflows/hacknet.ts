@@ -29,7 +29,7 @@ interface HacknetPurchaseDetails {
   purchaseFunc: PurchaseFunction;
 }
 
-const HACKNET_MANAGER_SCRIPT = '/scripts/hacknet-manager.js';
+const HACKNET_MANAGER_SCRIPT = 'scripts/hacknet-manager.js';
 
 function getNodeUpgradeOrders(
   hacknetApi: Hacknet,

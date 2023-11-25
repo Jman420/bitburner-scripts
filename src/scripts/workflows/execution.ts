@@ -70,19 +70,14 @@ function ensureRunning(
   return scriptPid !== 0;
 }
 
-function getPid(
-  netscript: NS,
-  scriptPath: string,
-  targetHosts?: string[],
-  ...args: string[]
-) {
+function getPid(netscript: NS, scriptPath: string, targetHosts?: string[]) {
   targetHosts = targetHosts
     ? targetHosts
     : scanWideNetwork(netscript, true, true, true);
   for (const hostname of targetHosts) {
     const hostProcesses = netscript.ps(hostname);
     for (const process of hostProcesses) {
-      if (process.filename === scriptPath && args && process.args === args) {
+      if (process.filename === scriptPath) {
         return process.pid;
       }
     }

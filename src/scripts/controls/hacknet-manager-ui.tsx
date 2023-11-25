@@ -115,13 +115,6 @@ function handleHacknetConfigResponse(
   setFundsLimit(netscript.formatNumber(config.fundsLimit));
 }
 
-function handlePurchaseSettingsClick(
-  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
-  eventData: React.MouseEvent<HTMLButtonElement, MouseEvent>
-) {
-  sendHacknetManagerConfig();
-}
-
 function handleSetFundsLimitClick(
   /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   eventData: React.MouseEvent<HTMLButtonElement, MouseEvent>
@@ -185,7 +178,7 @@ async function handleToggleHacknetManager(
       eventListener,
       setFundsLimit
     );
-    sendMessage(new HacknetConfigRequest());
+    sendMessage(new HacknetConfigRequest(eventListener.subscriberName));
   } else {
     netscript.kill(scriptPid);
     scriptPid = 0;
@@ -202,6 +195,7 @@ function HacknetManagerUI({
   eventListener: EventListener;
 }) {
   const [fundsLimit, setFundsLimit] = useState('');
+  const managerRunning = Boolean(getPid(netscript, HACKNET_MANAGER_SCRIPT));
 
   useEffectOnce(() => {
     eventListener.addListener(
@@ -211,10 +205,7 @@ function HacknetManagerUI({
       eventListener,
       setFundsLimit
     );
-    sendMessageRetry(
-      netscript,
-      new HacknetConfigRequest(eventListener.subscriberName)
-    );
+    sendMessage(new HacknetConfigRequest(eventListener.subscriberName));
   });
 
   return (
@@ -222,26 +213,27 @@ function HacknetManagerUI({
       <div style={HEADER_DIV_STYLE}>
         <label style={HEADER_LABEL_STYLE}>Hacknet Manager</label>
         <RunScriptButton
-          title="Run hacknet manager script"
+          title="Toggle hacknet manager script"
           runScriptFunc={handleToggleHacknetManager.bind(
             undefined,
             netscript,
             eventListener,
             setFundsLimit
           )}
+          scriptAlreadyRunning={managerRunning}
         />
       </div>
       <label style={LABEL_STYLE}>Purchase Settings</label>
       <div className={DIV_BORDER_CSS_CLASS} style={DIV_STYLE}>
         <ToggleButton
           id={PURCHASE_NODES_BUTTON_ID}
-          onClick={handlePurchaseSettingsClick}
+          onClick={sendHacknetManagerConfig}
         >
           New Nodes
         </ToggleButton>
         <ToggleButton
           id={PURCHASE_UPGRADES_BUTTON_ID}
-          onClick={handlePurchaseSettingsClick}
+          onClick={sendHacknetManagerConfig}
         >
           Node Upgrades
         </ToggleButton>

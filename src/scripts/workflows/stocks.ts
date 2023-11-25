@@ -46,9 +46,9 @@ interface PurchaseTransaction extends StockTransaction {
   cost: number;
 }
 
-const STOCKS_TICKER_HISTORY_SCRIPT = '/scripts/stocks-ticker-history.js';
-const STOCKS_TICKER_4SIGMA_SCRIPT = '/scripts/stocks-ticker-4sigma.js';
-const STOCKS_TRADER_SCRIPT = '/scripts/stocks-trader.js';
+const STOCKS_TICKER_HISTORY_SCRIPT = 'scripts/stocks-ticker-history.js';
+const STOCKS_TICKER_4SIGMA_SCRIPT = 'scripts/stocks-ticker-4sigma.js';
+const STOCKS_TRADER_SCRIPT = 'scripts/stocks-trader.js';
 
 const FIFTY_PERCENT = 0.5;
 const COMMISSION = 100000;
