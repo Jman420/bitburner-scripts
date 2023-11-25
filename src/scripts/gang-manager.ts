@@ -135,7 +135,8 @@ function manageGang(
     }
   );
   reduceWantedPenalty =
-    gangInfo.wantedPenalty <= 1 - WANTED_PENALTY_LIMIT ||
+    (gangInfo.wantedLevel > 1 &&
+      gangInfo.wantedPenalty <= 1 - WANTED_PENALTY_LIMIT) ||
     (reduceWantedPenalty && gangInfo.wantedLevel > 1);
   if (gangInfo.territory >= 1) {
     formWarParty = false;
