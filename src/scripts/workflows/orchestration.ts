@@ -69,10 +69,10 @@ async function growHost(
   hostDetails: ServerDetails,
   useMaxThreads = true,
   includeHomeAttacker = false,
-  maxFundsWeight = 1,
+  maxFundsPercent = 1,
   influenceStocks = false
 ) {
-  const maxFundsLimit = maxFundsWeight * hostDetails.maxFunds;
+  const maxFundsLimit = maxFundsPercent * hostDetails.maxFunds;
   while (hostDetails.availableFunds < maxFundsLimit) {
     const requiredFundsMultiplier = maxFundsLimit / hostDetails.availableFunds;
     let requiredThreads = 0;
@@ -116,11 +116,11 @@ async function hackHost(
   hostDetails: ServerDetails,
   useMaxThreads = false,
   includeHomeAttacker = false,
-  hackPercent = 0.75,
+  hackFundsPercent = 0.75,
   influenceStocks = false
 ) {
   const prehackFunds = hostDetails.availableFunds;
-  const targetHackFunds = prehackFunds * hackPercent;
+  const targetHackFunds = prehackFunds * hackFundsPercent;
   let requiredThreads = 0;
   if (!useMaxThreads) {
     requiredThreads = hackThreadsRequired(

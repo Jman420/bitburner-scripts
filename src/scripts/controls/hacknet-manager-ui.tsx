@@ -6,8 +6,13 @@ import {
   getReactModel,
   handleDisableTerminal,
   handleEnableTerminal,
-  handleNumericInputChange,
+  handleTextboxInputChange,
 } from '/scripts/workflows/ui';
+import {
+  HACKNET_MANAGER_SCRIPT,
+  HacknetManagerConfig,
+} from '/scripts/workflows/hacknet';
+import {getPid, runScript} from '/scripts/workflows/execution';
 
 import {
   EventListener,
@@ -19,13 +24,6 @@ import {HacknetConfigResponse} from '/scripts/comms/responses/hacknet-config-res
 import {HacknetManagerConfigEvent} from '/scripts/comms/events/hacknet-manager-config-event';
 
 import {
-  HACKNET_MANAGER_SCRIPT,
-  HacknetManagerConfig,
-} from '/scripts/workflows/hacknet';
-import {RunScriptButton} from '/scripts/controls/components/run-script-button';
-import {getPid, runScript} from '/scripts/workflows/execution';
-
-import {
   BUTTON_CSS_CLASS,
   DIV_BORDER_CSS_CLASS,
   HEADER_DIV_STYLE,
@@ -33,8 +31,10 @@ import {
   TEXTBOX_CSS_CLASS,
   TOGGLE_BUTTON_SELECTED_CSS_CLASS,
 } from '/scripts/controls/style-sheet';
-import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
+import {RunScriptButton} from '/scripts/controls/components/run-script-button';
 import {ToggleButton} from '/scripts/controls/components/toggle-button';
+import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
+import {parseNumber} from '/scripts/workflows/parsing';
 
 const React = getReactModel().reactNS;
 const useState = React.useState;
@@ -134,13 +134,8 @@ function handleSetFundsLimitClick(
 function getHacknetManagerConfig() {
   const interfaceControls = getInterfaceControls();
 
-  let fundsLimit = parseInt(
-    interfaceControls.fundsLimit?.value.replaceAll(',', '') ?? ''
-  );
-  if (isNaN(fundsLimit)) {
-    fundsLimit = -1;
-  }
-
+  const fundsLimit =
+    parseNumber(interfaceControls.fundsLimit?.value ?? '') || -1;
   const config: HacknetManagerConfig = {
     purchaseNodes:
       interfaceControls.purchaseNodes?.classList.contains(
@@ -158,6 +153,7 @@ function getHacknetManagerConfig() {
 function sendHacknetManagerConfig() {
   const config = getHacknetManagerConfig();
   sendMessage(new HacknetManagerConfigEvent(config));
+  return true;
 }
 
 async function handleToggleHacknetManager(
@@ -247,7 +243,7 @@ function HacknetManagerUI({
           value={fundsLimit}
           onFocusCapture={handleDisableTerminal}
           onBlur={handleEnableTerminal}
-          onChange={handleNumericInputChange.bind(undefined, setFundsLimit)}
+          onChange={handleTextboxInputChange.bind(undefined, setFundsLimit)}
         />
         <button
           id={SET_FUNDS_LIMIT_BUTTON_ID}

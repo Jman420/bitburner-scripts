@@ -4,19 +4,25 @@ import {
   TOGGLE_BUTTON_CSS_CLASS,
   TOGGLE_BUTTON_SELECTED_CSS_CLASS,
 } from '/scripts/controls/style-sheet';
-import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
 
 const React = getReactModel().reactNS;
 
+type ToggleButtonOnClickBeforeCallback = (
+  eventData: React.MouseEvent<HTMLButtonElement, MouseEvent>
+) => boolean;
 type ToggleButtonOnClickCallback = (
   eventData: React.MouseEvent<HTMLButtonElement, MouseEvent>
-) => void;
-
-let onClickCallback: ToggleButtonOnClickCallback | undefined;
+) => boolean;
 
 function toggleButtonState(
+  onClickBeforeCallback: ToggleButtonOnClickBeforeCallback | undefined,
+  onClickCallback: ToggleButtonOnClickCallback | undefined,
   eventData: React.MouseEvent<HTMLButtonElement, MouseEvent>
 ) {
+  if (onClickBeforeCallback && !onClickBeforeCallback(eventData)) {
+    return;
+  }
+
   const targetClassList = eventData.currentTarget.classList;
   if (targetClassList.contains(TOGGLE_BUTTON_SELECTED_CSS_CLASS)) {
     targetClassList.remove(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
@@ -31,26 +37,28 @@ function toggleButtonState(
 
 function ToggleButton({
   id,
+  onClickBefore,
   onClick,
   children,
 }: {
   id?: string;
+  onClickBefore?: ToggleButtonOnClickBeforeCallback;
   onClick?: ToggleButtonOnClickCallback;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }) {
-  useEffectOnce(() => {
-    onClickCallback = onClick;
-  });
-
   return (
     <button
       id={id}
       className={TOGGLE_BUTTON_CSS_CLASS}
-      onClick={toggleButtonState}
+      onClick={toggleButtonState.bind(undefined, onClickBefore, onClick)}
     >
       {children}
     </button>
   );
 }
 
-export {ToggleButtonOnClickCallback, ToggleButton};
+export {
+  ToggleButtonOnClickBeforeCallback,
+  ToggleButtonOnClickCallback,
+  ToggleButton,
+};

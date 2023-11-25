@@ -33,12 +33,12 @@ async function handleButtonClick(
 
 function RunScriptButton({
   title,
-  runScriptFunc,
   scriptAlreadyRunning,
+  runScriptFunc,
 }: {
   title?: string;
-  runScriptFunc: RunScriptFunction;
   scriptAlreadyRunning?: boolean;
+  runScriptFunc: RunScriptFunction;
 }) {
   const [iconClassName, setIconClassName] = useState(
     scriptAlreadyRunning ? SVG_STOP_ICON_CSS_CLASS : SVG_PLAY_ICON_CSS_CLASS
@@ -59,7 +59,7 @@ function RunScriptButton({
           runScriptFunc
         )}
       >
-        <path d={iconSvgPath}></path>
+        <path d={iconSvgPath} />
       </svg>
     </button>
   );

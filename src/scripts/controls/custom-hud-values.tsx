@@ -7,10 +7,10 @@ import {EventListener} from '/scripts/comms/event-comms';
 import {StocksTickerEvent} from '/scripts/comms/events/stocks-ticker-event';
 import {GangInfoChangedEvent} from '/scripts/comms/events/gang-info-changed-event';
 
-import {getReactModel, ReactSetStateFunction} from '/scripts/workflows/ui';
 import {useInterval} from '/scripts/controls/hooks/use-interval';
 import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
 
+import {getReactModel, ReactSetStateFunction} from '/scripts/workflows/ui';
 import {scanWideNetwork} from '/scripts/workflows/recon';
 import {TOTAL_STOCKS} from '/scripts/workflows/stocks';
 

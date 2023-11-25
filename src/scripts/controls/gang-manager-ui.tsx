@@ -6,29 +6,27 @@ import {
   GangManagerConfig,
   TaskFocus,
 } from '/scripts/workflows/gangs';
+import {getPid, runScript} from '/scripts/workflows/execution';
 
 import {
   EventListener,
   sendMessage,
   sendMessageRetry,
 } from '/scripts/comms/event-comms';
-
-import {getPid, runScript} from '/scripts/workflows/execution';
-
 import {GangManagerConfigEvent} from '/scripts/comms/events/gang-manager-config-event';
 import {GangConfigResponse} from '/scripts/comms/responses/gang-config-response';
 import {GangConfigRequest} from '/scripts/comms/requests/gang-config-request';
 
-import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
-import {RunScriptButton} from '/scripts/controls/components/run-script-button';
 import {
   DIV_BORDER_CSS_CLASS,
   HEADER_DIV_STYLE,
   HEADER_LABEL_STYLE,
   TOGGLE_BUTTON_SELECTED_CSS_CLASS,
 } from '/scripts/controls/style-sheet';
+import {RunScriptButton} from '/scripts/controls/components/run-script-button';
 import {ToggleButton} from '/scripts/controls/components/toggle-button';
 import {ExclusiveToggleButton} from '/scripts/controls/components/exclusive-toggle-button';
+import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
 
 interface InterfaceControls {
   buyAugmentations: HTMLElement | null;
@@ -150,6 +148,7 @@ function getGangManagerConfig() {
 function sendGangManagerConfig() {
   const config = getGangManagerConfig();
   sendMessage(new GangManagerConfigEvent(config));
+  return true;
 }
 
 async function handleToggleGangManager(

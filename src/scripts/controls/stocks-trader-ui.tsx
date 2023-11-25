@@ -6,10 +6,13 @@ import {
   getReactModel,
   handleDisableTerminal,
   handleEnableTerminal,
-  handleNumericInputChange,
+  handleTextboxInputChange,
 } from '/scripts/workflows/ui';
-
-import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
+import {
+  STOCKS_TRADER_SCRIPT,
+  StocksTraderConfig,
+} from '/scripts/workflows/stocks';
+import {getPid, runScript} from '/scripts/workflows/execution';
 
 import {
   EventListener,
@@ -21,21 +24,19 @@ import {StocksTraderConfigRequest} from '/scripts/comms/requests/stocks-trader-c
 import {StocksTraderConfigEvent} from '/scripts/comms/events/stocks-trader-config-event';
 
 import {
-  STOCKS_TRADER_SCRIPT,
-  StocksTraderConfig,
-} from '/scripts/workflows/stocks';
-import {RunScriptButton} from '/scripts/controls/components/run-script-button';
-import {getPid, runScript} from '/scripts/workflows/execution';
-
-import {
   BUTTON_CSS_CLASS,
+  COLOR_DARK_GRAY,
+  COLOR_WHITE,
   DIV_BORDER_CSS_CLASS,
   HEADER_DIV_STYLE,
   HEADER_LABEL_STYLE,
   TEXTBOX_CSS_CLASS,
   TOGGLE_BUTTON_SELECTED_CSS_CLASS,
 } from '/scripts/controls/style-sheet';
+import {RunScriptButton} from '/scripts/controls/components/run-script-button';
 import {ToggleButton} from '/scripts/controls/components/toggle-button';
+import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
+import {parseNumber} from '/scripts/workflows/parsing';
 
 interface InterfaceControls {
   shortSales: HTMLButtonElement | undefined;
@@ -59,6 +60,8 @@ const INPUT_STYLE: React.CSSProperties = {
   fontSize: '14pt',
   textAlign: 'center',
   display: 'block',
+  backgroundColor: COLOR_DARK_GRAY,
+  borderBottomColor: COLOR_WHITE,
 };
 
 const SHORT_SALES_BUTTON_ID = 'shortSales';
@@ -122,6 +125,7 @@ function handleTradeSettingsClick(
   eventData: React.MouseEvent<HTMLButtonElement, MouseEvent>
 ) {
   sendStockTraderConfig();
+  return true;
 }
 
 function handleSetFundsLimitClick(
@@ -143,9 +147,7 @@ function handleSetFundsLimitClick(
 function getStockTraderConfig() {
   const interfaceControls = getInterfaceControls();
 
-  let fundsLimit = parseInt(
-    interfaceControls.fundsLimit?.value.replaceAll(',', '') ?? ''
-  );
+  let fundsLimit = parseNumber(interfaceControls.fundsLimit?.value ?? '');
   if (isNaN(fundsLimit)) {
     fundsLimit = -1;
   }
@@ -256,7 +258,7 @@ function StocksTraderUI({
           value={fundsLimit}
           onFocusCapture={handleDisableTerminal}
           onBlur={handleEnableTerminal}
-          onChange={handleNumericInputChange.bind(undefined, setFundsLimit)}
+          onChange={handleTextboxInputChange.bind(undefined, setFundsLimit)}
         />
         <button
           id={SET_FUNDS_LIMIT_BUTTON_ID}

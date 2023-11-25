@@ -4,17 +4,23 @@ import {
   TOGGLE_BUTTON_CSS_CLASS,
   TOGGLE_BUTTON_SELECTED_CSS_CLASS,
 } from '/scripts/controls/style-sheet';
-import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
-import {ToggleButtonOnClickCallback} from '/scripts/controls/components/toggle-button';
+import {
+  ToggleButtonOnClickBeforeCallback,
+  ToggleButtonOnClickCallback,
+} from '/scripts/controls/components/toggle-button';
 
 const React = getReactModel().reactNS;
 
-let exclusiveGroupClass: string;
-let onClickCallback: ToggleButtonOnClickCallback | undefined;
-
 function toggleButtonState(
+  exclusiveGroupClass: string,
+  onClickBeforeCallback: ToggleButtonOnClickBeforeCallback | undefined,
+  onClickCallback: ToggleButtonOnClickCallback | undefined,
   eventData: React.MouseEvent<HTMLButtonElement, MouseEvent>
 ) {
+  if (onClickBeforeCallback && !onClickBeforeCallback(eventData)) {
+    return;
+  }
+
   const targetClassList = eventData.currentTarget.classList;
   if (targetClassList.contains(TOGGLE_BUTTON_SELECTED_CSS_CLASS)) {
     return;
@@ -33,30 +39,32 @@ function toggleButtonState(
 }
 
 function ExclusiveToggleButton({
-  exclusiveGroup,
   id,
+  exclusiveGroup,
+  selected,
+  onClickBefore,
   onClick,
   children,
-  selected
 }: {
-  exclusiveGroup: string;
   id?: string;
-  onClick?: ToggleButtonOnClickCallback;
-  children: React.ReactNode;
+  exclusiveGroup: string;
   selected?: boolean;
+  onClickBefore?: ToggleButtonOnClickBeforeCallback;
+  onClick?: ToggleButtonOnClickCallback;
+  children?: React.ReactNode;
 }) {
-  useEffectOnce(() => {
-    exclusiveGroupClass = exclusiveGroup;
-    onClickCallback = onClick;
-  });
-
   const selectedClass = selected ? TOGGLE_BUTTON_SELECTED_CSS_CLASS : '';
 
   return (
     <button
       id={id}
       className={`${TOGGLE_BUTTON_CSS_CLASS} ${exclusiveGroup} ${selectedClass}`}
-      onClick={toggleButtonState}
+      onClick={toggleButtonState.bind(
+        undefined,
+        exclusiveGroup,
+        onClickBefore,
+        onClick
+      )}
     >
       {children}
     </button>

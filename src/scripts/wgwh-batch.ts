@@ -41,27 +41,34 @@ import {
   WEAKEN_WORKER_SCRIPT,
   weakenThreadsRequired,
 } from '/scripts/workflows/orchestration';
+import {openTail} from '/scripts/workflows/ui';
+import {WgwhAttackConfig} from '/scripts/workflows/attacks';
+
+import {EventListener, sendMessage} from '/scripts/comms/event-comms';
+import {WgwhManagerConfigEvent} from '/scripts/comms/events/wgwh-manager-config-event';
+import {WgwhConfigRequest} from '/scripts/comms/requests/wgwh-config-request';
+import {WgwhConfigResponse} from '/scripts/comms/responses/wgwh-config-response';
+
 import {CMD_FLAG_DELAY, CMD_FLAG_TARGETS_CSV} from '/scripts/workers/shared';
 import {WORKERS_PACKAGE} from '/scripts/workers/package';
-import {openTail} from '/scripts/workflows/ui';
 
-const CMD_FLAG_CONTINUOUS_ATTACK = 'continuousAttack';
-const CMD_FLAG_INCLUDE_HOME = 'includeHome';
 const CMD_FLAG_OPTIMAL_ONLY = 'optimalOnly';
 const CMD_FLAG_HACK_PERCENT = 'hackPercent';
-const CMD_FLAG_FUNDS_LIMIT_WEIGHT = 'fundsLimitWeight';
+const CMD_FLAG_FUNDS_LIMIT_PERCENT = 'fundsLimitPercent';
+const CMD_FLAG_INCLUDE_HOME = 'includeHome';
+const CMD_FLAG_ATTACKERS = 'attackers';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
-  [CMD_FLAG_CONTINUOUS_ATTACK, false],
   [CMD_FLAG_INCLUDE_HOME, false],
   [CMD_FLAG_OPTIMAL_ONLY, 0],
   [CMD_FLAG_HACK_PERCENT, 0.75],
-  [CMD_FLAG_FUNDS_LIMIT_WEIGHT, 1],
+  [CMD_FLAG_FUNDS_LIMIT_PERCENT, 1],
   [CMD_FLAG_TARGETS, []],
+  [CMD_FLAG_ATTACKERS, []],
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
-const MODULE_NAME = 'wgwh-batches';
-const SUBSCRIBER_NAME = 'wgwh-batches';
+const MODULE_NAME = 'wgwh-batch';
+const SUBSCRIBER_NAME = 'wgwh-batch';
 
 const TAIL_X_POS = 1045;
 const TAIL_Y_POS = 154;
@@ -71,14 +78,11 @@ const TAIL_HEIGHT = 510;
 const DEFAULT_SLEEP_FOR_RAM = 500;
 const BATCH_BUFFER_DELAY = 100;
 
+let managerConfig: WgwhAttackConfig;
+
 async function attackTargets(
   netscript: NS,
   logWriter: Logger,
-  targetHosts: string[],
-  targetFundsPercent = 0.75,
-  optimalOnlyCount = 0,
-  includeHomeAttacker = false,
-  fundsLimitWeight = 1,
   weightScoreValues: WeightScoreValues = {
     hackTime: 1,
     maxFunds: 1,
@@ -88,6 +92,7 @@ async function attackTargets(
     expGain: 1,
   }
 ) {
+  let targetHosts = [...managerConfig.targetHosts];
   if (targetHosts.length < 1) {
     logWriter.writeLine(
       'No target hosts provided.  Getting all rooted host targets...'
@@ -100,11 +105,11 @@ async function attackTargets(
   sortOptimalTargetHosts(targetsAnalysis, weightScoreValues);
   logWriter.writeLine(`Sorted ${targetsAnalysis.length} target hosts.`);
 
-  if (optimalOnlyCount > 0) {
+  if (managerConfig.optimalOnlyCount > 0) {
     logWriter.writeLine(
-      `Isolating top ${optimalOnlyCount} most optimal targets...`
+      `Isolating top ${managerConfig.optimalOnlyCount} most optimal targets...`
     );
-    targetsAnalysis = targetsAnalysis.slice(0, optimalOnlyCount);
+    targetsAnalysis = targetsAnalysis.slice(0, managerConfig.optimalOnlyCount);
   }
 
   logWriter.writeLine(`Attacking ${targetsAnalysis.length} targets...`);
@@ -140,7 +145,7 @@ async function attackTargets(
     const growBatchThreads = netscript.formulas.hacking.growThreads(
       targetServer,
       player,
-      fundsLimitWeight * targetDetails.maxFunds
+      managerConfig.targetFundsLimitPercent * targetDetails.maxFunds
     );
     const growBatchRam = getRequiredRam(
       netscript,
@@ -173,7 +178,7 @@ async function attackTargets(
     );
     const hackBatchThreads = Math.max(
       0,
-      Math.floor(targetFundsPercent / hackPercentPerThread)
+      Math.floor(managerConfig.targetFundsLimitPercent / hackPercentPerThread)
     );
     const hackBatchRam = getRequiredRam(
       netscript,
@@ -192,7 +197,7 @@ async function attackTargets(
     // Determine if Total Ram can be satisfied by accessible servers (max ram) ; if not then skip
     const attackHosts = scanWideNetwork(
       netscript,
-      includeHomeAttacker,
+      managerConfig.includeHomeAttacker,
       true,
       true
     );
@@ -265,7 +270,7 @@ async function attackTargets(
       WORKERS_PACKAGE,
       false,
       weakenGrowBatchThreads,
-      includeHomeAttacker,
+      managerConfig.includeHomeAttacker,
       getCmdFlag(CMD_FLAG_TARGETS_CSV),
       hostname,
       getCmdFlag(CMD_FLAG_DELAY),
@@ -277,7 +282,7 @@ async function attackTargets(
       WORKERS_PACKAGE,
       false,
       growBatchThreads,
-      includeHomeAttacker,
+      managerConfig.includeHomeAttacker,
       getCmdFlag(CMD_FLAG_TARGETS_CSV),
       hostname,
       getCmdFlag(CMD_FLAG_DELAY),
@@ -289,7 +294,7 @@ async function attackTargets(
       WORKERS_PACKAGE,
       false,
       weakenHackBatchThreads,
-      includeHomeAttacker,
+      managerConfig.includeHomeAttacker,
       getCmdFlag(CMD_FLAG_TARGETS_CSV),
       hostname,
       getCmdFlag(CMD_FLAG_DELAY),
@@ -301,7 +306,7 @@ async function attackTargets(
       WORKERS_PACKAGE,
       false,
       hackBatchThreads,
-      includeHomeAttacker,
+      managerConfig.includeHomeAttacker,
       getCmdFlag(CMD_FLAG_TARGETS_CSV),
       hostname,
       getCmdFlag(CMD_FLAG_DELAY),
@@ -333,6 +338,39 @@ async function attackTargets(
   await waitForScripts(netscript, workerPids);
 }
 
+function handleUpdateConfigEvent(
+  eventData: WgwhManagerConfigEvent,
+  logWriter: Logger
+) {
+  if (!eventData.config) {
+    return;
+  }
+
+  logWriter.writeLine('Update settings event received...');
+  managerConfig = eventData.config;
+
+  logWriter.writeLine(`  Optimal Only : ${managerConfig.optimalOnlyCount}`);
+  logWriter.writeLine(`  Hack Percent : ${managerConfig.hackFundsPercent}`);
+  logWriter.writeLine(
+    `  Funds Limit Percent : ${managerConfig.targetFundsLimitPercent}`
+  );
+  logWriter.writeLine(`  Target Hosts : ${managerConfig.targetHosts}`);
+  logWriter.writeLine(
+    `  Include Home Attacker : ${managerConfig.includeHomeAttacker}`
+  );
+  logWriter.writeLine(`  Attacker Hosts : ${managerConfig.attackerHosts}`);
+}
+
+function handleWgwhConfigRequest(
+  requestData: WgwhConfigRequest,
+  logWriter: Logger
+) {
+  logWriter.writeLine(
+    `Sending serial wgwh attack manager config response to ${requestData.sender}`
+  );
+  sendMessage(new WgwhConfigResponse(managerConfig), requestData.sender);
+}
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
   initializeScript(netscript, SUBSCRIBER_NAME);
@@ -342,54 +380,51 @@ export async function main(netscript: NS) {
 
   terminalWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
-  const continuousAttack = cmdArgs[
-    CMD_FLAG_CONTINUOUS_ATTACK
-  ].valueOf() as boolean;
+  const optimalOnlyCount = cmdArgs[CMD_FLAG_OPTIMAL_ONLY].valueOf() as number;
+  const hackFundsPercent = cmdArgs[CMD_FLAG_HACK_PERCENT].valueOf() as number;
+  const fundsLimitPercent = cmdArgs[
+    CMD_FLAG_FUNDS_LIMIT_PERCENT
+  ].valueOf() as number;
+  const targetHosts = cmdArgs[CMD_FLAG_TARGETS].valueOf() as string[];
   const includeHomeAttacker = cmdArgs[
     CMD_FLAG_INCLUDE_HOME
   ].valueOf() as boolean;
-  const optimalOnlyCount = cmdArgs[CMD_FLAG_OPTIMAL_ONLY].valueOf() as number;
-  const hackPercent = cmdArgs[CMD_FLAG_HACK_PERCENT].valueOf() as number;
-  const fundsLimitWeight = cmdArgs[
-    CMD_FLAG_FUNDS_LIMIT_WEIGHT
-  ].valueOf() as number;
-  const targetHosts = cmdArgs[CMD_FLAG_TARGETS].valueOf() as string[];
+  const attackerHosts = cmdArgs[CMD_FLAG_ATTACKERS].valueOf() as string[];
 
-  terminalWriter.writeLine(`Continuous Attack : ${continuousAttack}`);
-  terminalWriter.writeLine(`Include Home Attacker : ${includeHomeAttacker}`);
-  terminalWriter.writeLine(`Optimal Only : ${optimalOnlyCount}`);
-  terminalWriter.writeLine(`Hack Percent : ${hackPercent}`);
-  terminalWriter.writeLine(`Funds Limit Weight : ${fundsLimitWeight}`);
+  terminalWriter.writeLine(`Optimal Only Count : ${optimalOnlyCount}`);
+  terminalWriter.writeLine(`Hack Funds Percent : ${hackFundsPercent}`);
+  terminalWriter.writeLine(`Funds Limit Percent : ${fundsLimitPercent}`);
   terminalWriter.writeLine(`Target Hosts : ${targetHosts}`);
+  terminalWriter.writeLine(`Include Home Attacker : ${includeHomeAttacker}`);
+  terminalWriter.writeLine(`Attacker Hosts : ${attackerHosts}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
+
+  managerConfig = {
+    includeHomeAttacker: includeHomeAttacker,
+    optimalOnlyCount: optimalOnlyCount,
+    hackFundsPercent: hackFundsPercent,
+    targetFundsLimitPercent: fundsLimitPercent,
+    targetHosts: targetHosts,
+    attackerHosts: attackerHosts,
+  };
 
   terminalWriter.writeLine('See script logs for on-going attack details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
-  if (continuousAttack) {
-    await infiniteLoop(
-      netscript,
-      attackTargets,
-      netscript,
-      scriptLogWriter,
-      targetHosts,
-      hackPercent,
-      optimalOnlyCount,
-      includeHomeAttacker,
-      fundsLimitWeight
-    );
-  } else {
-    await attackTargets(
-      netscript,
-      scriptLogWriter,
-      targetHosts,
-      hackPercent,
-      optimalOnlyCount,
-      includeHomeAttacker,
-      fundsLimitWeight
-    );
-  }
+  const eventListener = new EventListener(SUBSCRIBER_NAME);
+  eventListener.addListener(
+    WgwhManagerConfigEvent,
+    handleUpdateConfigEvent,
+    scriptLogWriter
+  );
+  eventListener.addListener(
+    WgwhConfigRequest,
+    handleWgwhConfigRequest,
+    scriptLogWriter
+  );
+
+  await infiniteLoop(netscript, attackTargets, netscript, scriptLogWriter);
 }
 
 export function autocomplete(data: AutocompleteData, args: string[]) {
@@ -400,7 +435,7 @@ export function autocomplete(data: AutocompleteData, args: string[]) {
   if (lastCmdFlag === getCmdFlag(CMD_FLAG_HACK_PERCENT)) {
     return PERCENT_AUTOCOMPLETE;
   }
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_FUNDS_LIMIT_WEIGHT)) {
+  if (lastCmdFlag === getCmdFlag(CMD_FLAG_FUNDS_LIMIT_PERCENT)) {
     return PERCENT_AUTOCOMPLETE;
   }
   if (lastCmdFlag === getCmdFlag(CMD_FLAG_TARGETS)) {

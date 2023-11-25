@@ -74,12 +74,11 @@ function handleEnableTerminal() {
   }
 }
 
-function handleNumericInputChange(
-  setFundsLimit: ReactSetStateFunction<string>,
+function handleTextboxInputChange(
+  setValue: ReactSetStateFunction<string>,
   eventData: React.ChangeEvent<HTMLInputElement>
 ) {
-  const numValue = Number.parseInt(eventData.target.value.replaceAll(',', ''));
-  setFundsLimit(Number.isNaN(numValue) ? '' : numValue.toLocaleString());
+  setValue(eventData.target.value);
 }
 
 function runTerminalCommand(cmd: string) {
@@ -129,7 +128,7 @@ export {
   getHtmlElement,
   handleDisableTerminal,
   handleEnableTerminal,
-  handleNumericInputChange,
+  handleTextboxInputChange,
   runTerminalCommand,
   openTail,
 };

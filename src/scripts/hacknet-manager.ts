@@ -21,11 +21,13 @@ import {
   HacknetOrder,
   getNodeUpgradeOrders,
 } from '/scripts/workflows/hacknet';
-import {openTail} from '/scripts/workflows/ui';
-import {HacknetConfigRequest} from '/scripts/comms/requests/hacknet-config-request';
+
 import {EventListener, sendMessage} from '/scripts/comms/event-comms';
+import {HacknetConfigRequest} from '/scripts/comms/requests/hacknet-config-request';
 import {HacknetConfigResponse} from '/scripts/comms/responses/hacknet-config-response';
 import {HacknetManagerConfigEvent} from '/scripts/comms/events/hacknet-manager-config-event';
+
+import {openTail} from '/scripts/workflows/ui';
 
 const MODULE_NAME = 'hacknet-manager';
 const SUBSCRIBER_NAME = 'hacknet-manager';
