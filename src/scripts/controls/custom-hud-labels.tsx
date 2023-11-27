@@ -10,12 +10,14 @@ function CustomHudLabels({
   excludeScriptsMetrics,
   excludeGangMetrics,
   excludeStocksMetrics,
+  excludePlayerMetrics,
 }: {
   uiTheme: UserInterfaceTheme;
   excludeLocationMetrics: boolean;
   excludeScriptsMetrics: boolean;
   excludeGangMetrics: boolean;
   excludeStocksMetrics: boolean;
+  excludePlayerMetrics: boolean;
 }) {
   return (
     <div>
@@ -23,7 +25,7 @@ function CustomHudLabels({
       <label
         title="Name of the city you are currently in"
         style={{
-          color: uiTheme['infolight'],
+          color: uiTheme.infolight,
           display: excludeLocationMetrics ? 'none' : '',
         }}
       >
@@ -33,7 +35,7 @@ function CustomHudLabels({
       <label
         title="Current location witin the city"
         style={{
-          color: uiTheme['infolight'],
+          color: uiTheme.infolight,
           display: excludeLocationMetrics ? 'none' : '',
         }}
       >
@@ -43,7 +45,7 @@ function CustomHudLabels({
       <label
         title="Script hacking experience per second"
         style={{
-          color: uiTheme['hack'],
+          color: uiTheme.hack,
           display: excludeScriptsMetrics ? 'none' : '',
         }}
       >
@@ -53,7 +55,7 @@ function CustomHudLabels({
       <label
         title="Script income per second"
         style={{
-          color: uiTheme['money'],
+          color: uiTheme.money,
           display: excludeScriptsMetrics ? 'none' : '',
         }}
       >
@@ -63,7 +65,7 @@ function CustomHudLabels({
       <label
         title="Gang income per second"
         style={{
-          color: uiTheme['money'],
+          color: uiTheme.money,
           display: excludeGangMetrics ? 'none' : '',
         }}
       >
@@ -73,7 +75,7 @@ function CustomHudLabels({
       <label
         title="Total profit from stock portfolio"
         style={{
-          color: uiTheme['money'],
+          color: uiTheme.money,
           display: excludeStocksMetrics ? 'none' : '',
         }}
       >
@@ -83,7 +85,7 @@ function CustomHudLabels({
       <label
         title="Total value of stock portfolio"
         style={{
-          color: uiTheme['money'],
+          color: uiTheme.money,
           display: excludeStocksMetrics ? 'none' : '',
         }}
       >
@@ -93,13 +95,20 @@ function CustomHudLabels({
       <label
         title="Total player money"
         style={{
-          color: uiTheme['money'],
+          color: uiTheme.money,
           display: excludeStocksMetrics ? 'none' : '',
         }}
       >
         Player Val
       </label>
       <br style={{display: excludeStocksMetrics ? 'none' : ''}} />
+      <label
+        title="Player karma level"
+        style={{color: uiTheme.hp, display: excludePlayerMetrics ? 'none' : ''}}
+      >
+        Karma Lvl
+      </label>
+      <br style={{display: excludePlayerMetrics ? 'none' : ''}} />
     </div>
   );
 }

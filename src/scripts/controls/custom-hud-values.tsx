@@ -81,7 +81,8 @@ function updatePolledMetrics(
   setCity: ReactSetStateFunction<string>,
   setLocation: ReactSetStateFunction<string>,
   setScriptsExp: ReactSetStateFunction<string>,
-  setScriptsIncome: ReactSetStateFunction<string>
+  setScriptsIncome: ReactSetStateFunction<string>,
+  setKarmaLevel: ReactSetStateFunction<string>
 ) {
   logWriter.writeLine('Calculating script metrics...');
   let totalScriptIncome = 0;
@@ -105,12 +106,15 @@ function updatePolledMetrics(
 
   logWriter.writeLine('Retrieving location & player metrics...');
   const playerInfo = netscript.getPlayer();
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  const karmaLevel = (netscript as any).heart.break();
 
   logWriter.writeLine('Updating location & script...');
   setCity(playerInfo.city);
   setLocation(playerInfo.location);
   setScriptsExp(netscript.formatNumber(totalScriptExp));
   setScriptsIncome(`$${netscript.formatNumber(totalScriptIncome)}`);
+  setKarmaLevel(netscript.formatNumber(karmaLevel));
   logWriter.writeLine(ENTRY_DIVIDER);
 }
 
@@ -124,6 +128,7 @@ function CustomHudValues({
   excludeScriptsMetrics,
   excludeGangMetrics,
   excludeStocksMetrics,
+  excludePlayerMetrics,
 }: {
   uiTheme: UserInterfaceTheme;
   netscript: NS;
@@ -134,6 +139,7 @@ function CustomHudValues({
   excludeScriptsMetrics: boolean;
   excludeGangMetrics: boolean;
   excludeStocksMetrics: boolean;
+  excludePlayerMetrics: boolean;
 }) {
   const [city, setCity] = useState('');
   const [location, setLocation] = useState('');
@@ -143,6 +149,7 @@ function CustomHudValues({
   const [stocksProfit, setStocksProfit] = useState('');
   const [stocksPortfolioValue, setStocksPortfolioValue] = useState('');
   const [playerTotalValue, setPlayerTotalValue] = useState('');
+  const [playerKarmaLevel, setKarmaLevel] = useState('');
 
   useEffectOnce(() => {
     updatePolledMetrics(
@@ -151,7 +158,8 @@ function CustomHudValues({
       setCity,
       setLocation,
       setScriptsExp,
-      setScriptsIncome
+      setScriptsIncome,
+      setKarmaLevel
     );
   });
   useInterval(() => {
@@ -161,7 +169,8 @@ function CustomHudValues({
       setCity,
       setLocation,
       setScriptsExp,
-      setScriptsIncome
+      setScriptsIncome,
+      setKarmaLevel
     );
   }, updateDelay);
 
@@ -269,6 +278,13 @@ function CustomHudValues({
         {playerTotalValue}
       </label>
       <br style={{display: excludeStocksMetrics ? 'none' : ''}} />
+      <label
+        id="playerKarmaLevel"
+        style={{color: uiTheme.hp, display: excludePlayerMetrics ? 'none' : ''}}
+      >
+        {playerKarmaLevel}
+      </label>
+      <br style={{display: excludePlayerMetrics ? 'none' : ''}} />
     </div>
   );
 }
