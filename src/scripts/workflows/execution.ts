@@ -185,7 +185,9 @@ async function delayedInfiniteLoop<FuncType extends LoopableFunction>(
   /* eslint-disable-next-line no-constant-condition */
   while (true) {
     await loopFunction(...funcArgs);
-    await netscript.asleep(delay);
+    if (delay > 0) {
+      await netscript.asleep(delay);
+    }
   }
 }
 

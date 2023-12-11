@@ -23,6 +23,7 @@ import {
 } from '/scripts/workflows/recon';
 import {
   ServerDetailsExtended,
+  getHackingExpGain,
   scoreHostForExperience,
   scoreHostForWGWH,
   sortOptimalTargetHosts,
@@ -76,14 +77,10 @@ export async function main(netscript: NS) {
   } else if (scoreFunc === CMD_FLAG_ARG_EXP_FARM_FUNCTION) {
     targetsAnalysis.map(value => {
       const extendedValue = value as ServerDetailsExtended;
-      extendedValue.expGain = netscript.formulas.hacking.hackExp(
-        netscript.getServer(extendedValue.hostname),
-        netscript.getPlayer()
-      );
+      extendedValue.expGain = getHackingExpGain(netscript, value.hostname);
       return extendedValue;
     });
     sortOptimalTargetHosts(targetsAnalysis, undefined, scoreHostForExperience);
-    console.table(targetsAnalysis);
   } else {
     logWriter.writeLine(
       `Unrecognized scoring function : ${scoreFunc}.  Scoring function must be one of : ${CMD_ARGS_FLAG_SCORING_FUNC}`

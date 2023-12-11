@@ -22,7 +22,7 @@ import {
 const MODULE_NAME = 'gangs-monitor';
 const SUBSCRIBER_NAME = 'gangs-monitor';
 
-const UPDATE_DELAY = 1500;
+const UPDATE_DELAY = 0;
 
 const MONITORED_GANG_INFO_PROPERTIES: Array<keyof GangGenInfo> = [
   'faction',
@@ -130,6 +130,8 @@ async function updateGangDetails(netscript: NS, logWriter: Logger) {
     );
   }
   logWriter.writeLine(ENTRY_DIVIDER);
+
+  await netscript.gang.nextUpdate();
 }
 
 /** @param {NS} netscript */

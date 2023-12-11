@@ -23,15 +23,15 @@ import {StockListingsResponse} from '/scripts/comms/responses/stocks-listing-res
 const MODULE_NAME = 'stocks-ticker-4sigma';
 const SUBSCRIBER_NAME = 'stocks-ticker-4sigma';
 
-const REFRESH_LISTINGS_DELAY = 1500;
+const UPDATE_DELAY = 0;
 const STOCK_LISTINGS_MAP = new Map<string, StockListing>();
 
-function updateStockListings(netscript: NS, logWriter: Logger) {
+async function updateStockListings(netscript: NS, logWriter: Logger) {
   logWriter.writeLine('Updating Stock Listings from 4Sigma Market Data');
   logWriter.writeLine(SECTION_DIVIDER);
 
   const allSymbols = netscript.stock.getSymbols();
-  const updatedSymbols = new Array<StockListing>();
+  const updatedListings = new Array<StockListing>();
   for (const symbol of allSymbols) {
     const askPrice = netscript.stock.getAskPrice(symbol);
     const bidPrice = netscript.stock.getBidPrice(symbol);
@@ -64,19 +64,21 @@ function updateStockListings(netscript: NS, logWriter: Logger) {
       };
 
       STOCK_LISTINGS_MAP.set(symbol, stockListing);
-      updatedSymbols.push(stockListing);
+      updatedListings.push(stockListing);
       logWriter.writeLine(`  Forecast score : ${stockListing.forecastScore}`);
       logWriter.writeLine(ENTRY_DIVIDER);
     }
   }
 
-  if (updatedSymbols.length > 0) {
-    sendMessage(new StocksTickerEvent(updatedSymbols));
-    logWriter.writeLine(`Updated ${updatedSymbols.length} stock listings.`);
+  if (updatedListings.length > 0) {
+    sendMessage(new StocksTickerEvent(updatedListings));
+    logWriter.writeLine(`Updated ${updatedListings.length} stock listings.`);
   } else {
     logWriter.writeLine('No stock listings updated.');
   }
   logWriter.writeLine(SECTION_DIVIDER);
+
+  await netscript.stock.nextUpdate();
 }
 
 function sendListings(eventData: StockListingsRequest) {
@@ -108,7 +110,7 @@ export async function main(netscript: NS) {
 
   await delayedInfiniteLoop(
     netscript,
-    REFRESH_LISTINGS_DELAY,
+    UPDATE_DELAY,
     updateStockListings,
     netscript,
     logWriter

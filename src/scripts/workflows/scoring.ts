@@ -245,13 +245,19 @@ function sortOptimalTargetHosts(
   );
 }
 
-function getHackingExpGain(netscript: NS, hostDetails: ServerDetails) {
-  const extendedDetails = hostDetails as ServerDetailsExtended;
-  extendedDetails.expGain = netscript.formulas.hacking.hackExp(
-    netscript.getServer(hostDetails.hostname),
-    netscript.getPlayer()
-  );
-  return extendedDetails;
+function getHackingExpGain(netscript: NS, hostname: string) {
+  const serverDetails = netscript.getServer(hostname);
+  if (!serverDetails.baseDifficulty) {
+    return 0;
+  }
+
+  const playerDetails = netscript.getPlayer();
+  const baseExpGain = 3;
+  const diffFactor = 0.3;
+  const expGain =
+    (baseExpGain + serverDetails.baseDifficulty * diffFactor) *
+    playerDetails.mults.hacking_exp;
+  return expGain;
 }
 
 export {

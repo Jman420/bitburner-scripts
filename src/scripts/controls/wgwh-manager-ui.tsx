@@ -178,11 +178,13 @@ function getWgwhConfig() {
   const targetHosts =
     interfaceControls.targetHosts?.value
       .split(',')
-      .map(value => value.trim()) ?? [];
+      .map(value => value.trim())
+      .filter(value => value !== '') ?? [];
   const attackerHosts =
     interfaceControls.attackerHosts?.value
       .split(',')
-      .map(value => value.trim()) ?? [];
+      .map(value => value.trim())
+      .filter(value => value !== '') ?? [];
 
   const result: WgwhAttackConfig = {
     includeHomeAttacker: includeHomeAttacker,

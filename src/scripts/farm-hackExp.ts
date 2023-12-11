@@ -26,6 +26,8 @@ import {WORKERS_PACKAGE} from '/scripts/workers/package';
 import {WEAKEN_WORKER_SCRIPT} from '/scripts/workflows/orchestration';
 import {initializeScript, runScript} from '/scripts/workflows/execution';
 import {
+  ServerDetailsExtended,
+  getHackingExpGain,
   scoreHostForExperience,
   sortOptimalTargetHosts,
 } from '/scripts/workflows/scoring';
@@ -68,9 +70,13 @@ export async function main(netscript: NS) {
     targetHosts = filterHostsCanHack(netscript, targetHosts);
   }
   logWriter.writeLine('Sorting target hosts by optimality...');
-  const targetsAnalysis = targetHosts.map(value =>
-    analyzeHost(netscript, value)
-  );
+  const targetsAnalysis = targetHosts
+    .map(value => analyzeHost(netscript, value))
+    .map(value => {
+      const extendedValue = value as ServerDetailsExtended;
+      extendedValue.expGain = getHackingExpGain(netscript, value.hostname);
+      return extendedValue;
+    });
   sortOptimalTargetHosts(targetsAnalysis, undefined, scoreHostForExperience);
   logWriter.writeLine(`Sorted ${targetsAnalysis.length} target hosts.`);
 

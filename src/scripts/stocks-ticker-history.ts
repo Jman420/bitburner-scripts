@@ -47,13 +47,13 @@ class HistoricalStockDetails {
 const MODULE_NAME = 'stocks-ticker-history';
 const SUBSCRIBER_NAME = 'stocks-ticker-history';
 
-const REFRESH_LISTINGS_DELAY = 1500;
+const UPDATE_DELAY = 0;
 const HISTORICAL_RECORD_DEPTH = 20;
 const MIN_RECORDS_FOR_FORECAST = 10;
 const HISTORICAL_DETAILS_MAP = new Map<string, HistoricalStockDetails>();
 const STOCK_LISTINGS_MAP = new Map<string, StockListing>();
 
-function updateStockListings(netscript: NS, logWriter: Logger) {
+async function updateStockListings(netscript: NS, logWriter: Logger) {
   logWriter.writeLine('Updating Stock Listings from Historical Market Data');
   logWriter.writeLine(SECTION_DIVIDER);
 
@@ -115,9 +115,15 @@ function updateStockListings(netscript: NS, logWriter: Logger) {
     }
   }
 
-  sendMessage(new StocksTickerEvent(updatedListings));
-  logWriter.writeLine(`Updated ${updatedListings.length} stock listings.`);
+  if (updatedListings.length > 0) {
+    sendMessage(new StocksTickerEvent(updatedListings));
+    logWriter.writeLine(`Updated ${updatedListings.length} stock listings.`);
+  } else {
+    logWriter.writeLine('No stock listings updated.');
+  }
   logWriter.writeLine(SECTION_DIVIDER);
+
+  await netscript.stock.nextUpdate();
 }
 
 function sendListings(eventData: StockListingsRequest) {
@@ -150,7 +156,7 @@ export async function main(netscript: NS) {
   HISTORICAL_DETAILS_MAP.clear();
   await delayedInfiniteLoop(
     netscript,
-    REFRESH_LISTINGS_DELAY,
+    UPDATE_DELAY,
     updateStockListings,
     netscript,
     logWriter
