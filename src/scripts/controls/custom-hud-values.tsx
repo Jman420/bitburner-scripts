@@ -201,7 +201,7 @@ function CustomHudValues({
       <label
         id="cityValue"
         style={{
-          color: uiTheme['infolight'],
+          color: uiTheme.infolight,
           display: excludeLocationMetrics ? 'none' : '',
         }}
       >
@@ -211,7 +211,7 @@ function CustomHudValues({
       <label
         id="locationValue"
         style={{
-          color: uiTheme['infolight'],
+          color: uiTheme.infolight,
           display: excludeLocationMetrics ? 'none' : '',
         }}
       >
@@ -221,7 +221,7 @@ function CustomHudValues({
       <label
         id="scriptsExpValue"
         style={{
-          color: uiTheme['hack'],
+          color: uiTheme.hack,
           display: excludeScriptsMetrics ? 'none' : '',
         }}
       >
@@ -231,7 +231,7 @@ function CustomHudValues({
       <label
         id="scriptsIncomeValue"
         style={{
-          color: uiTheme['money'],
+          color: uiTheme.money,
           display: excludeScriptsMetrics ? 'none' : '',
         }}
       >
@@ -241,7 +241,7 @@ function CustomHudValues({
       <label
         id="gangIncomeValue"
         style={{
-          color: uiTheme['money'],
+          color: uiTheme.money,
           display: excludeGangMetrics ? 'none' : '',
         }}
       >
@@ -251,7 +251,7 @@ function CustomHudValues({
       <label
         id="stocksProfitValue"
         style={{
-          color: uiTheme['money'],
+          color: uiTheme.money,
           display: excludeStocksMetrics ? 'none' : '',
         }}
       >
@@ -261,7 +261,7 @@ function CustomHudValues({
       <label
         id="stocksPortfolioValue"
         style={{
-          color: uiTheme['money'],
+          color: uiTheme.money,
           display: excludeStocksMetrics ? 'none' : '',
         }}
       >
@@ -271,7 +271,7 @@ function CustomHudValues({
       <label
         id="playerTotalValue"
         style={{
-          color: uiTheme['money'],
+          color: uiTheme.money,
           display: excludeStocksMetrics ? 'none' : '',
         }}
       >

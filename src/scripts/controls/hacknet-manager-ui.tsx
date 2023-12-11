@@ -1,12 +1,9 @@
-import {NS} from '@ns';
+import {NS, UserInterfaceTheme} from '@ns';
 
 import {
   ReactSetStateFunction,
   getDocument,
   getReactModel,
-  handleDisableTerminal,
-  handleEnableTerminal,
-  handleTextboxInputChange,
 } from '/scripts/workflows/ui';
 import {
   HACKNET_MANAGER_SCRIPT,
@@ -24,17 +21,18 @@ import {HacknetConfigResponse} from '/scripts/comms/responses/hacknet-config-res
 import {HacknetManagerConfigEvent} from '/scripts/comms/events/hacknet-manager-config-event';
 
 import {
-  BUTTON_CSS_CLASS,
-  DIV_BORDER_CSS_CLASS,
-  HEADER_DIV_STYLE,
-  HEADER_LABEL_STYLE,
-  TEXTBOX_CSS_CLASS,
-  TOGGLE_BUTTON_SELECTED_CSS_CLASS,
+  TOGGLE_BUTTON_SELECTED_CLASS,
+  getDivBorderStyle,
+  getHeaderDivStyle,
+  getHeaderLabelStyle,
+  getLabelStyle,
 } from '/scripts/controls/style-sheet';
 import {RunScriptButton} from '/scripts/controls/components/run-script-button';
 import {ToggleButton} from '/scripts/controls/components/toggle-button';
 import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
 import {parseNumber} from '/scripts/workflows/parsing';
+import {Button} from '/scripts/controls/components/button';
+import {Input} from '/scripts/controls/components/input';
 
 const React = getReactModel().reactNS;
 const useState = React.useState;
@@ -44,21 +42,6 @@ interface InterfaceControls {
   purchaseUpgrades: HTMLButtonElement | undefined;
   fundsLimit: HTMLInputElement | undefined;
 }
-
-const DIV_STYLE: React.CSSProperties = {
-  alignItems: 'center',
-  textAlign: 'center',
-};
-const LABEL_STYLE: React.CSSProperties = {
-  fontSize: '14pt',
-  textAlign: 'center',
-  display: 'block',
-};
-const INPUT_STYLE: React.CSSProperties = {
-  fontSize: '14pt',
-  textAlign: 'center',
-  display: 'block',
-};
 
 const PURCHASE_NODES_BUTTON_ID = 'purchaseNodes';
 const PURCHASE_UPGRADES_BUTTON_ID = 'purchaseUpgrades';
@@ -83,7 +66,8 @@ function handleHacknetConfigResponse(
   responseData: HacknetConfigResponse,
   netscript: NS,
   eventListener: EventListener,
-  setFundsLimit: ReactSetStateFunction<string>
+  setFundsLimit: ReactSetStateFunction<string>,
+  uiTheme: UserInterfaceTheme
 ) {
   if (!responseData.config) {
     return;
@@ -93,24 +77,39 @@ function handleHacknetConfigResponse(
     handleHacknetConfigResponse
   );
 
-  const interfaceControls = getInterfaceControls();
-  interfaceControls.purchaseNodes?.classList.remove(
-    TOGGLE_BUTTON_SELECTED_CSS_CLASS
-  );
-  interfaceControls.purchaseUpgrades?.classList.remove(
-    TOGGLE_BUTTON_SELECTED_CSS_CLASS
-  );
-
   const config = responseData.config;
-  if (config.purchaseNodes) {
-    interfaceControls.purchaseNodes?.classList.add(
-      TOGGLE_BUTTON_SELECTED_CSS_CLASS
+  const interfaceControls = getInterfaceControls();
+  if (interfaceControls.purchaseNodes) {
+    interfaceControls.purchaseNodes.classList.remove(
+      TOGGLE_BUTTON_SELECTED_CLASS
     );
+    interfaceControls.purchaseNodes.style.color = uiTheme.secondary;
+    interfaceControls.purchaseNodes.style.backgroundColor =
+      uiTheme.backgroundprimary;
+
+    if (config.purchaseNodes) {
+      interfaceControls.purchaseNodes.classList.add(
+        TOGGLE_BUTTON_SELECTED_CLASS
+      );
+      interfaceControls.purchaseNodes.style.color = uiTheme.primary;
+      interfaceControls.purchaseNodes.style.backgroundColor = uiTheme.button;
+    }
   }
-  if (config.purchaseUpgrades) {
-    interfaceControls.purchaseUpgrades?.classList.add(
-      TOGGLE_BUTTON_SELECTED_CSS_CLASS
+  if (interfaceControls.purchaseUpgrades) {
+    interfaceControls.purchaseUpgrades.classList.remove(
+      TOGGLE_BUTTON_SELECTED_CLASS
     );
+    interfaceControls.purchaseUpgrades.style.color = uiTheme.secondary;
+    interfaceControls.purchaseUpgrades.style.backgroundColor =
+      uiTheme.backgroundprimary;
+
+    if (config.purchaseUpgrades) {
+      interfaceControls.purchaseUpgrades.classList.add(
+        TOGGLE_BUTTON_SELECTED_CLASS
+      );
+      interfaceControls.purchaseUpgrades.style.color = uiTheme.primary;
+      interfaceControls.purchaseUpgrades.style.backgroundColor = uiTheme.button;
+    }
   }
   setFundsLimit(netscript.formatNumber(config.fundsLimit));
 }
@@ -139,11 +138,11 @@ function getHacknetManagerConfig() {
   const config: HacknetManagerConfig = {
     purchaseNodes:
       interfaceControls.purchaseNodes?.classList.contains(
-        TOGGLE_BUTTON_SELECTED_CSS_CLASS
+        TOGGLE_BUTTON_SELECTED_CLASS
       ) ?? false,
     purchaseUpgrades:
       interfaceControls.purchaseUpgrades?.classList.contains(
-        TOGGLE_BUTTON_SELECTED_CSS_CLASS
+        TOGGLE_BUTTON_SELECTED_CLASS
       ) ?? false,
     fundsLimit: fundsLimit,
   };
@@ -159,7 +158,8 @@ function sendHacknetManagerConfig() {
 async function handleToggleHacknetManager(
   netscript: NS,
   eventListener: EventListener,
-  setFundsLimit: ReactSetStateFunction<string>
+  setFundsLimit: ReactSetStateFunction<string>,
+  uiTheme: UserInterfaceTheme
 ) {
   let scriptPid = getPid(netscript, HACKNET_MANAGER_SCRIPT);
   if (!scriptPid) {
@@ -172,7 +172,8 @@ async function handleToggleHacknetManager(
       handleHacknetConfigResponse,
       netscript,
       eventListener,
-      setFundsLimit
+      setFundsLimit,
+      uiTheme
     );
     sendMessage(new HacknetConfigRequest(eventListener.subscriberName));
   } else {
@@ -190,6 +191,9 @@ function HacknetManagerUI({
   netscript: NS;
   eventListener: EventListener;
 }) {
+  const uiStyle = netscript.ui.getStyles();
+  const uiTheme = netscript.ui.getTheme();
+
   const [fundsLimit, setFundsLimit] = useState('');
   const managerRunning = Boolean(getPid(netscript, HACKNET_MANAGER_SCRIPT));
 
@@ -199,59 +203,71 @@ function HacknetManagerUI({
       handleHacknetConfigResponse,
       netscript,
       eventListener,
-      setFundsLimit
+      setFundsLimit,
+      uiTheme
     );
     sendMessage(new HacknetConfigRequest(eventListener.subscriberName));
   });
 
+  const divBorderStyle = getDivBorderStyle(uiStyle, uiTheme);
+  divBorderStyle.alignItems = 'center';
+  divBorderStyle.textAlign = 'center';
+
   return (
     <div>
-      <div style={HEADER_DIV_STYLE}>
-        <label style={HEADER_LABEL_STYLE}>Hacknet Manager</label>
+      <div style={getHeaderDivStyle(uiStyle, uiTheme)}>
+        <label style={getHeaderLabelStyle()}>Hacknet Manager</label>
         <RunScriptButton
           title="Toggle hacknet manager script"
           runScriptFunc={handleToggleHacknetManager.bind(
             undefined,
             netscript,
             eventListener,
-            setFundsLimit
+            setFundsLimit,
+            uiTheme
           )}
           scriptAlreadyRunning={managerRunning}
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
         />
       </div>
-      <label style={LABEL_STYLE}>Purchase Settings</label>
-      <div className={DIV_BORDER_CSS_CLASS} style={DIV_STYLE}>
+      <label style={getLabelStyle('center')}>Purchase Settings</label>
+      <div style={divBorderStyle}>
         <ToggleButton
           id={PURCHASE_NODES_BUTTON_ID}
           onClick={sendHacknetManagerConfig}
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
         >
           New Nodes
         </ToggleButton>
         <ToggleButton
           id={PURCHASE_UPGRADES_BUTTON_ID}
           onClick={sendHacknetManagerConfig}
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
         >
           Node Upgrades
         </ToggleButton>
       </div>
-      <div style={DIV_STYLE}>
-        <input
+      <div style={divBorderStyle}>
+        <Input
           id={FUNDS_LIMIT_INPUT_ID}
-          className={TEXTBOX_CSS_CLASS}
-          style={INPUT_STYLE}
           placeholder="Enter funds limit"
           value={fundsLimit}
-          onFocusCapture={handleDisableTerminal}
-          onBlur={handleEnableTerminal}
-          onChange={handleTextboxInputChange.bind(undefined, setFundsLimit)}
+          setValue={setFundsLimit}
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
+          textAlign="center"
         />
-        <button
+        <Button
           id={SET_FUNDS_LIMIT_BUTTON_ID}
-          className={BUTTON_CSS_CLASS}
           onClick={handleSetFundsLimitClick}
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
         >
           Set Funds Limit
-        </button>
+        </Button>
       </div>
     </div>
   );

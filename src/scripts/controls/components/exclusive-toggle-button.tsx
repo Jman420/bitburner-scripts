@@ -1,13 +1,14 @@
 import {getDocument, getReactModel} from '/scripts/workflows/ui';
 
 import {
-  TOGGLE_BUTTON_CSS_CLASS,
-  TOGGLE_BUTTON_SELECTED_CSS_CLASS,
+  TOGGLE_BUTTON_SELECTED_CLASS,
+  getExclusiveToggleButtonStyle,
 } from '/scripts/controls/style-sheet';
 import {
   ToggleButtonOnClickBeforeCallback,
   ToggleButtonOnClickCallback,
 } from '/scripts/controls/components/toggle-button';
+import {IStyleSettings, UserInterfaceTheme} from '@ns';
 
 const React = getReactModel().reactNS;
 
@@ -15,23 +16,32 @@ function toggleButtonState(
   exclusiveGroupClass: string,
   onClickBeforeCallback: ToggleButtonOnClickBeforeCallback | undefined,
   onClickCallback: ToggleButtonOnClickCallback | undefined,
+  uiTheme: UserInterfaceTheme,
   eventData: React.MouseEvent<HTMLButtonElement, MouseEvent>
 ) {
   if (onClickBeforeCallback && !onClickBeforeCallback(eventData)) {
     return;
   }
 
-  const targetClassList = eventData.currentTarget.classList;
-  if (targetClassList.contains(TOGGLE_BUTTON_SELECTED_CSS_CLASS)) {
+  const target = eventData.currentTarget;
+  const targetClassList = target.classList;
+  if (targetClassList.contains(TOGGLE_BUTTON_SELECTED_CLASS)) {
     return;
   }
 
   const doc = getDocument();
-  const groupElements = doc.getElementsByClassName(exclusiveGroupClass);
+  const groupElements = doc.getElementsByClassName(
+    exclusiveGroupClass
+  ) as HTMLCollectionOf<HTMLElement>;
   for (const exclusiveElement of groupElements) {
-    exclusiveElement.classList.remove(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
+    exclusiveElement.classList.remove(TOGGLE_BUTTON_SELECTED_CLASS);
+    exclusiveElement.style.color = uiTheme.secondary;
+    exclusiveElement.style.backgroundColor = uiTheme.backgroundprimary;
   }
-  targetClassList.add(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
+
+  targetClassList.add(TOGGLE_BUTTON_SELECTED_CLASS);
+  target.style.color = uiTheme.primary;
+  target.style.backgroundColor = uiTheme.button;
 
   if (onClickCallback) {
     onClickCallback(eventData);
@@ -45,6 +55,8 @@ function ExclusiveToggleButton({
   onClickBefore,
   onClick,
   children,
+  uiStyle,
+  uiTheme,
 }: {
   id?: string;
   exclusiveGroup: string;
@@ -52,18 +64,22 @@ function ExclusiveToggleButton({
   onClickBefore?: ToggleButtonOnClickBeforeCallback;
   onClick?: ToggleButtonOnClickCallback;
   children?: React.ReactNode;
+  uiStyle: IStyleSettings;
+  uiTheme: UserInterfaceTheme;
 }) {
-  const selectedClass = selected ? TOGGLE_BUTTON_SELECTED_CSS_CLASS : '';
+  const selectedClass = selected ? TOGGLE_BUTTON_SELECTED_CLASS : '';
 
   return (
     <button
       id={id}
-      className={`${TOGGLE_BUTTON_CSS_CLASS} ${exclusiveGroup} ${selectedClass}`}
+      className={`${exclusiveGroup} ${selectedClass}`}
+      style={getExclusiveToggleButtonStyle(uiStyle, uiTheme, selected)}
       onClick={toggleButtonState.bind(
         undefined,
         exclusiveGroup,
         onClickBefore,
-        onClick
+        onClick,
+        uiTheme
       )}
     >
       {children}

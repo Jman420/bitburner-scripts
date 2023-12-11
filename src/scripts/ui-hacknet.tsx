@@ -18,7 +18,7 @@ const SUBSCRIBER_NAME = 'ui-hacknet';
 const TAIL_X_POS = 1320;
 const TAIL_Y_POS = 52;
 const TAIL_WIDTH = 330;
-const TAIL_HEIGHT = 245;
+const TAIL_HEIGHT = 275;
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {

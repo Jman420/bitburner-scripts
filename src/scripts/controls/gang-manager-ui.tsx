@@ -1,4 +1,4 @@
-import {NS} from '@ns';
+import {NS, UserInterfaceTheme} from '@ns';
 
 import {getDocument, getReactModel} from '/scripts/workflows/ui';
 import {
@@ -18,10 +18,11 @@ import {GangConfigResponse} from '/scripts/comms/responses/gang-config-response'
 import {GangConfigRequest} from '/scripts/comms/requests/gang-config-request';
 
 import {
-  DIV_BORDER_CSS_CLASS,
-  HEADER_DIV_STYLE,
-  HEADER_LABEL_STYLE,
-  TOGGLE_BUTTON_SELECTED_CSS_CLASS,
+  TOGGLE_BUTTON_SELECTED_CLASS,
+  getDivBorderStyle,
+  getHeaderDivStyle,
+  getHeaderLabelStyle,
+  getLabelStyle,
 } from '/scripts/controls/style-sheet';
 import {RunScriptButton} from '/scripts/controls/components/run-script-button';
 import {ToggleButton} from '/scripts/controls/components/toggle-button';
@@ -44,16 +45,6 @@ const FOCUS_MONEY_BUTTON_ID = 'focusMoney';
 
 const MEMBER_FOCUS_GROUP_CLASS = 'memberFocus';
 
-const LABEL_STYLE: React.CSSProperties = {
-  fontSize: '14pt',
-  textAlign: 'center',
-  display: 'block',
-};
-const DIV_STYLE: React.CSSProperties = {
-  alignItems: 'center',
-  textAlign: 'center',
-};
-
 function getInterfaceControls() {
   const doc = getDocument();
   const result: InterfaceControls = {
@@ -73,7 +64,8 @@ function getInterfaceControls() {
 
 function handleGangConfigResponse(
   responseData: GangConfigResponse,
-  eventListener: EventListener
+  eventListener: EventListener,
+  uiTheme: UserInterfaceTheme
 ) {
   if (!responseData.config) {
     return;
@@ -85,29 +77,41 @@ function handleGangConfigResponse(
     keyof InterfaceControls
   >) {
     const uiControl = interfaceControls[propertyKey];
-    uiControl?.classList.remove(TOGGLE_BUTTON_SELECTED_CSS_CLASS);
+    if (uiControl) {
+      uiControl.classList.remove(TOGGLE_BUTTON_SELECTED_CLASS);
+      uiControl.style.color = uiTheme.secondary;
+      uiControl.style.backgroundColor = uiTheme.backgroundprimary;
+    }
   }
 
   const config = responseData.config;
-  if (config.buyAugmentations) {
-    interfaceControls.buyAugmentations?.classList.add(
-      TOGGLE_BUTTON_SELECTED_CSS_CLASS
+  if (config.buyAugmentations && interfaceControls.buyAugmentations) {
+    interfaceControls.buyAugmentations.classList.add(
+      TOGGLE_BUTTON_SELECTED_CLASS
     );
+    interfaceControls.buyAugmentations.style.color = uiTheme.primary;
+    interfaceControls.buyAugmentations.style.backgroundColor = uiTheme.button;
   }
-  if (config.buyEquipment) {
-    interfaceControls.buyEquipment?.classList.add(
-      TOGGLE_BUTTON_SELECTED_CSS_CLASS
-    );
+  if (config.buyEquipment && interfaceControls.buyEquipment) {
+    interfaceControls.buyEquipment.classList.add(TOGGLE_BUTTON_SELECTED_CLASS);
+    interfaceControls.buyEquipment.style.color = uiTheme.primary;
+    interfaceControls.buyEquipment.style.backgroundColor = uiTheme.button;
   }
 
-  if (config.taskFocus === TaskFocus.RESPECT) {
-    interfaceControls.focusRespect?.classList.add(
-      TOGGLE_BUTTON_SELECTED_CSS_CLASS
-    );
-  } else if (config.taskFocus === TaskFocus.MONEY) {
-    interfaceControls.focusMoney?.classList.add(
-      TOGGLE_BUTTON_SELECTED_CSS_CLASS
-    );
+  if (
+    config.taskFocus === TaskFocus.RESPECT &&
+    interfaceControls.focusRespect
+  ) {
+    interfaceControls.focusRespect.classList.add(TOGGLE_BUTTON_SELECTED_CLASS);
+    interfaceControls.focusRespect.style.color = uiTheme.primary;
+    interfaceControls.focusRespect.style.backgroundColor = uiTheme.button;
+  } else if (
+    config.taskFocus === TaskFocus.MONEY &&
+    interfaceControls.focusMoney
+  ) {
+    interfaceControls.focusMoney.classList.add(TOGGLE_BUTTON_SELECTED_CLASS);
+    interfaceControls.focusMoney.style.color = uiTheme.primary;
+    interfaceControls.focusMoney.style.backgroundColor = uiTheme.button;
   }
 }
 
@@ -115,20 +119,20 @@ function getGangManagerConfig() {
   const interfaceControls = getInterfaceControls();
   const buyAugmentations =
     interfaceControls.buyAugmentations?.classList.contains(
-      TOGGLE_BUTTON_SELECTED_CSS_CLASS
+      TOGGLE_BUTTON_SELECTED_CLASS
     ) ?? false;
   const buyEquipment =
     interfaceControls.buyEquipment?.classList.contains(
-      TOGGLE_BUTTON_SELECTED_CSS_CLASS
+      TOGGLE_BUTTON_SELECTED_CLASS
     ) ?? false;
 
   const focusRespect =
     interfaceControls.focusRespect?.classList.contains(
-      TOGGLE_BUTTON_SELECTED_CSS_CLASS
+      TOGGLE_BUTTON_SELECTED_CLASS
     ) ?? false;
   const focusMoney =
     interfaceControls.focusMoney?.classList.contains(
-      TOGGLE_BUTTON_SELECTED_CSS_CLASS
+      TOGGLE_BUTTON_SELECTED_CLASS
     ) ?? false;
   let taskFocus = TaskFocus.MONEY;
   if (focusRespect) {
@@ -153,7 +157,8 @@ function sendGangManagerConfig() {
 
 async function handleToggleGangManager(
   netscript: NS,
-  eventListener: EventListener
+  eventListener: EventListener,
+  uiTheme: UserInterfaceTheme
 ) {
   let scriptPid = getPid(netscript, GANG_MANAGER_SCRIPT);
   if (!scriptPid) {
@@ -164,7 +169,8 @@ async function handleToggleGangManager(
     eventListener.addListener(
       GangConfigResponse,
       handleGangConfigResponse,
-      eventListener
+      eventListener,
+      uiTheme
     );
     sendMessage(new GangConfigRequest(eventListener.subscriberName));
   } else {
@@ -182,52 +188,69 @@ function GangsManagerUI({
   netscript: NS;
   eventListener: EventListener;
 }) {
+  const uiStyle = netscript.ui.getStyles();
+  const uiTheme = netscript.ui.getTheme();
+
   const managerRunning = Boolean(getPid(netscript, GANG_MANAGER_SCRIPT));
 
   useEffectOnce(() => {
     eventListener.addListener(
       GangConfigResponse,
       handleGangConfigResponse,
-      eventListener
+      eventListener,
+      uiTheme
     );
     sendMessage(new GangConfigRequest(eventListener.subscriberName));
   });
 
+  const divBorderStyle = getDivBorderStyle(uiStyle, uiTheme);
+  divBorderStyle.alignItems = 'center';
+  divBorderStyle.textAlign = 'center';
+
   return (
     <div>
-      <div style={HEADER_DIV_STYLE}>
-        <label style={HEADER_LABEL_STYLE}>Gang Manager</label>
+      <div style={getHeaderDivStyle(uiStyle, uiTheme)}>
+        <label style={getHeaderLabelStyle()}>Gang Manager</label>
         <RunScriptButton
           title="Toggle gang manager script"
           runScriptFunc={handleToggleGangManager.bind(
             undefined,
             netscript,
-            eventListener
+            eventListener,
+            uiTheme
           )}
           scriptAlreadyRunning={managerRunning}
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
         />
       </div>
-      <label style={LABEL_STYLE}>Purchase Member Upgrades</label>
-      <div className={DIV_BORDER_CSS_CLASS} style={DIV_STYLE}>
+      <label style={getLabelStyle('center')}>Purchase Member Upgrades</label>
+      <div style={divBorderStyle}>
         <ToggleButton
           id={BUY_AUGMENTATIONS_BUTTON_ID}
           onClick={sendGangManagerConfig}
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
         >
           Augmentations
         </ToggleButton>
         <ToggleButton
           id={BUY_EQUIPMENT_BUTTON_ID}
           onClick={sendGangManagerConfig}
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
         >
           Equipment
         </ToggleButton>
       </div>
-      <label style={LABEL_STYLE}>Member Task Focus</label>
-      <div className={DIV_BORDER_CSS_CLASS} style={DIV_STYLE}>
+      <label style={getLabelStyle('center')}>Member Task Focus</label>
+      <div style={divBorderStyle}>
         <ExclusiveToggleButton
           id={FOCUS_RESPECT_BUTTON_ID}
           exclusiveGroup={MEMBER_FOCUS_GROUP_CLASS}
           onClick={sendGangManagerConfig}
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
         >
           Respect
         </ExclusiveToggleButton>
@@ -235,6 +258,8 @@ function GangsManagerUI({
           id={FOCUS_MONEY_BUTTON_ID}
           exclusiveGroup={MEMBER_FOCUS_GROUP_CLASS}
           onClick={sendGangManagerConfig}
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
         >
           Money
         </ExclusiveToggleButton>

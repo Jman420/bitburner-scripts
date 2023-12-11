@@ -1,10 +1,12 @@
+import {IStyleSettings, UserInterfaceTheme} from '@ns';
+
 import {
   PLAY_ICON_SVG_PATH,
   STOP_ICON_SVG_PATH,
-  SVG_BUTTON_CSS_CLASS,
-  SVG_PLAY_ICON_CSS_CLASS,
-  SVG_STOP_ICON_CSS_CLASS,
+  getSvgButtonStyle,
+  getSvgStyle,
 } from '/scripts/controls/style-sheet';
+
 import {ReactSetStateFunction, getReactModel} from '/scripts/workflows/ui';
 
 type RunScriptFunction = () => Promise<boolean>;
@@ -12,8 +14,10 @@ type RunScriptFunction = () => Promise<boolean>;
 const React = getReactModel().reactNS;
 const useState = React.useState;
 
+const STOP_RED = 'rgb(204, 0, 0)';
+
 async function handleButtonClick(
-  setIconClassName: ReactSetStateFunction<string>,
+  setIconStyle: ReactSetStateFunction<React.CSSProperties>,
   setIconSvgPath: ReactSetStateFunction<string>,
   callback: RunScriptFunction,
   /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
@@ -21,11 +25,13 @@ async function handleButtonClick(
 ) {
   if (callback) {
     const scriptExecuted = await callback();
+    const iconStyle = getSvgStyle();
     if (scriptExecuted) {
-      setIconClassName(SVG_STOP_ICON_CSS_CLASS);
+      iconStyle.color = STOP_RED;
+      setIconStyle(iconStyle);
       setIconSvgPath(STOP_ICON_SVG_PATH);
     } else {
-      setIconClassName(SVG_PLAY_ICON_CSS_CLASS);
+      setIconStyle(iconStyle);
       setIconSvgPath(PLAY_ICON_SVG_PATH);
     }
   }
@@ -35,26 +41,31 @@ function RunScriptButton({
   title,
   scriptAlreadyRunning,
   runScriptFunc,
+  uiStyle,
+  uiTheme,
 }: {
   title?: string;
   scriptAlreadyRunning?: boolean;
   runScriptFunc: RunScriptFunction;
+  uiStyle: IStyleSettings;
+  uiTheme: UserInterfaceTheme;
 }) {
-  const [iconClassName, setIconClassName] = useState(
-    scriptAlreadyRunning ? SVG_STOP_ICON_CSS_CLASS : SVG_PLAY_ICON_CSS_CLASS
-  );
+  const initialIconStyle = getSvgStyle();
+  if (scriptAlreadyRunning) {
+    initialIconStyle.color = STOP_RED;
+  }
+  const [iconStyle, setIconStyle] = useState(initialIconStyle);
   const [iconSvgPath, setIconSvgPath] = useState(
     scriptAlreadyRunning ? STOP_ICON_SVG_PATH : PLAY_ICON_SVG_PATH
   );
 
   return (
-    <button className={SVG_BUTTON_CSS_CLASS} title={title}>
+    <button style={getSvgButtonStyle(uiStyle, uiTheme)} title={title}>
       <svg
-        className={iconClassName}
-        style={{textAlign: 'right'}}
+        style={iconStyle}
         onClick={handleButtonClick.bind(
           undefined,
-          setIconClassName,
+          setIconStyle,
           setIconSvgPath,
           runScriptFunc
         )}

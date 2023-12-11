@@ -1,12 +1,9 @@
-import {NS} from '@ns';
+import {NS, UserInterfaceTheme} from '@ns';
 
 import {
   ReactSetStateFunction,
   getDocument,
   getReactModel,
-  handleDisableTerminal,
-  handleEnableTerminal,
-  handleTextboxInputChange,
 } from '/scripts/workflows/ui';
 import {
   STOCKS_TRADER_SCRIPT,
@@ -24,18 +21,18 @@ import {StocksTraderConfigRequest} from '/scripts/comms/requests/stocks-trader-c
 import {StocksTraderConfigEvent} from '/scripts/comms/events/stocks-trader-config-event';
 
 import {
-  BUTTON_CSS_CLASS,
-  COLOR_DARK_GRAY,
-  COLOR_WHITE,
-  DIV_BORDER_CSS_CLASS,
-  HEADER_DIV_STYLE,
-  HEADER_LABEL_STYLE,
-  TEXTBOX_CSS_CLASS,
-  TOGGLE_BUTTON_SELECTED_CSS_CLASS,
+  TOGGLE_BUTTON_SELECTED_CLASS,
+  getDivBorderStyle,
+  getHeaderDivStyle,
+  getHeaderLabelStyle,
+  getLabelStyle,
 } from '/scripts/controls/style-sheet';
 import {RunScriptButton} from '/scripts/controls/components/run-script-button';
 import {ToggleButton} from '/scripts/controls/components/toggle-button';
+import {Button} from '/scripts/controls/components/button';
+import {Input} from '/scripts/controls/components/input';
 import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
+
 import {parseNumber} from '/scripts/workflows/parsing';
 
 interface InterfaceControls {
@@ -46,23 +43,6 @@ interface InterfaceControls {
 
 const React = getReactModel().reactNS;
 const useState = React.useState;
-
-const DIV_STYLE: React.CSSProperties = {
-  alignItems: 'center',
-  textAlign: 'center',
-};
-const LABEL_STYLE: React.CSSProperties = {
-  fontSize: '14pt',
-  textAlign: 'center',
-  display: 'block',
-};
-const INPUT_STYLE: React.CSSProperties = {
-  fontSize: '14pt',
-  textAlign: 'center',
-  display: 'block',
-  backgroundColor: COLOR_DARK_GRAY,
-  borderBottomColor: COLOR_WHITE,
-};
 
 const SHORT_SALES_BUTTON_ID = 'shortSales';
 const PURCHASE_STOCKS_BUTTON_ID = 'purchaseStocks';
@@ -88,7 +68,8 @@ function handleStocksTraderConfigResponse(
   responseData: StocksTraderConfigResponse,
   netscript: NS,
   eventListener: EventListener,
-  setFundsLimit: ReactSetStateFunction<string>
+  setFundsLimit: ReactSetStateFunction<string>,
+  uiTheme: UserInterfaceTheme
 ) {
   if (!responseData.config) {
     return;
@@ -98,24 +79,31 @@ function handleStocksTraderConfigResponse(
     handleStocksTraderConfigResponse
   );
 
-  const interfaceControls = getInterfaceControls();
-  interfaceControls.shortSales?.classList.remove(
-    TOGGLE_BUTTON_SELECTED_CSS_CLASS
-  );
-  interfaceControls.purchaseStocks?.classList.remove(
-    TOGGLE_BUTTON_SELECTED_CSS_CLASS
-  );
-
   const config = responseData.config;
-  if (config.shortSales) {
-    interfaceControls.shortSales?.classList.add(
-      TOGGLE_BUTTON_SELECTED_CSS_CLASS
-    );
+  const interfaceControls = getInterfaceControls();
+  if (interfaceControls.shortSales) {
+    const shortSalesButton = interfaceControls.shortSales;
+    shortSalesButton.classList.remove(TOGGLE_BUTTON_SELECTED_CLASS);
+    shortSalesButton.style.color = uiTheme.secondary;
+    shortSalesButton.style.backgroundColor = uiTheme.backgroundprimary;
+
+    if (config.shortSales) {
+      shortSalesButton.classList.add(TOGGLE_BUTTON_SELECTED_CLASS);
+      shortSalesButton.style.color = uiTheme.primary;
+      shortSalesButton.style.backgroundColor = uiTheme.button;
+    }
   }
-  if (config.purchaseStocks) {
-    interfaceControls.purchaseStocks?.classList.add(
-      TOGGLE_BUTTON_SELECTED_CSS_CLASS
-    );
+  if (interfaceControls.purchaseStocks) {
+    const purchaseStocksButton = interfaceControls.purchaseStocks;
+    purchaseStocksButton.classList.remove(TOGGLE_BUTTON_SELECTED_CLASS);
+    purchaseStocksButton.style.color = uiTheme.secondary;
+    purchaseStocksButton.style.backgroundColor = uiTheme.backgroundprimary;
+
+    if (config.purchaseStocks) {
+      purchaseStocksButton.classList.add(TOGGLE_BUTTON_SELECTED_CLASS);
+      purchaseStocksButton.style.color = uiTheme.primary;
+      purchaseStocksButton.style.backgroundColor = uiTheme.button;
+    }
   }
   setFundsLimit(netscript.formatNumber(config.fundsLimit));
 }
@@ -155,11 +143,11 @@ function getStockTraderConfig() {
   const config: StocksTraderConfig = {
     shortSales:
       interfaceControls.shortSales?.classList.contains(
-        TOGGLE_BUTTON_SELECTED_CSS_CLASS
+        TOGGLE_BUTTON_SELECTED_CLASS
       ) ?? false,
     purchaseStocks:
       interfaceControls.purchaseStocks?.classList.contains(
-        TOGGLE_BUTTON_SELECTED_CSS_CLASS
+        TOGGLE_BUTTON_SELECTED_CLASS
       ) ?? false,
     fundsLimit: fundsLimit,
   };
@@ -174,7 +162,8 @@ function sendStockTraderConfig() {
 async function handleToggleStockTrader(
   netscript: NS,
   eventListener: EventListener,
-  setFundsLimit: ReactSetStateFunction<string>
+  setFundsLimit: ReactSetStateFunction<string>,
+  uiTheme: UserInterfaceTheme
 ) {
   let scriptPid = getPid(netscript, STOCKS_TRADER_SCRIPT);
   if (!scriptPid) {
@@ -187,7 +176,8 @@ async function handleToggleStockTrader(
       handleStocksTraderConfigResponse,
       netscript,
       eventListener,
-      setFundsLimit
+      setFundsLimit,
+      uiTheme
     );
     sendMessage(new StocksTraderConfigRequest(eventListener.subscriberName));
   } else {
@@ -205,6 +195,9 @@ function StocksTraderUI({
   netscript: NS;
   eventListener: EventListener;
 }) {
+  const uiStyle = netscript.ui.getStyles();
+  const uiTheme = netscript.ui.getTheme();
+
   const [fundsLimit, setFundsLimit] = useState('');
   const traderRunning = Boolean(getPid(netscript, STOCKS_TRADER_SCRIPT));
 
@@ -214,59 +207,71 @@ function StocksTraderUI({
       handleStocksTraderConfigResponse,
       netscript,
       eventListener,
-      setFundsLimit
+      setFundsLimit,
+      uiTheme
     );
     sendMessage(new StocksTraderConfigRequest(eventListener.subscriberName));
   });
 
+  const divBorderStyle = getDivBorderStyle(uiStyle, uiTheme);
+  divBorderStyle.alignItems = 'center';
+  divBorderStyle.textAlign = 'center';
+
   return (
     <div>
-      <div style={HEADER_DIV_STYLE}>
-        <label style={HEADER_LABEL_STYLE}>Stock Trader</label>
+      <div style={getHeaderDivStyle(uiStyle, uiTheme)}>
+        <label style={getHeaderLabelStyle()}>Stock Trader</label>
         <RunScriptButton
           title="Toggle stock trader script"
           runScriptFunc={handleToggleStockTrader.bind(
             undefined,
             netscript,
             eventListener,
-            setFundsLimit
+            setFundsLimit,
+            uiTheme
           )}
           scriptAlreadyRunning={traderRunning}
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
         />
       </div>
-      <label style={LABEL_STYLE}>Trading Settings</label>
-      <div className={DIV_BORDER_CSS_CLASS} style={DIV_STYLE}>
+      <label style={getLabelStyle('center')}>Trading Settings</label>
+      <div style={divBorderStyle}>
         <ToggleButton
           id={SHORT_SALES_BUTTON_ID}
           onClick={handleTradeSettingsClick}
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
         >
           Short Sales
         </ToggleButton>
         <ToggleButton
           id={PURCHASE_STOCKS_BUTTON_ID}
           onClick={handleTradeSettingsClick}
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
         >
           Purchase Stocks
         </ToggleButton>
       </div>
-      <div style={DIV_STYLE}>
-        <input
+      <div style={divBorderStyle}>
+        <Input
           id={FUNDS_LIMIT_INPUT_ID}
-          className={TEXTBOX_CSS_CLASS}
-          style={INPUT_STYLE}
           placeholder="Enter funds limit"
           value={fundsLimit}
-          onFocusCapture={handleDisableTerminal}
-          onBlur={handleEnableTerminal}
-          onChange={handleTextboxInputChange.bind(undefined, setFundsLimit)}
+          setValue={setFundsLimit}
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
+          textAlign="center"
         />
-        <button
+        <Button
           id={SET_FUNDS_LIMIT_BUTTON_ID}
-          className={BUTTON_CSS_CLASS}
           onClick={handleSetFundsLimitClick}
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
         >
           Set Funds Limit
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import {NS} from '@ns';
+import {NS, UserInterfaceTheme} from '@ns';
 
 import {
   ReactSetStateFunction,
@@ -25,17 +25,17 @@ import {WgwhConfigRequest} from '/scripts/comms/requests/wgwh-config-request';
 import {WgwhConfigResponse} from '/scripts/comms/responses/wgwh-config-response';
 
 import {
-  BUTTON_CSS_CLASS,
-  DIV_BORDER_CSS_CLASS,
-  HEADER_DIV_STYLE,
-  HEADER_LABEL_STYLE,
-  TOGGLE_BUTTON_SELECTED_CSS_CLASS,
+  TOGGLE_BUTTON_SELECTED_CLASS,
+  getDivBorderStyle,
+  getHeaderDivStyle,
+  getHeaderLabelStyle,
 } from '/scripts/controls/style-sheet';
 import {RunScriptButton} from '/scripts/controls/components/run-script-button';
 import {ExclusiveToggleButton} from '/scripts/controls/components/exclusive-toggle-button';
 import {ToggleButton} from '/scripts/controls/components/toggle-button';
+import {LabeledInput} from '/scripts/controls/components/labeled-input';
+import {Button} from '/scripts/controls/components/button';
 import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
-import {LabeledTextbox} from '/scripts/controls/components/labeled-textbox';
 
 enum AttackManagerRunning {
   SERIAL,
@@ -57,10 +57,6 @@ interface InterfaceControls {
 const React = getReactModel().reactNS;
 const useState = React.useState;
 
-const DIV_STYLE: React.CSSProperties = {
-  alignItems: 'center',
-  textAlign: 'center',
-};
 const LABEL_STYLE: React.CSSProperties = {
   fontSize: '14pt',
   textAlign: 'center',
@@ -113,7 +109,8 @@ function handleWgwhConfigResponse(
   setHackFundsPercent: ReactSetStateFunction<string>,
   setFundsLimitPercent: ReactSetStateFunction<string>,
   setTargetHosts: ReactSetStateFunction<string[]>,
-  setAttackerHosts: ReactSetStateFunction<string[]>
+  setAttackerHosts: ReactSetStateFunction<string[]>,
+  uiTheme: UserInterfaceTheme
 ) {
   if (!responseData.config) {
     return;
@@ -122,10 +119,13 @@ function handleWgwhConfigResponse(
 
   const config = responseData.config;
   const interfaceControls = getInterfaceControls();
-  if (config.includeHomeAttacker) {
-    interfaceControls.includeHomeAttacker?.classList.add(
-      TOGGLE_BUTTON_SELECTED_CSS_CLASS
+  if (config.includeHomeAttacker && interfaceControls.includeHomeAttacker) {
+    interfaceControls.includeHomeAttacker.classList.add(
+      TOGGLE_BUTTON_SELECTED_CLASS
     );
+    interfaceControls.includeHomeAttacker.style.color = uiTheme.primary;
+    interfaceControls.includeHomeAttacker.style.backgroundColor =
+      uiTheme.button;
   }
   setOptimalOnlyCount(`${config.optimalOnlyCount}`);
   setHackFundsPercent(`${config.hackFundsPercent}`);
@@ -138,12 +138,12 @@ function handleAttackSettingsClick(netscript: NS) {
   const interfaceControls = getInterfaceControls();
   const serialSelected =
     interfaceControls.serialAttack?.classList.contains(
-      TOGGLE_BUTTON_SELECTED_CSS_CLASS
+      TOGGLE_BUTTON_SELECTED_CLASS
     ) ?? false;
   const serialRunning = getPid(netscript, SERIAL_ATTACK_SCRIPT);
   const batchSelected =
     interfaceControls.batchAttack?.classList.contains(
-      TOGGLE_BUTTON_SELECTED_CSS_CLASS
+      TOGGLE_BUTTON_SELECTED_CLASS
     ) ?? false;
   const batchRunning = getPid(netscript, BATCH_ATTACK_SCRIPT);
 
@@ -158,7 +158,7 @@ function getWgwhConfig() {
   const interfaceControls = getInterfaceControls();
   const includeHomeAttacker =
     interfaceControls.includeHomeAttacker?.classList.contains(
-      TOGGLE_BUTTON_SELECTED_CSS_CLASS
+      TOGGLE_BUTTON_SELECTED_CLASS
     ) ?? false;
   const optimalOnlyCount =
     parseInt(
@@ -210,14 +210,15 @@ async function handleToggleManager(
   setHackFundsPercent: ReactSetStateFunction<string>,
   setFundsLimitPercent: ReactSetStateFunction<string>,
   setTargetHosts: ReactSetStateFunction<string[]>,
-  setAttackerHosts: ReactSetStateFunction<string[]>
+  setAttackerHosts: ReactSetStateFunction<string[]>,
+  uiTheme: UserInterfaceTheme
 ) {
   const interfaceControls = getInterfaceControls();
   const serialAttack = interfaceControls.serialAttack?.classList.contains(
-    TOGGLE_BUTTON_SELECTED_CSS_CLASS
+    TOGGLE_BUTTON_SELECTED_CLASS
   );
   const batchAttack = interfaceControls.batchAttack?.classList.contains(
-    TOGGLE_BUTTON_SELECTED_CSS_CLASS
+    TOGGLE_BUTTON_SELECTED_CLASS
   );
   let attackManagerScript = BATCH_ATTACK_SCRIPT;
   if (batchAttack) {
@@ -240,7 +241,8 @@ async function handleToggleManager(
       setHackFundsPercent,
       setFundsLimitPercent,
       setTargetHosts,
-      setAttackerHosts
+      setAttackerHosts,
+      uiTheme
     );
     sendMessage(new WgwhConfigRequest(eventListener.subscriberName));
   } else {
@@ -260,6 +262,9 @@ function WgwhManagerUI({
   eventListener: EventListener;
   attackManagerRunning: AttackManagerRunning;
 }) {
+  const uiTheme = netscript.ui.getTheme();
+  const uiStyle = netscript.ui.getStyles();
+
   const [optimalOnlyCount, setOptimalOnlyCount] = useState('');
   const [hackFundsPercent, setHackFundsPercent] = useState('');
   const [fundsLimitPercent, setFundsLimitPercent] = useState('');
@@ -275,15 +280,22 @@ function WgwhManagerUI({
       setHackFundsPercent,
       setFundsLimitPercent,
       setTargetHosts,
-      setAttackerHosts
+      setAttackerHosts,
+      uiTheme
     );
     sendMessage(new WgwhConfigRequest(eventListener.subscriberName));
   });
 
+  const divBorderStyle = getDivBorderStyle(uiStyle, uiTheme);
+  divBorderStyle.alignItems = 'center';
+  divBorderStyle.textAlign = 'center';
+
   return (
     <div>
-      <div style={HEADER_DIV_STYLE}>
-        <label style={HEADER_LABEL_STYLE}>WeakenGrow WeakenHack Attack</label>
+      <div style={getHeaderDivStyle(uiStyle, uiTheme)}>
+        <label style={getHeaderLabelStyle()}>
+          WeakenGrow WeakenHack Attack
+        </label>
         <RunScriptButton
           title="Run weaken-grow weaken-hack attack script"
           runScriptFunc={handleToggleManager.bind(
@@ -294,20 +306,25 @@ function WgwhManagerUI({
             setHackFundsPercent,
             setFundsLimitPercent,
             setTargetHosts,
-            setAttackerHosts
+            setAttackerHosts,
+            uiTheme
           )}
           scriptAlreadyRunning={
             attackManagerRunning !== AttackManagerRunning.NONE
           }
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
         />
       </div>
       <label style={LABEL_STYLE}>Manager Settings</label>
-      <div className={DIV_BORDER_CSS_CLASS} style={DIV_STYLE}>
+      <div style={divBorderStyle}>
         <ExclusiveToggleButton
           id={SERIAL_ATTACK_ID}
           exclusiveGroup={ATTACK_TYPE_GROUP_CLASS}
           onClickBefore={handleAttackSettingsClick.bind(undefined, netscript)}
           selected={attackManagerRunning === AttackManagerRunning.SERIAL}
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
         >
           Serial
         </ExclusiveToggleButton>
@@ -316,13 +333,20 @@ function WgwhManagerUI({
           exclusiveGroup={ATTACK_TYPE_GROUP_CLASS}
           onClickBefore={handleAttackSettingsClick.bind(undefined, netscript)}
           selected={attackManagerRunning === AttackManagerRunning.BATCH}
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
         >
           Batch
         </ExclusiveToggleButton>
       </div>
       <label style={LABEL_STYLE}>Attack Settings</label>
-      <div className={DIV_BORDER_CSS_CLASS} style={DIV_STYLE}>
-        <ToggleButton id={INCLUDE_HOME_ATTACKER_ID} onClick={sendWgwhConfig}>
+      <div style={divBorderStyle}>
+        <ToggleButton
+          id={INCLUDE_HOME_ATTACKER_ID}
+          onClick={sendWgwhConfig}
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
+        >
           Include Home Attacker
         </ToggleButton>
         <div
@@ -333,49 +357,60 @@ function WgwhManagerUI({
           }}
         >
           <div style={{display: 'flex', justifyContent: 'space-between'}}>
-            <LabeledTextbox
+            <LabeledInput
               id={OPTIMAL_ONLY_COUNT_ID}
               title="Optimal Only #"
               value={optimalOnlyCount}
               setValueFunc={setOptimalOnlyCount}
+              uiStyle={uiStyle}
+              uiTheme={uiTheme}
             />
-            <LabeledTextbox
+            <LabeledInput
               id={HACK_FUNDS_PERCENT_ID}
               title="Hack Funds %"
               value={hackFundsPercent}
               setValueFunc={setHackFundsPercent}
+              uiStyle={uiStyle}
+              uiTheme={uiTheme}
             />
-            <LabeledTextbox
+            <LabeledInput
               id={FUNDS_LIMIT_PERCENT_ID}
               title="Funds Limit %"
               value={fundsLimitPercent}
               setValueFunc={setFundsLimitPercent}
+              uiStyle={uiStyle}
+              uiTheme={uiTheme}
             />
           </div>
           <div style={{display: 'flex', justifyContent: 'space-between'}}>
-            <LabeledTextbox
+            <LabeledInput
               id={TARGET_HOSTS_ID}
               title="Target Hosts"
               placeholder="Set target hosts"
               value={targetHosts.join(', ')}
               setValueFunc={() => {}}
+              uiStyle={uiStyle}
+              uiTheme={uiTheme}
             />
-            <LabeledTextbox
+            <LabeledInput
               id={ATTACKER_HOSTS_ID}
               title="Attacker Hosts"
               placeholder="Set attacker hosts"
               value={attackerHosts.join(', ')}
               setValueFunc={() => {}}
+              uiStyle={uiStyle}
+              uiTheme={uiTheme}
             />
           </div>
         </div>
-        <button
+        <Button
           id={SEND_SETTINGS_BUTTON_ID}
-          className={BUTTON_CSS_CLASS}
           onClick={sendWgwhConfig}
+          uiStyle={uiStyle}
+          uiTheme={uiTheme}
         >
           Send Settings
-        </button>
+        </Button>
       </div>
     </div>
   );
