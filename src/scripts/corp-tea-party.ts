@@ -1,11 +1,10 @@
 import {AutocompleteData, NS} from '@ns';
 
 import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
-import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
+import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {
   CmdArgsSchema,
-  PERCENT_AUTOCOMPLETE,
   getCmdFlag,
   getLastCmdFlag,
   getSchemaFlags,
@@ -16,19 +15,28 @@ import {
   delayedInfiniteLoop,
   initializeScript,
 } from '/scripts/workflows/execution';
+import {waitForState} from '/scripts/workflows/corporation';
+import {openTail} from '/scripts/workflows/ui';
 
-const CMD_FLAG_ENERGY_LIMIT = 'energyLimit';
 const CMD_FLAG_MORALE_LIMIT = 'moraleLimit';
+const CMD_FLAG_ENERGY_LIMIT = 'energyLimit';
 const CMD_FLAG_PARTY_FUNDS = 'partyFunds';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
-  [CMD_FLAG_ENERGY_LIMIT, 0.8],
-  [CMD_FLAG_MORALE_LIMIT, 0.8],
+  [CMD_FLAG_MORALE_LIMIT, 95],
+  [CMD_FLAG_ENERGY_LIMIT, 98],
   [CMD_FLAG_PARTY_FUNDS, 500000],
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
+const ENERGY_MORALE_LIMIT_AUTOCOMPLETE = [25, 50, 75, 80, 90];
 
 const MODULE_NAME = 'corp-tea-party';
 const SUBSCRIBER_NAME = 'corp-tea-party';
+
+const TAIL_X_POS = 1230;
+const TAIL_Y_POS = 120;
+const TAIL_WIDTH = 1090;
+const TAIL_HEIGHT = 490;
+
 const UPDATE_DELAY = 0;
 
 async function manageTeaParty(
@@ -46,33 +54,28 @@ async function manageTeaParty(
         divisionName,
         cityName
       );
-      let threwTeaParty = false;
       if (officeInfo.avgEnergy <= energyLimit) {
-        threwTeaParty = netscript.corporation.buyTea(divisionName, cityName);
+        const teaPurchased = netscript.corporation.buyTea(
+          divisionName,
+          cityName
+        );
         logWriter.writeLine(
-          `Tea purchased for ${divisionName} office in ${cityName} : ${threwTeaParty}`
+          `Tea purchased for ${divisionName} office in ${cityName} : ${teaPurchased}`
         );
       }
       if (officeInfo.avgMorale <= moraleLimit) {
-        const partyCost = netscript.corporation.throwParty(
-          divisionName,
-          cityName,
-          partyFunds
-        );
-        threwTeaParty = true;
+        netscript.corporation.throwParty(divisionName, cityName, partyFunds);
+        const partyCost = partyFunds * officeInfo.numEmployees;
         logWriter.writeLine(
           `Threw party for ${divisionName} office in ${cityName} : $${netscript.formatNumber(
             partyCost
           )}`
         );
       }
-      if (threwTeaParty) {
-        logWriter.writeLine(ENTRY_DIVIDER);
-      }
     }
   }
 
-  await netscript.corporation.nextUpdate();
+  await waitForState(netscript, 'START');
 }
 
 /** @param {NS} netscript */
@@ -88,13 +91,22 @@ export async function main(netscript: NS) {
   const moraleLimit = cmdArgs[CMD_FLAG_MORALE_LIMIT].valueOf() as number;
   const partyFunds = cmdArgs[CMD_FLAG_PARTY_FUNDS].valueOf() as number;
 
-  terminalWriter.writeLine(`Energy Limit : ${energyLimit}`);
   terminalWriter.writeLine(`Morale Limit : ${moraleLimit}`);
+  terminalWriter.writeLine(`Energy Limit : ${energyLimit}`);
   terminalWriter.writeLine(`Party Funds : ${partyFunds}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
+  terminalWriter.writeLine('See script logs for on-going party details.');
+  openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
+
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
-  delayedInfiniteLoop(
+  scriptLogWriter.writeLine('Corporate Tea Party Automation');
+  scriptLogWriter.writeLine(SECTION_DIVIDER);
+  scriptLogWriter.writeLine(`Morale Limit : ${moraleLimit}`);
+  scriptLogWriter.writeLine(`Energy Limit : ${energyLimit}`);
+  scriptLogWriter.writeLine(`Party Funds : ${partyFunds}`);
+  scriptLogWriter.writeLine(SECTION_DIVIDER);
+  await delayedInfiniteLoop(
     netscript,
     UPDATE_DELAY,
     manageTeaParty,
@@ -109,10 +121,10 @@ export async function main(netscript: NS) {
 export function autocomplete(data: AutocompleteData, args: string[]) {
   const lastCmdFlag = getLastCmdFlag(args);
   if (lastCmdFlag === getCmdFlag(CMD_FLAG_ENERGY_LIMIT)) {
-    return PERCENT_AUTOCOMPLETE;
+    return ENERGY_MORALE_LIMIT_AUTOCOMPLETE;
   }
   if (lastCmdFlag === getCmdFlag(CMD_FLAG_MORALE_LIMIT)) {
-    return PERCENT_AUTOCOMPLETE;
+    return ENERGY_MORALE_LIMIT_AUTOCOMPLETE;
   }
   return CMD_FLAGS;
 }
