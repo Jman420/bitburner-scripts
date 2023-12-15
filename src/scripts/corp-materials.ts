@@ -16,6 +16,7 @@ import {CITY_NAMES} from '/scripts/common/shared';
 import {
   buyMaterial,
   getOptimalIndustryMaterials,
+  sellMaterial,
 } from '/scripts/workflows/corporation';
 import {openTail} from '/scripts/workflows/ui';
 
@@ -69,13 +70,17 @@ function purchaseMaterials(
   logWriter.writeLine(`Included cities : ${cityNames.join(', ')}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
-  const purchasePromises = new Array<Promise<void>>();
+  const transactionPromises = new Array<Promise<void>>();
   for (const cityName of cityNames) {
     const warehouseInfo = netscript.corporation.getWarehouse(
       divisionName,
       cityName
     );
-    logWriter.writeLine(`City : ${cityName} - Storage : ${warehouseInfo.size}`);
+    logWriter.writeLine(
+      `City : ${cityName} - Storage : ${netscript.formatNumber(
+        warehouseInfo.size
+      )}`
+    );
     if (warehouseInfo.size >= storageSize) {
       for (const [materialName, materialAmount] of optimalAmounts) {
         const officeMaterialInfo = netscript.corporation.getMaterial(
@@ -83,23 +88,42 @@ function purchaseMaterials(
           cityName,
           materialName
         );
-        const purchaseAmount = materialAmount - officeMaterialInfo.stored;
-        if (purchaseAmount > 0) {
+        const transactionAmount = materialAmount - officeMaterialInfo.stored;
+        if (transactionAmount > 0) {
           logWriter.writeLine(
-            `  Purchasing material : ${materialName} - ${purchaseAmount}`
+            `  Purchasing additional material : ${materialName} - ${netscript.formatNumber(
+              transactionAmount
+            )}`
           );
-          purchasePromises.push(
+          transactionPromises.push(
             buyMaterial(
               netscript,
               divisionName,
               cityName,
               materialName,
-              purchaseAmount
+              transactionAmount
+            )
+          );
+        } else if (transactionAmount < 0) {
+          logWriter.writeLine(
+            `  Selling excess material : ${materialName} - ${netscript.formatNumber(
+              -transactionAmount
+            )}`
+          );
+          transactionPromises.push(
+            sellMaterial(
+              netscript,
+              divisionName,
+              cityName,
+              materialName,
+              -transactionAmount
             )
           );
         } else {
           logWriter.writeLine(
-            `  Material already satisfied : ${materialName} - ${materialAmount}`
+            `  Material already satisfied : ${materialName} - ${netscript.formatNumber(
+              materialAmount
+            )}`
           );
         }
       }
@@ -108,7 +132,7 @@ function purchaseMaterials(
     }
     logWriter.writeLine(ENTRY_DIVIDER);
   }
-  return purchasePromises;
+  return transactionPromises;
 }
 
 /** @param {NS} netscript */

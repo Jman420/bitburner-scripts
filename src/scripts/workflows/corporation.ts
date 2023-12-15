@@ -6,6 +6,11 @@ import {
   NS,
 } from '@ns';
 
+const MARKET_TA_I = 'Market-TA.I';
+const MARKET_TA_II = 'Market-TA.II';
+const PRODUCT_CAPACITY_I = 'uPgrade: Capacity.I';
+const PRODUCT_CAPACITY_II = 'uPgrade: Capacity.II';
+
 const INDUSTRY_MULTIPLIER_MATERIALS: CorpMaterialName[] = [
   'Hardware',
   'AI Cores',
@@ -101,9 +106,9 @@ async function buyMaterial(
   divisionName: string,
   cityName: CityName,
   materialName: CorpMaterialName,
-  totalAmount: number
+  amount: number
 ) {
-  const buyAmount = totalAmount / 10;
+  const buyAmount = amount / 10;
   netscript.corporation.buyMaterial(
     divisionName,
     cityName,
@@ -114,9 +119,77 @@ async function buyMaterial(
   netscript.corporation.buyMaterial(divisionName, cityName, materialName, 0);
 }
 
+async function sellMaterial(
+  netscript: NS,
+  divisionName: string,
+  cityName: CityName,
+  materialName: CorpMaterialName,
+  amount: number
+) {
+  let materialInfo = netscript.corporation.getMaterial(
+    divisionName,
+    cityName,
+    materialName
+  );
+  const targetAmount = materialInfo.stored - amount;
+  while (materialInfo.stored > targetAmount && materialInfo.stored > 0) {
+    if (netscript.corporation.hasResearched(divisionName, MARKET_TA_I)) {
+      netscript.corporation.setMaterialMarketTA1(
+        divisionName,
+        cityName,
+        materialName,
+        true
+      );
+    }
+    if (netscript.corporation.hasResearched(divisionName, MARKET_TA_II)) {
+      netscript.corporation.setMaterialMarketTA2(
+        divisionName,
+        cityName,
+        materialName,
+        true
+      );
+    }
+
+    const sellAmount = materialInfo.stored - targetAmount;
+    netscript.corporation.sellMaterial(
+      divisionName,
+      cityName,
+      materialName,
+      `${sellAmount}`,
+      'MP'
+    );
+    await waitForState(netscript, 'PURCHASE');
+    netscript.corporation.sellMaterial(
+      divisionName,
+      cityName,
+      materialName,
+      '0',
+      'MP'
+    );
+
+    materialInfo = netscript.corporation.getMaterial(
+      divisionName,
+      cityName,
+      materialName
+    );
+  }
+}
+
+function getDivisionProductLimit(netscript: NS, divisionName: string) {
+  if (netscript.corporation.hasResearched(divisionName, PRODUCT_CAPACITY_II)) {
+    return 5;
+  }
+  if (netscript.corporation.hasResearched(divisionName, PRODUCT_CAPACITY_I)) {
+    return 4;
+  }
+  return 3;
+}
+
 export {
   INDUSTRY_MULTIPLIER_MATERIALS,
   getOptimalIndustryMaterials,
   waitForState,
   buyMaterial,
+  sellMaterial,
+  getDivisionProductLimit,
 };
