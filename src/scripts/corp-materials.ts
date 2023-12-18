@@ -20,9 +20,9 @@ import {
 } from '/scripts/workflows/corporation';
 import {openTail} from '/scripts/workflows/ui';
 
-const CMD_FLAG_DIVISION_NAME = 'division';
-const CMD_FLAG_CITY_NAMES = 'cities';
-const CMD_FLAG_STORAGE_SIZE = 'storageSize';
+export const CMD_FLAG_DIVISION_NAME = 'division';
+export const CMD_FLAG_CITY_NAMES = 'cities';
+export const CMD_FLAG_STORAGE_SIZE = 'storageSize';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_DIVISION_NAME, ''],
   [CMD_FLAG_CITY_NAMES, []],
@@ -143,7 +143,7 @@ export async function main(netscript: NS) {
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
-  terminalWriter.writeLine('Purchase Corporation Materials');
+  terminalWriter.writeLine('Purchase Industry Materials');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
   terminalWriter.writeLine('Parsing command line arguments...');

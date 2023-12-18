@@ -18,7 +18,7 @@ const SUBSCRIBER_NAME = 'ui-gang';
 const TAIL_X_POS = 1340;
 const TAIL_Y_POS = 18;
 const TAIL_WIDTH = 330;
-const TAIL_HEIGHT = 270;
+const TAIL_HEIGHT = 265;
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {

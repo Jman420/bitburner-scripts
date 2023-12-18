@@ -27,12 +27,14 @@ function Button({
   id,
   onClick,
   children,
+  style,
   uiStyle,
   uiTheme,
 }: {
   id?: string;
   onClick?: ButtonOnClickCallback;
   children?: React.ReactNode;
+  style?: React.CSSProperties;
   uiStyle: IStyleSettings;
   uiTheme: UserInterfaceTheme;
 }) {
@@ -40,7 +42,7 @@ function Button({
     <button
       id={id}
       onClick={onClick}
-      style={getButtonStyle(uiStyle, uiTheme)}
+      style={Object.assign(getButtonStyle(uiStyle, uiTheme), style)}
       onMouseOver={handleMouseOver.bind(undefined, uiTheme)}
       onMouseOut={handleMouseOut.bind(undefined, uiTheme)}
     >

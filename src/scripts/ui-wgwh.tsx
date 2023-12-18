@@ -29,7 +29,7 @@ const SUBSCRIBER_NAME = 'ui-wgwh';
 const TAIL_X_POS = 645;
 const TAIL_Y_POS = 154;
 const TAIL_WIDTH = 400;
-const TAIL_HEIGHT = 445;
+const TAIL_HEIGHT = 435;
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {

@@ -82,6 +82,7 @@ function updatePolledMetrics(
   setLocation: ReactSetStateFunction<string>,
   setScriptsExp: ReactSetStateFunction<string>,
   setScriptsIncome: ReactSetStateFunction<string>,
+  setCorpIncome: ReactSetStateFunction<string>,
   setKarmaLevel: ReactSetStateFunction<string>
 ) {
   logWriter.writeLine('Calculating script metrics...');
@@ -103,17 +104,21 @@ function updatePolledMetrics(
       }
     }
   }
+  setScriptsExp(netscript.formatNumber(totalScriptExp));
+  setScriptsIncome(`$${netscript.formatNumber(totalScriptIncome)}`);
+
+  if (netscript.corporation.hasCorporation()) {
+    logWriter.writeLine('Retrieving corporation metrics...');
+    const corpInfo = netscript.corporation.getCorporation();
+    setCorpIncome(`$${netscript.formatNumber(corpInfo.dividendEarnings)}`);
+  }
 
   logWriter.writeLine('Retrieving location & player metrics...');
   const playerInfo = netscript.getPlayer();
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   const karmaLevel = (netscript as any).heart.break();
-
-  logWriter.writeLine('Updating location & script...');
   setCity(playerInfo.city);
   setLocation(playerInfo.location);
-  setScriptsExp(netscript.formatNumber(totalScriptExp));
-  setScriptsIncome(`$${netscript.formatNumber(totalScriptIncome)}`);
   setKarmaLevel(netscript.formatNumber(karmaLevel));
   logWriter.writeLine(ENTRY_DIVIDER);
 }
@@ -127,6 +132,7 @@ function CustomHudValues({
   excludeLocationMetrics,
   excludeScriptsMetrics,
   excludeGangMetrics,
+  excludeCorpMetrics,
   excludeStocksMetrics,
   excludePlayerMetrics,
 }: {
@@ -138,6 +144,7 @@ function CustomHudValues({
   excludeLocationMetrics: boolean;
   excludeScriptsMetrics: boolean;
   excludeGangMetrics: boolean;
+  excludeCorpMetrics: boolean;
   excludeStocksMetrics: boolean;
   excludePlayerMetrics: boolean;
 }) {
@@ -146,6 +153,7 @@ function CustomHudValues({
   const [scriptsExp, setScriptsExp] = useState('');
   const [scriptsIncome, setScriptsIncome] = useState('');
   const [gangIncome, setGangIncome] = useState('');
+  const [corpIncome, setCorpIncome] = useState('');
   const [stocksProfit, setStocksProfit] = useState('');
   const [stocksPortfolioValue, setStocksPortfolioValue] = useState('');
   const [playerTotalValue, setPlayerTotalValue] = useState('');
@@ -159,6 +167,7 @@ function CustomHudValues({
       setLocation,
       setScriptsExp,
       setScriptsIncome,
+      setCorpIncome,
       setKarmaLevel
     );
   });
@@ -170,6 +179,7 @@ function CustomHudValues({
       setLocation,
       setScriptsExp,
       setScriptsIncome,
+      setCorpIncome,
       setKarmaLevel
     );
   }, updateDelay);
@@ -248,6 +258,16 @@ function CustomHudValues({
         {gangIncome}
       </label>
       <br style={{display: excludeGangMetrics ? 'none' : ''}} />
+      <label
+        id="corpIncomeValue"
+        style={{
+          color: uiTheme.money,
+          display: excludeCorpMetrics ? 'none' : '',
+        }}
+      >
+        {corpIncome}
+      </label>
+      <br style={{display: excludeCorpMetrics ? 'none' : ''}} />
       <label
         id="stocksProfitValue"
         style={{

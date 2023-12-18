@@ -1,4 +1,4 @@
-import {NS, UserInterfaceTheme} from '@ns';
+import {NS} from '@ns';
 
 import {getReactModel} from '/scripts/workflows/ui';
 
@@ -10,12 +10,13 @@ const useState = React.useState;
 function ComponentTemplate({
   netscript,
   eventListener,
-  uiTheme,
 }: {
   netscript: NS;
   eventListener: EventListener;
-  uiTheme: UserInterfaceTheme;
 }) {
+  const uiStyle = netscript.ui.getStyles();
+  const uiTheme = netscript.ui.getTheme();
+  
   const [testValue, setTestValue] = useState('default value');
 
   return (

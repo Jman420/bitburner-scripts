@@ -9,6 +9,7 @@ function CustomHudLabels({
   excludeLocationMetrics,
   excludeScriptsMetrics,
   excludeGangMetrics,
+  excludeCorpMetrics,
   excludeStocksMetrics,
   excludePlayerMetrics,
 }: {
@@ -16,6 +17,7 @@ function CustomHudLabels({
   excludeLocationMetrics: boolean;
   excludeScriptsMetrics: boolean;
   excludeGangMetrics: boolean;
+  excludeCorpMetrics: boolean;
   excludeStocksMetrics: boolean;
   excludePlayerMetrics: boolean;
 }) {
@@ -72,6 +74,16 @@ function CustomHudLabels({
         Gang Inc
       </label>
       <br style={{display: excludeGangMetrics ? 'none' : ''}} />
+      <label
+        title="Corp Dividends income per second"
+        style={{
+          color: uiTheme.money,
+          display: excludeCorpMetrics ? 'none' : '',
+        }}
+      >
+        Corp Inc
+      </label>
+      <br style={{display: excludeCorpMetrics ? 'none' : ''}} />
       <label
         title="Total profit from stock portfolio"
         style={{

@@ -30,13 +30,15 @@ const React = reactModel.reactNS;
 const CMD_FLAG_EXCLUDE_LOCATION_METRICS = 'excludeLocation';
 const CMD_FLAG_EXCLUDE_SCRIPT_METRICS = 'excludeScripts';
 const CMD_FLAG_EXCLUDE_GANG_METRICS = 'excludeGang';
+const CMD_FLAG_EXCLUDE_CORP_METRICS = 'excludeCorp';
 const CMD_FLAG_EXCLUDE_STOCK_METRICS = 'excludeStocks';
 const CMD_FLAG_EXCLUDE_PLAYER_METRICS = 'excludePlayer';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_EXCLUDE_LOCATION_METRICS, false],
   [CMD_FLAG_EXCLUDE_SCRIPT_METRICS, false],
-  [CMD_FLAG_EXCLUDE_STOCK_METRICS, false],
   [CMD_FLAG_EXCLUDE_GANG_METRICS, false],
+  [CMD_FLAG_EXCLUDE_CORP_METRICS, false],
+  [CMD_FLAG_EXCLUDE_STOCK_METRICS, false],
   [CMD_FLAG_EXCLUDE_PLAYER_METRICS, false],
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
@@ -73,6 +75,9 @@ export async function main(netscript: NS) {
   const excludeGangMetrics = cmdArgs[
     CMD_FLAG_EXCLUDE_GANG_METRICS
   ].valueOf() as boolean;
+  const excludeCorpMetrics = cmdArgs[
+    CMD_FLAG_EXCLUDE_CORP_METRICS
+  ].valueOf() as boolean;
   const excludeStockMetrics = cmdArgs[
     CMD_FLAG_EXCLUDE_STOCK_METRICS
   ].valueOf() as boolean;
@@ -85,6 +90,7 @@ export async function main(netscript: NS) {
   );
   terminalWriter.writeLine(`Exclude Script Metrics : ${excludeScriptMetrics}`);
   terminalWriter.writeLine(`Exclude Gang Metrics: ${excludeGangMetrics}`);
+  terminalWriter.writeLine(`Exclude Corp Metrics: ${excludeCorpMetrics}`);
   terminalWriter.writeLine(`Exclude Stock Metrics : ${excludeStockMetrics}`);
   terminalWriter.writeLine(`Exclude Player Metrics : ${excludePlayerMetrics}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
@@ -134,8 +140,9 @@ export async function main(netscript: NS) {
         uiTheme={netscript.ui.getTheme()}
         excludeLocationMetrics={excludeLocationMetrics}
         excludeScriptsMetrics={excludeScriptMetrics}
-        excludeStocksMetrics={excludeStockMetrics}
         excludeGangMetrics={excludeGangMetrics}
+        excludeCorpMetrics={excludeCorpMetrics}
+        excludeStocksMetrics={excludeStockMetrics}
         excludePlayerMetrics={excludePlayerMetrics}
       />
     </React.StrictMode>,
@@ -151,8 +158,9 @@ export async function main(netscript: NS) {
         uiTheme={netscript.ui.getTheme()}
         excludeLocationMetrics={excludeLocationMetrics}
         excludeScriptsMetrics={excludeScriptMetrics}
-        excludeStocksMetrics={excludeStockMetrics}
+        excludeCorpMetrics={excludeCorpMetrics}
         excludeGangMetrics={excludeGangMetrics}
+        excludeStocksMetrics={excludeStockMetrics}
         excludePlayerMetrics={excludePlayerMetrics}
       />
     </React.StrictMode>,

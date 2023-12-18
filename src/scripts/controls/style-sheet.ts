@@ -51,7 +51,8 @@ function getHeaderLabelStyle(): React.CSSProperties {
 
 function getDivBorderStyle(
   uiStyle: IStyleSettings,
-  uiTheme: UserInterfaceTheme
+  uiTheme: UserInterfaceTheme,
+  textAlign: TextAlign = 'left'
 ): React.CSSProperties {
   return {
     fontFamily: uiStyle.fontFamily,
@@ -60,6 +61,7 @@ function getDivBorderStyle(
     color: uiTheme.primary,
     backgroundColor: uiTheme.backgroundprimary,
 
+    textAlign: textAlign,
     padding: '8px',
     opacity: 1,
     borderRadius: '0px',
@@ -203,16 +205,15 @@ function getSvgButtonStyle(
     justifyContent: 'center',
     verticalAlign: 'middle',
 
-    height: '100%',
     padding: 0,
     borderColor: uiTheme.secondary,
     borderStyle: 'solid',
     borderWidth: '0 0 0 1px',
     borderRadius: 0,
-
-    outline: '0px',
     border: '0px',
-    margin: '5px',
+
+    marginRight: '5px',
+    outline: '0px',
     overflow: 'visible',
   };
 }
@@ -223,9 +224,46 @@ function getSvgStyle(): React.CSSProperties {
     width: '1em',
     height: '1em',
     display: 'inline-block',
+    verticalAlign: 'middle',
     fill: 'currentcolor',
-    flexShrink: 0,
     fontSize: '1.5rem',
+  };
+}
+
+function getSelectStyle(
+  uiStyle: IStyleSettings,
+  uiTheme: UserInterfaceTheme
+): React.CSSProperties {
+  return {
+    fontFamily: uiStyle.fontFamily,
+    lineHeight: uiStyle.lineHeight,
+
+    color: uiTheme.primary,
+    backgroundColor: uiTheme.well,
+
+    userSelect: 'none',
+    cursor: 'pointer',
+    position: 'relative',
+    boxSizing: 'content-box',
+
+    height: '1.4375em',
+
+    fontWeight: 500,
+    fontSize: '1rem',
+
+    border: '0px',
+    borderRadius: '0px',
+    padding: '4px 0px 5px',
+    margin: '2.5px',
+  };
+}
+
+function getOptionStyle(
+  uiTheme: UserInterfaceTheme,
+  selected?: boolean
+): React.CSSProperties {
+  return {
+    backgroundColor: selected ? uiTheme.primarydark : uiTheme.backgroundprimary,
   };
 }
 
@@ -245,4 +283,6 @@ export {
   getExclusiveToggleButtonStyle,
   getSvgButtonStyle,
   getSvgStyle,
+  getSelectStyle,
+  getOptionStyle,
 };

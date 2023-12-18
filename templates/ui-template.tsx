@@ -33,7 +33,7 @@ export async function main(netscript: NS) {
   netscript.disableLog('ALL');
   netscript.printRaw(
     <React.StrictMode>
-      <DummyComponent netscript={netscript} eventListener={eventListener} uiTheme={netscript.ui.getTheme()}/>
+      <DummyComponent netscript={netscript} eventListener={eventListener}/>
     </React.StrictMode>
   );
 

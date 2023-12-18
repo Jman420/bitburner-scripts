@@ -73,7 +73,6 @@ const HACK_FUNDS_PERCENT_ID = 'hackFundsPercent';
 const FUNDS_LIMIT_PERCENT_ID = 'fundsLimitPercent';
 const TARGET_HOSTS_ID = 'targetHosts';
 const ATTACKER_HOSTS_ID = 'attackerHosts';
-const SEND_SETTINGS_BUTTON_ID = 'sendSettings';
 
 function getInterfaceControls() {
   const doc = getDocument();
@@ -403,12 +402,7 @@ function WgwhManagerUI({
             />
           </div>
         </div>
-        <Button
-          id={SEND_SETTINGS_BUTTON_ID}
-          onClick={sendWgwhConfig}
-          uiStyle={uiStyle}
-          uiTheme={uiTheme}
-        >
+        <Button onClick={sendWgwhConfig} uiStyle={uiStyle} uiTheme={uiTheme}>
           Send Settings
         </Button>
       </div>

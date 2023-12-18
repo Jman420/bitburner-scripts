@@ -6,10 +6,32 @@ import {
   NS,
 } from '@ns';
 
+interface TeaPartyConfig {
+  energyLimit: number;
+  moraleLimit: number;
+  partyFunds: number;
+}
+
+interface ProductLifecycleConfig {
+  divisionName: string;
+  designCity: CityName;
+  productName: string;
+  designBudget: number;
+  marketingBudget: number;
+}
+
+const TEA_PARTY_SCRIPT = 'scripts/corp-tea-party.js';
+const INDUSTRY_MATERIALS_SCRIPT = 'scripts/corp-materials.js';
+const PRODUCT_LIFECYCLE_SCRIPT = 'scripts/corp-product.js';
+const PRICING_SETUP_SCRIPT = 'scripts/corp-price.js';
+const EXPORT_SETUP_SCRIPT = 'scripts/corp-export.js';
+
 const MARKET_TA_I = 'Market-TA.I';
 const MARKET_TA_II = 'Market-TA.II';
 const PRODUCT_CAPACITY_I = 'uPgrade: Capacity.I';
 const PRODUCT_CAPACITY_II = 'uPgrade: Capacity.II';
+
+const EXPORT_FORMULA = '-IPROD-IINV/10';
 
 const INDUSTRY_MULTIPLIER_MATERIALS: CorpMaterialName[] = [
   'Hardware',
@@ -17,6 +39,10 @@ const INDUSTRY_MULTIPLIER_MATERIALS: CorpMaterialName[] = [
   'Robots',
   'Real Estate',
 ];
+
+function getDivisions(netscript: NS) {
+  return netscript.corporation.getCorporation().divisions;
+}
 
 function getOptimalIndustryMaterials(
   netscript: NS,
@@ -133,22 +159,7 @@ async function sellMaterial(
   );
   const targetAmount = materialInfo.stored - amount;
   while (materialInfo.stored > targetAmount && materialInfo.stored > 0) {
-    if (netscript.corporation.hasResearched(divisionName, MARKET_TA_I)) {
-      netscript.corporation.setMaterialMarketTA1(
-        divisionName,
-        cityName,
-        materialName,
-        true
-      );
-    }
-    if (netscript.corporation.hasResearched(divisionName, MARKET_TA_II)) {
-      netscript.corporation.setMaterialMarketTA2(
-        divisionName,
-        cityName,
-        materialName,
-        true
-      );
-    }
+    setMaterialMarketTA(netscript, divisionName, cityName, materialName);
 
     const sellAmount = materialInfo.stored - targetAmount;
     netscript.corporation.sellMaterial(
@@ -175,6 +186,58 @@ async function sellMaterial(
   }
 }
 
+function setMaterialMarketTA(
+  netscript: NS,
+  divisionName: string,
+  cityName: CityName,
+  materialName: CorpMaterialName
+) {
+  netscript.corporation.sellMaterial(
+    divisionName,
+    cityName,
+    materialName,
+    'MAX',
+    'MP'
+  );
+  if (netscript.corporation.hasResearched(divisionName, MARKET_TA_I)) {
+    netscript.corporation.setMaterialMarketTA1(
+      divisionName,
+      cityName,
+      materialName,
+      true
+    );
+  }
+  if (netscript.corporation.hasResearched(divisionName, MARKET_TA_II)) {
+    netscript.corporation.setMaterialMarketTA2(
+      divisionName,
+      cityName,
+      materialName,
+      true
+    );
+  }
+}
+
+function setProductMarketTA(
+  netscript: NS,
+  divisionName: string,
+  productName: string
+) {
+  netscript.corporation.sellProduct(
+    divisionName,
+    'Sector-12',
+    productName,
+    'MAX',
+    'MP',
+    true
+  );
+  if (netscript.corporation.hasResearched(divisionName, MARKET_TA_I)) {
+    netscript.corporation.setProductMarketTA1(divisionName, productName, true);
+  }
+  if (netscript.corporation.hasResearched(divisionName, MARKET_TA_II)) {
+    netscript.corporation.setProductMarketTA2(divisionName, productName, true);
+  }
+}
+
 function getDivisionProductLimit(netscript: NS, divisionName: string) {
   if (netscript.corporation.hasResearched(divisionName, PRODUCT_CAPACITY_II)) {
     return 5;
@@ -186,10 +249,21 @@ function getDivisionProductLimit(netscript: NS, divisionName: string) {
 }
 
 export {
+  TeaPartyConfig,
+  ProductLifecycleConfig,
+  TEA_PARTY_SCRIPT,
+  INDUSTRY_MATERIALS_SCRIPT,
+  PRODUCT_LIFECYCLE_SCRIPT,
+  PRICING_SETUP_SCRIPT,
+  EXPORT_SETUP_SCRIPT,
+  EXPORT_FORMULA,
   INDUSTRY_MULTIPLIER_MATERIALS,
+  getDivisions,
   getOptimalIndustryMaterials,
   waitForState,
   buyMaterial,
   sellMaterial,
+  setMaterialMarketTA,
+  setProductMarketTA,
   getDivisionProductLimit,
 };

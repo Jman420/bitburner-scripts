@@ -132,9 +132,6 @@ function handleSetFundsLimitClick(
 
 function getHacknetManagerConfig() {
   const interfaceControls = getInterfaceControls();
-
-  const fundsLimit =
-    parseNumber(interfaceControls.fundsLimit?.value ?? '') || -1;
   const config: HacknetManagerConfig = {
     purchaseNodes:
       interfaceControls.purchaseNodes?.classList.contains(
@@ -144,7 +141,7 @@ function getHacknetManagerConfig() {
       interfaceControls.purchaseUpgrades?.classList.contains(
         TOGGLE_BUTTON_SELECTED_CLASS
       ) ?? false,
-    fundsLimit: fundsLimit,
+    fundsLimit: parseNumber(interfaceControls.fundsLimit?.value ?? '') || -1,
   };
   return config;
 }
@@ -195,7 +192,7 @@ function HacknetManagerUI({
   const uiTheme = netscript.ui.getTheme();
 
   const [fundsLimit, setFundsLimit] = useState('');
-  const managerRunning = Boolean(getPid(netscript, HACKNET_MANAGER_SCRIPT));
+  const targetRunning = Boolean(getPid(netscript, HACKNET_MANAGER_SCRIPT));
 
   useEffectOnce(() => {
     eventListener.addListener(
@@ -208,10 +205,6 @@ function HacknetManagerUI({
     );
     sendMessage(new HacknetConfigRequest(eventListener.subscriberName));
   });
-
-  const divBorderStyle = getDivBorderStyle(uiStyle, uiTheme);
-  divBorderStyle.alignItems = 'center';
-  divBorderStyle.textAlign = 'center';
 
   return (
     <div>
@@ -226,13 +219,13 @@ function HacknetManagerUI({
             setFundsLimit,
             uiTheme
           )}
-          scriptAlreadyRunning={managerRunning}
+          scriptAlreadyRunning={targetRunning}
           uiStyle={uiStyle}
           uiTheme={uiTheme}
         />
       </div>
       <label style={getLabelStyle('center')}>Purchase Settings</label>
-      <div style={divBorderStyle}>
+      <div style={getDivBorderStyle(uiStyle, uiTheme, 'center')}>
         <ToggleButton
           id={PURCHASE_NODES_BUTTON_ID}
           onClick={sendHacknetManagerConfig}
@@ -250,7 +243,7 @@ function HacknetManagerUI({
           Node Upgrades
         </ToggleButton>
       </div>
-      <div style={divBorderStyle}>
+      <div style={getDivBorderStyle(uiStyle, uiTheme, 'center')}>
         <Input
           id={FUNDS_LIMIT_INPUT_ID}
           placeholder="Enter funds limit"

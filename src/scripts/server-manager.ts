@@ -65,7 +65,11 @@ function manageOrdersAndPurchases(
     (!upgradeOrders.length || nodeCost < upgradeOrders[0].cost) &&
     nodeCost <= netscript.getPlayer().money
   ) {
-    logWriter.writeLine(`Purchasing new Server Farm Node for $${nodeCost}...`);
+    logWriter.writeLine(
+      `Purchasing new Server Farm Node for $${netscript.formatNumber(
+        nodeCost
+      )}...`
+    );
     const hostname = netscript.purchaseServer(namePrefix, minRamOrder);
     logWriter.writeLine(
       `Successfully purchased new Server Farm Node with index : ${hostname}`
@@ -94,11 +98,17 @@ function manageOrdersAndPurchases(
     }
 
     logWriter.writeLine(
-      `Purchasing ${orderDetails.ramAmount}GB RAM upgrade for node ${orderDetails.hostname} for $${orderDetails.cost}...`
+      `Purchasing ${netscript.formatRam(
+        orderDetails.ramAmount
+      )} RAM upgrade for node ${
+        orderDetails.hostname
+      } for $${netscript.formatNumber(orderDetails.cost)}...`
     );
     orderDetails.purchaseFunc(orderDetails.hostname, orderDetails.ramAmount);
     logWriter.writeLine(
-      `Successfully purchased ${orderDetails.ramAmount}GB RAM upgrade for node ${orderDetails.hostname}`
+      `Successfully purchased ${netscript.formatRam(
+        orderDetails.ramAmount
+      )} RAM upgrade for node ${orderDetails.hostname}`
     );
 
     logWriter.writeLine(

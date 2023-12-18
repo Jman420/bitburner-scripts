@@ -170,7 +170,6 @@ function canRunScript(
     const runningScript = netscript.getRunningScript();
     availableRam += runningScript?.ramUsage ?? 0;
   }
-
   return scriptRam > 0 && scriptRam <= availableRam;
 }
 

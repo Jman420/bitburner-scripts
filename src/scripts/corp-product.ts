@@ -18,24 +18,35 @@ import {
 import {openTail} from '/scripts/workflows/ui';
 import {CITY_NAMES} from '/scripts/common/shared';
 import {
+  ProductLifecycleConfig,
   getDivisionProductLimit,
+  setProductMarketTA,
   waitForState,
 } from '/scripts/workflows/corporation';
 import {parseNumber} from '/scripts/workflows/parsing';
+import {ProductLifecycleConfigEvent} from '/scripts/comms/events/product-lifecycle-config-event';
+import {EventListener, sendMessage} from '/scripts/comms/event-comms';
+import {ProductLifecycleConfigRequest} from '/scripts/comms/requests/product-lifecycle-config-request';
+import {ProductLifecycleConfigResponse} from '/scripts/comms/responses/product-lifecycle-config-response';
+
+const DEFAULT_DESIGN_CITY = 'Sector-12';
+const DEFAULT_PRODUCT_NAME = 'Product';
+const DEFAULT_DESIGN_BUDGET = '5b';
+const DEFAULT_MARKETING_BUDGET = '5b';
 
 const PRODUCT_VERSION_SUFFIX = ' v';
 
-const CMD_FLAG_DIVISION_NAME = 'division';
-const CMD_FLAG_DESIGN_CITY_NAME = 'designCity';
-const CMD_FLAG_PRODUCT_NAME = 'productName';
-const CMD_FLAG_DESIGN_BUDGET = 'designBudget';
-const CMD_FLAG_MARKETING_BUDGET = 'marketingBudget';
+export const CMD_FLAG_DIVISION_NAME = 'division';
+export const CMD_FLAG_DESIGN_CITY_NAME = 'designCity';
+export const CMD_FLAG_PRODUCT_NAME = 'productName';
+export const CMD_FLAG_DESIGN_BUDGET = 'designBudget';
+export const CMD_FLAG_MARKETING_BUDGET = 'marketingBudget';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_DIVISION_NAME, ''],
-  [CMD_FLAG_DESIGN_CITY_NAME, 'Sector-12'],
-  [CMD_FLAG_PRODUCT_NAME, 'Product'],
-  [CMD_FLAG_DESIGN_BUDGET, '5b'],
-  [CMD_FLAG_MARKETING_BUDGET, '5b'],
+  [CMD_FLAG_DESIGN_CITY_NAME, DEFAULT_DESIGN_CITY],
+  [CMD_FLAG_PRODUCT_NAME, DEFAULT_PRODUCT_NAME],
+  [CMD_FLAG_DESIGN_BUDGET, DEFAULT_DESIGN_BUDGET],
+  [CMD_FLAG_MARKETING_BUDGET, DEFAULT_MARKETING_BUDGET],
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
@@ -52,22 +63,17 @@ const TAIL_HEIGHT = 490;
 const UPDATE_DELAY = 0;
 
 let DIVISION_NAMES: string[];
+let managerConfig: ProductLifecycleConfig;
 
-async function manageProductLifecycle(
-  netscript: NS,
-  logWriter: Logger,
-  divisionName: string,
-  designCity: CityName,
-  productName: string,
-  designBudget: number,
-  marketingBudget: number
-) {
-  let productVersion = 1;
-  const divisionInfo = netscript.corporation.getDivision(divisionName);
+async function manageProductLifecycle(netscript: NS, logWriter: Logger) {
+  let productVersion = 0;
+  const divisionInfo = netscript.corporation.getDivision(
+    managerConfig.divisionName
+  );
   for (const productName of divisionInfo.products) {
     const productInfo = netscript.corporation.getProduct(
-      divisionName,
-      designCity,
+      managerConfig.divisionName,
+      managerConfig.designCity,
       productName
     );
     if (productInfo.developmentProgress < 100) {
@@ -75,36 +81,92 @@ async function manageProductLifecycle(
       return;
     }
 
-    const productVersionIndex =
-      productName.indexOf(PRODUCT_VERSION_SUFFIX) +
-      PRODUCT_VERSION_SUFFIX.length;
-    if (productVersionIndex >= PRODUCT_VERSION_SUFFIX.length) {
-      productVersion = parseInt(productName.slice(productVersionIndex));
+    setProductMarketTA(netscript, managerConfig.divisionName, productName);
+
+    const productVersionIndex = productName.indexOf(PRODUCT_VERSION_SUFFIX);
+    if (productVersionIndex > -1) {
+      productVersion = parseInt(
+        productName.slice(productVersionIndex + PRODUCT_VERSION_SUFFIX.length)
+      );
     }
   }
+  productVersion++;
 
-  const productLimit = getDivisionProductLimit(netscript, divisionName);
+  const productLimit = getDivisionProductLimit(
+    netscript,
+    managerConfig.divisionName
+  );
   if (divisionInfo.products.length >= productLimit) {
     const eolProductName = divisionInfo.products[0];
     logWriter.writeLine(
-      `Discontinuing product in division ${divisionName} : ${eolProductName}`
+      `Discontinuing product in division ${managerConfig.divisionName} : ${eolProductName}`
     );
-    netscript.corporation.discontinueProduct(divisionName, eolProductName);
+    netscript.corporation.discontinueProduct(
+      managerConfig.divisionName,
+      eolProductName
+    );
   }
 
-  const newProductName = `${productName}${PRODUCT_VERSION_SUFFIX}${productVersion}`;
+  const newProductName = `${managerConfig.productName}${PRODUCT_VERSION_SUFFIX}${productVersion}`;
   logWriter.writeLine(
-    `Designing new product in division ${divisionName} : ${newProductName}`
+    `Designing new product in division ${managerConfig.divisionName} : ${newProductName}`
   );
   netscript.corporation.makeProduct(
-    divisionName,
-    designCity,
+    managerConfig.divisionName,
+    managerConfig.designCity,
     newProductName,
-    designBudget,
-    marketingBudget
+    managerConfig.designBudget,
+    managerConfig.marketingBudget
   );
 
   await waitForState(netscript, 'START');
+}
+
+function handleUpdateConfigEvent(
+  eventData: ProductLifecycleConfigEvent,
+  netscript: NS,
+  logWriter: Logger
+) {
+  if (!eventData.config) {
+    return;
+  }
+
+  logWriter.writeLine('Update settings event received...');
+  managerConfig = eventData.config;
+  if (!managerConfig.productName) {
+    managerConfig.productName = DEFAULT_PRODUCT_NAME;
+  }
+  if (managerConfig.designBudget < 0) {
+    managerConfig.designBudget = parseNumber(DEFAULT_DESIGN_BUDGET);
+  }
+  if (managerConfig.marketingBudget < 0) {
+    managerConfig.marketingBudget = parseNumber(DEFAULT_MARKETING_BUDGET);
+  }
+
+  logWriter.writeLine(`Division Name : ${managerConfig.divisionName}`);
+  logWriter.writeLine(`Design City : ${managerConfig.designCity}`);
+  logWriter.writeLine(`Product Name : ${managerConfig.productName}`);
+  logWriter.writeLine(
+    `Design Budget : $${netscript.formatNumber(managerConfig.designBudget)}`
+  );
+  logWriter.writeLine(
+    `Marketing Budget : $${netscript.formatNumber(
+      managerConfig.marketingBudget
+    )}`
+  );
+}
+
+function handleProductLifecycleConfigRequest(
+  requestData: ProductLifecycleConfigRequest,
+  logWriter: Logger
+) {
+  logWriter.writeLine(
+    `Sending product lifecycle config response to ${requestData.sender}`
+  );
+  sendMessage(
+    new ProductLifecycleConfigResponse(managerConfig),
+    requestData.sender
+  );
 }
 
 /** @param {NS} netscript */
@@ -157,17 +219,46 @@ export async function main(netscript: NS) {
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
+  const eventListener = new EventListener(SUBSCRIBER_NAME);
+  eventListener.addListener(
+    ProductLifecycleConfigEvent,
+    handleUpdateConfigEvent,
+    netscript,
+    scriptLogWriter
+  );
+  eventListener.addListener(
+    ProductLifecycleConfigRequest,
+    handleProductLifecycleConfigRequest,
+    scriptLogWriter
+  );
+
+  scriptLogWriter.writeLine('Corporation Product Lifecycle Manager');
+  scriptLogWriter.writeLine(SECTION_DIVIDER);
+  scriptLogWriter.writeLine(`Division Name : ${divisionName}`);
+  scriptLogWriter.writeLine(`Design City : ${designCity}`);
+  scriptLogWriter.writeLine(`Product Name : ${productName}`);
+  scriptLogWriter.writeLine(
+    `Design Budget : $${netscript.formatNumber(designBudget)}`
+  );
+  scriptLogWriter.writeLine(
+    `Marketing Budget : $${netscript.formatNumber(marketingBudget)}`
+  );
+  scriptLogWriter.writeLine(SECTION_DIVIDER);
+
+  managerConfig = {
+    divisionName: divisionName,
+    designCity: designCity,
+    productName: productName,
+    designBudget: designBudget,
+    marketingBudget: marketingBudget,
+  };
+
   await delayedInfiniteLoop(
     netscript,
     UPDATE_DELAY,
     manageProductLifecycle,
     netscript,
-    scriptLogWriter,
-    divisionName,
-    designCity,
-    productName,
-    designBudget,
-    marketingBudget
+    scriptLogWriter
   );
 }
 

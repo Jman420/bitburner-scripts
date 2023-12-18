@@ -12,9 +12,10 @@ import {
 } from '/scripts/workflows/cmd-args';
 
 import {initializeScript} from '/scripts/workflows/execution';
+import {parseNumber} from '/scripts/workflows/parsing';
 
 const CMD_FLAG_REPUTATION = 'reputation';
-const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_REPUTATION, 0]];
+const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_REPUTATION, '']];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const MODULE_NAME = 'faction-donation';
@@ -29,14 +30,14 @@ export async function main(netscript: NS) {
 
   logWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
-  const targetReputation = cmdArgs[CMD_FLAG_REPUTATION].valueOf() as number;
+  const targetReputation = cmdArgs[CMD_FLAG_REPUTATION].valueOf() as string;
 
   logWriter.writeLine(`Target Reputation : ${targetReputation}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
+  const repAmount = parseNumber(targetReputation);
   const player = netscript.getPlayer();
-  const donationAmount =
-    (targetReputation * 10 ** 6) / player.mults.faction_rep;
+  const donationAmount = (repAmount * 10 ** 6) / player.mults.faction_rep;
 
   logWriter.writeLine(
     `Required donation : $${netscript.formatNumber(
