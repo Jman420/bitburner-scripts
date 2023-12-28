@@ -54,7 +54,7 @@ export async function main(netscript: NS) {
     attackManagerRunning = AttackManagerRunning.BATCH;
   }
 
-  terminalWriter.writeLine('See script logs for on-going attack details.');
+  terminalWriter.writeLine('See script log window for user interface.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
   const eventListener = new EventListener(SUBSCRIBER_NAME);

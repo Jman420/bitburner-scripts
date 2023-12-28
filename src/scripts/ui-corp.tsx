@@ -27,7 +27,7 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('Corporation Automation UI');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
-  terminalWriter.writeLine('See script logs for on-going attack details.');
+  terminalWriter.writeLine('See script log window for user interface.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
   const eventListener = new EventListener(SUBSCRIBER_NAME);
