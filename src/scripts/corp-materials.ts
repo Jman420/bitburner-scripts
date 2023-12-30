@@ -11,14 +11,16 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
-import {initializeScript} from '/scripts/workflows/execution';
+import {openTail} from '/scripts/workflows/ui';
+
 import {CITY_NAMES} from '/scripts/common/shared';
+
+import {initializeScript} from '/scripts/workflows/execution';
 import {
   buyMaterial,
-  getOptimalIndustryMaterials,
   sellMaterial,
-} from '/scripts/workflows/corporation';
-import {openTail} from '/scripts/workflows/ui';
+} from '/scripts/workflows/corporation-actions';
+import {getOptimalIndustryMaterials} from '/scripts/workflows/corporation-optimization';
 
 export const CMD_FLAG_DIVISION_NAME = 'division';
 export const CMD_FLAG_CITY_NAMES = 'cities';
@@ -184,7 +186,7 @@ export async function main(netscript: NS) {
     cityNames,
     storageSize
   );
-  await Promise.all(purchasePromises);
+  await Promise.allSettled(purchasePromises);
 }
 
 export function autocomplete(data: AutocompleteData, args: string[]) {

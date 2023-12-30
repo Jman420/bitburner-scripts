@@ -3,15 +3,13 @@ import {CityName, CorpMaterialName, NS} from '@ns';
 import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
-import {
-  delayedInfiniteLoop,
-  initializeScript,
-} from '/scripts/workflows/execution';
 import {openTail} from '/scripts/workflows/ui';
-import {
-  getOfficeLimitedProduction,
-  waitForState,
-} from '/scripts/workflows/corporation';
+
+import {delayedInfiniteLoop} from '/scripts/workflows/execution';
+import {waitForState} from '/scripts/workflows/corporation-actions';
+import {getOfficeLimitedProduction} from '/scripts/workflows/corporation-formulas';
+import {ExitEvent} from '/scripts/comms/events/exit-event';
+import {sendMessage} from '/scripts/comms/event-comms';
 
 const MODULE_NAME = 'corp-supply';
 const SUBSCRIBER_NAME = 'corp-supply';
@@ -27,12 +25,32 @@ const MAX_CONGESTION_COUNT = 5;
 let officeProductionMap: Map<string, number>;
 let warehouseCongestionMap: Map<string, number>;
 
+async function handleShutdown(netscript: NS) {
+  const corpApi = netscript.corporation;
+  const corporationInfo = corpApi.getCorporation();
+  for (const divisionName of corporationInfo.divisions) {
+    const divisionInfo = corpApi.getDivision(divisionName);
+    const industryInfo = corpApi.getIndustryData(divisionInfo.type);
+    for (const officeCityName of divisionInfo.cities) {
+      for (const materialName of Object.keys(industryInfo.requiredMaterials)) {
+        corpApi.buyMaterial(divisionName, officeCityName, materialName, 0);
+        corpApi.sellMaterial(
+          divisionName,
+          officeCityName,
+          materialName,
+          '0',
+          'MP'
+        );
+      }
+    }
+  }
+}
+
 function getOfficeKey(divisionName: string, cityName: CityName) {
   return `${divisionName}-${cityName}`;
 }
 
-function isWarehouseCongested(divisionName: string, cityName: CityName) {
-  const officeKey = getOfficeKey(divisionName, cityName);
+function isWarehouseCongested(officeKey: string) {
   const congestionCount = warehouseCongestionMap.get(officeKey) ?? 0;
   return congestionCount > MAX_CONGESTION_COUNT;
 }
@@ -46,17 +64,43 @@ async function monitorOfficeProduction(netscript: NS, logWriter: Logger) {
   const corporationInfo = corpApi.getCorporation();
   for (const divisionName of corporationInfo.divisions) {
     const divisionInfo = corpApi.getDivision(divisionName);
+    const industryInfo = corpApi.getIndustryData(divisionInfo.type);
     for (const officeCityName of divisionInfo.cities) {
-      if (!corpApi.hasWarehouse(divisionName, officeCityName)) {
+      const officeInfo = corpApi.getOffice(divisionName, officeCityName);
+      if (
+        !corpApi.hasWarehouse(divisionName, officeCityName) ||
+        officeInfo.numEmployees < 1
+      ) {
         continue;
       }
 
       const officeKey = getOfficeKey(divisionName, officeCityName);
-      const officeProduction = getOfficeLimitedProduction(
-        netscript,
-        divisionName,
-        officeCityName
-      );
+      let officeProduction = 0;
+      if (industryInfo.makesMaterials) {
+        officeProduction += getOfficeLimitedProduction(
+          netscript,
+          divisionName,
+          officeCityName
+        );
+      }
+      if (industryInfo.makesProducts) {
+        for (const productName of divisionInfo.products) {
+          const productInfo = corpApi.getProduct(
+            divisionName,
+            officeCityName,
+            productName
+          );
+          if (productInfo.developmentProgress >= 100) {
+            officeProduction += getOfficeLimitedProduction(
+              netscript,
+              divisionName,
+              officeCityName,
+              productInfo.size
+            );
+          }
+        }
+      }
+
       officeProductionMap.set(officeKey, officeProduction);
       logWriter.writeLine(
         `  ${divisionName} - ${officeCityName} : ${officeProduction}`
@@ -76,7 +120,11 @@ async function monitorWarehouseCongestion(netscript: NS, logWriter: Logger) {
     const divisionInfo = corpApi.getDivision(divisionName);
     const industryInfo = corpApi.getIndustryData(divisionInfo.type);
     for (const officeCityName of divisionInfo.cities) {
-      if (!corpApi.hasWarehouse(divisionName, officeCityName)) {
+      const officeInfo = corpApi.getOffice(divisionName, officeCityName);
+      if (
+        !corpApi.hasWarehouse(divisionName, officeCityName) ||
+        officeInfo.numEmployees < 1
+      ) {
         continue;
       }
 
@@ -97,10 +145,11 @@ async function monitorWarehouseCongestion(netscript: NS, logWriter: Logger) {
           productName
         );
         allOutputsProduced =
-          allOutputsProduced && productInfo.productionAmount > 0;
+          allOutputsProduced &&
+          (productInfo.productionAmount > 0 ||
+            productInfo.developmentProgress < 100);
       }
 
-      const officeInfo = corpApi.getOffice(divisionName, officeCityName);
       const productionWorkerCount =
         officeInfo.employeeJobs.Operations +
         officeInfo.employeeJobs.Engineer +
@@ -131,11 +180,16 @@ async function manageWarehouse(netscript: NS, logWriter: Logger) {
     const divisionInfo = corpApi.getDivision(divisionName);
     const industryInfo = corpApi.getIndustryData(divisionInfo.type);
     for (const officeCityName of divisionInfo.cities) {
-      if (!corpApi.hasWarehouse(divisionName, officeCityName)) {
+      const officeInfo = corpApi.getOffice(divisionName, officeCityName);
+      if (
+        !corpApi.hasWarehouse(divisionName, officeCityName) ||
+        officeInfo.numEmployees < 1
+      ) {
         continue;
       }
 
-      if (isWarehouseCongested(divisionName, officeCityName)) {
+      const officeKey = getOfficeKey(divisionName, officeCityName);
+      if (isWarehouseCongested(officeKey)) {
         logWriter.writeLine(
           `  ${divisionName} - ${officeCityName} : Congested`
         );
@@ -147,7 +201,7 @@ async function manageWarehouse(netscript: NS, logWriter: Logger) {
             officeCityName,
             materialName
           );
-          const sellAmount = materialInfo.stored / 2;
+          const sellAmount = materialInfo.stored / 10;
           corpApi.sellMaterial(
             divisionName,
             officeCityName,
@@ -156,6 +210,7 @@ async function manageWarehouse(netscript: NS, logWriter: Logger) {
             '0'
           );
           corpApi.buyMaterial(divisionName, officeCityName, materialName, 0);
+          warehouseCongestionMap.set(officeKey, 0);
           logWriter.writeLine(`    ${materialName} - ${sellAmount}`);
         }
       } else {
@@ -248,7 +303,10 @@ async function manageWarehouse(netscript: NS, logWriter: Logger) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  initializeScript(netscript, SUBSCRIBER_NAME);
+  netscript.atExit(async () => {
+    handleShutdown(netscript);
+    await sendMessage(new ExitEvent(), SUBSCRIBER_NAME);
+  });
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Corporation Custom Smart Supply');
   terminalWriter.writeLine(SECTION_DIVIDER);

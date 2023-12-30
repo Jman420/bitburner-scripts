@@ -8,14 +8,14 @@ import {
   getHeaderLabelStyle,
 } from '/scripts/controls/style-sheet';
 import {Dropdown} from '/scripts/controls/components/dropdown';
-import {
-  EXPORT_SETUP_SCRIPT,
-  getDivisions,
-} from '/scripts/workflows/corporation';
 import {Button} from '/scripts/controls/components/button';
-import {getCmdFlag} from '/scripts/workflows/cmd-args';
-import {CMD_FLAG_DIVISION_NAME} from '/scripts/corp-export';
+
 import {runScript} from '/scripts/workflows/execution';
+import {getCmdFlag} from '/scripts/workflows/cmd-args';
+
+import {EXPORT_SETUP_SCRIPT} from '/scripts/workflows/corporation-shared';
+import {CMD_FLAG_DIVISION_NAME} from '/scripts/corp-export';
+import {FRAUD_DIVISION_NAME_PREFIX} from '/scripts/workflows/corporation-shared';
 
 interface InterfaceControls {
   divisionName?: HTMLSelectElement;
@@ -51,7 +51,7 @@ function CorpExportUI({netscript}: {netscript: NS}) {
   const uiStyle = netscript.ui.getStyles();
   const uiTheme = netscript.ui.getTheme();
 
-  const divisionNames = getDivisions(netscript);
+  const corporationInfo = netscript.corporation.getCorporation();
 
   return (
     <div style={getDivBorderStyle(uiStyle, uiTheme, 'center')}>
@@ -62,9 +62,11 @@ function CorpExportUI({netscript}: {netscript: NS}) {
         <Dropdown
           id={DIVISION_NAME_ID}
           title="Division"
-          options={divisionNames.map(divisionName => {
-            return {label: divisionName, value: divisionName};
-          })}
+          options={corporationInfo.divisions
+            .filter(value => !value.includes(FRAUD_DIVISION_NAME_PREFIX))
+            .map(divisionName => {
+              return {label: divisionName, value: divisionName};
+            })}
           uiStyle={uiStyle}
           uiTheme={uiTheme}
         />

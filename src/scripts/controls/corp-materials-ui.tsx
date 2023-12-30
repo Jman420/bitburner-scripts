@@ -9,19 +9,20 @@ import {
 } from '/scripts/controls/style-sheet';
 import {LabeledInput} from '/scripts/controls/components/labeled-input';
 import {Dropdown} from '/scripts/controls/components/dropdown';
-import {
-  INDUSTRY_MATERIALS_SCRIPT,
-  getDivisions,
-} from '/scripts/workflows/corporation';
-import {CITY_NAMES} from '/scripts/common/shared';
 import {Button} from '/scripts/controls/components/button';
-import {runScript} from '/scripts/workflows/execution';
+
 import {getCmdFlag} from '/scripts/workflows/cmd-args';
+
+import {CITY_NAMES} from '/scripts/common/shared';
+
+import {runScript} from '/scripts/workflows/execution';
+import {INDUSTRY_MATERIALS_SCRIPT} from '/scripts/workflows/corporation-shared';
 import {
   CMD_FLAG_CITY_NAMES,
   CMD_FLAG_DIVISION_NAME,
   CMD_FLAG_STORAGE_SIZE,
 } from '/scripts/corp-materials';
+import {FRAUD_DIVISION_NAME_PREFIX} from '/scripts/workflows/corporation-shared';
 
 interface InterfaceControls {
   divisionName?: HTMLSelectElement;
@@ -85,13 +86,13 @@ function runManagerScript(netscript: NS) {
   );
 }
 
-function IndustryMaterialsUI({netscript}: {netscript: NS}) {
+function CorpMaterialsUI({netscript}: {netscript: NS}) {
   const uiStyle = netscript.ui.getStyles();
   const uiTheme = netscript.ui.getTheme();
 
   const [storageSize, setStorageSize] = useState('');
 
-  const divisionNames = getDivisions(netscript);
+  const corporationInfo = netscript.corporation.getCorporation();
   const cityNames = ['', ...CITY_NAMES];
 
   return (
@@ -103,9 +104,11 @@ function IndustryMaterialsUI({netscript}: {netscript: NS}) {
         <Dropdown
           id={DIVISION_NAME_ID}
           title="Division"
-          options={divisionNames.map(divisionName => {
-            return {label: divisionName, value: divisionName};
-          })}
+          options={corporationInfo.divisions
+            .filter(value => !value.includes(FRAUD_DIVISION_NAME_PREFIX))
+            .map(divisionName => {
+              return {label: divisionName, value: divisionName};
+            })}
           uiStyle={uiStyle}
           uiTheme={uiTheme}
         />
@@ -139,4 +142,4 @@ function IndustryMaterialsUI({netscript}: {netscript: NS}) {
   );
 }
 
-export {IndustryMaterialsUI};
+export {CorpMaterialsUI};

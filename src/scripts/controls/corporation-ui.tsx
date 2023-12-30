@@ -7,12 +7,13 @@ import {
   getHeaderDivStyle,
   getHeaderLabelStyle,
 } from '/scripts/controls/style-sheet';
-import {TeaPartyUI} from '/scripts/controls/tea-party-ui';
-import {ProductLifecycleUI} from '/scripts/controls/product-lifecycle-ui';
-import {IndustryMaterialsUI} from '/scripts/controls/industry-materials-ui';
+import {TeaPartyUI} from '/scripts/controls/corp-tea-party-ui';
+import {ProductLifecycleUI} from '/scripts/controls/corp-product-ui';
+import {CorpMaterialsUI} from '/scripts/controls/corp-materials-ui';
 import {CorpExportUI} from '/scripts/controls/corp-export-ui';
 import {CorpPricingUI} from '/scripts/controls/corp-pricing-ui';
 import {CorpSupplyUI} from '/scripts/controls/corp-supply-ui';
+import {CorpRoundsUI} from '/scripts/controls/corp-rounds-ui';
 
 const React = getReactModel().reactNS;
 
@@ -33,12 +34,13 @@ function CorporationUI({
       </div>
       <TeaPartyUI netscript={netscript} eventListener={eventListener} />
       <ProductLifecycleUI netscript={netscript} eventListener={eventListener} />
-      <IndustryMaterialsUI netscript={netscript} />
+      <CorpMaterialsUI netscript={netscript} />
       <div style={getHeaderDivStyle(uiStyle, uiTheme)}>
         <CorpPricingUI netscript={netscript} />
         <CorpSupplyUI netscript={netscript} />
         <CorpExportUI netscript={netscript} />
       </div>
+      <CorpRoundsUI netscript={netscript} />
     </div>
   );
 }

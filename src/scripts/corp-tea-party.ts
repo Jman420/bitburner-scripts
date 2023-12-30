@@ -11,14 +11,17 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
+import {openTail} from '/scripts/workflows/ui';
+
 import {
   delayedInfiniteLoop,
   initializeScript,
 } from '/scripts/workflows/execution';
-import {TeaPartyConfig, waitForState} from '/scripts/workflows/corporation';
-import {openTail} from '/scripts/workflows/ui';
-import {TeaPartyConfigEvent} from '/scripts/comms/events/tea-party-config-event';
+import {waitForState} from '/scripts/workflows/corporation-actions';
+import {TeaPartyConfig} from '/scripts/workflows/corporation-shared';
+
 import {EventListener, sendMessage} from '/scripts/comms/event-comms';
+import {TeaPartyConfigEvent} from '/scripts/comms/events/tea-party-config-event';
 import {TeaPartyConfigRequest} from '/scripts/comms/requests/tea-party-config-request';
 import {TeaPartyConfigResponse} from '/scripts/comms/responses/tea-party-config-response';
 
@@ -58,7 +61,11 @@ async function manageTeaParty(netscript: NS, logWriter: Logger) {
         divisionName,
         cityName
       );
-      if (officeInfo.avgEnergy <= managerConfig.energyLimit) {
+      const officeHasEmployees = officeInfo.numEmployees > 0;
+      if (
+        officeHasEmployees &&
+        officeInfo.avgEnergy <= managerConfig.energyLimit
+      ) {
         const teaPurchased = netscript.corporation.buyTea(
           divisionName,
           cityName
@@ -67,7 +74,10 @@ async function manageTeaParty(netscript: NS, logWriter: Logger) {
           `Tea purchased for ${divisionName} office in ${cityName} : ${teaPurchased}`
         );
       }
-      if (officeInfo.avgMorale <= managerConfig.moraleLimit) {
+      if (
+        officeHasEmployees &&
+        officeInfo.avgMorale <= managerConfig.moraleLimit
+      ) {
         netscript.corporation.throwParty(
           divisionName,
           cityName,

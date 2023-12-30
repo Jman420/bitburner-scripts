@@ -5,52 +5,51 @@ import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {
   CmdArgsSchema,
+  PERCENT_AUTOCOMPLETE,
   getCmdFlag,
   getLastCmdFlag,
   getSchemaFlags,
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
+import {openTail} from '/scripts/workflows/ui';
+
+import {CITY_NAMES} from '/scripts/common/shared';
+
+import {parseNumber} from '/scripts/workflows/parsing';
 import {
   delayedInfiniteLoop,
   initializeScript,
 } from '/scripts/workflows/execution';
-import {openTail} from '/scripts/workflows/ui';
-import {CITY_NAMES} from '/scripts/common/shared';
+import {waitForState} from '/scripts/workflows/corporation-actions';
 import {
+  FRAUD_DIVISION_NAME_PREFIX,
   ProductLifecycleConfig,
-  getDivisionProductLimit,
-  setProductMarketTA,
-  waitForState,
-} from '/scripts/workflows/corporation';
-import {parseNumber} from '/scripts/workflows/parsing';
-import {ProductLifecycleConfigEvent} from '/scripts/comms/events/product-lifecycle-config-event';
+} from '/scripts/workflows/corporation-shared';
+import {getDivisionProductLimit} from '/scripts/workflows/corporation-formulas';
+
 import {EventListener, sendMessage} from '/scripts/comms/event-comms';
+import {ProductLifecycleConfigEvent} from '/scripts/comms/events/product-lifecycle-config-event';
 import {ProductLifecycleConfigRequest} from '/scripts/comms/requests/product-lifecycle-config-request';
 import {ProductLifecycleConfigResponse} from '/scripts/comms/responses/product-lifecycle-config-response';
 
 const DEFAULT_DESIGN_CITY = 'Sector-12';
 const DEFAULT_PRODUCT_NAME = 'Product';
-const DEFAULT_DESIGN_BUDGET = '5b';
-const DEFAULT_MARKETING_BUDGET = '5b';
+const DEFAULT_BUDGET_PERCENT = '0.01';
 
 const PRODUCT_VERSION_SUFFIX = ' v';
 
 export const CMD_FLAG_DIVISION_NAME = 'division';
 export const CMD_FLAG_DESIGN_CITY_NAME = 'designCity';
 export const CMD_FLAG_PRODUCT_NAME = 'productName';
-export const CMD_FLAG_DESIGN_BUDGET = 'designBudget';
-export const CMD_FLAG_MARKETING_BUDGET = 'marketingBudget';
+export const CMD_FLAG_BUDGET_PERCENT = 'budgetPercent';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_DIVISION_NAME, ''],
   [CMD_FLAG_DESIGN_CITY_NAME, DEFAULT_DESIGN_CITY],
   [CMD_FLAG_PRODUCT_NAME, DEFAULT_PRODUCT_NAME],
-  [CMD_FLAG_DESIGN_BUDGET, DEFAULT_DESIGN_BUDGET],
-  [CMD_FLAG_MARKETING_BUDGET, DEFAULT_MARKETING_BUDGET],
+  [CMD_FLAG_BUDGET_PERCENT, DEFAULT_BUDGET_PERCENT],
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
-
-const BUDGET_AUTOCOMPLETE = ['1b', '5b', '10b', '15b'];
 
 const MODULE_NAME = 'corp-product';
 const SUBSCRIBER_NAME = 'corp-product';
@@ -67,11 +66,11 @@ let managerConfig: ProductLifecycleConfig;
 
 async function manageProductLifecycle(netscript: NS, logWriter: Logger) {
   let productVersion = 0;
-  const divisionInfo = netscript.corporation.getDivision(
-    managerConfig.divisionName
-  );
+  const corpApi = netscript.corporation;
+  const corporationInfo = corpApi.getCorporation();
+  const divisionInfo = corpApi.getDivision(managerConfig.divisionName);
   for (const productName of divisionInfo.products) {
-    const productInfo = netscript.corporation.getProduct(
+    const productInfo = corpApi.getProduct(
       managerConfig.divisionName,
       managerConfig.designCity,
       productName
@@ -80,8 +79,6 @@ async function manageProductLifecycle(netscript: NS, logWriter: Logger) {
       await waitForState(netscript, 'START');
       return;
     }
-
-    setProductMarketTA(netscript, managerConfig.divisionName, productName);
 
     const productVersionIndex = productName.indexOf(PRODUCT_VERSION_SUFFIX);
     if (productVersionIndex > -1) {
@@ -101,22 +98,24 @@ async function manageProductLifecycle(netscript: NS, logWriter: Logger) {
     logWriter.writeLine(
       `Discontinuing product in division ${managerConfig.divisionName} : ${eolProductName}`
     );
-    netscript.corporation.discontinueProduct(
-      managerConfig.divisionName,
-      eolProductName
-    );
+    corpApi.discontinueProduct(managerConfig.divisionName, eolProductName);
   }
 
   const newProductName = `${managerConfig.productName}${PRODUCT_VERSION_SUFFIX}${productVersion}`;
+  const budget = corporationInfo.funds * managerConfig.budgetPercent;
   logWriter.writeLine(
-    `Designing new product in division ${managerConfig.divisionName} : ${newProductName}`
+    `Designing new product in division ${
+      managerConfig.divisionName
+    } : ${newProductName} with design & marketing budgets : $${netscript.formatNumber(
+      budget
+    )}`
   );
-  netscript.corporation.makeProduct(
+  corpApi.makeProduct(
     managerConfig.divisionName,
     managerConfig.designCity,
     newProductName,
-    managerConfig.designBudget,
-    managerConfig.marketingBudget
+    budget,
+    budget
   );
 
   await waitForState(netscript, 'START');
@@ -136,23 +135,15 @@ function handleUpdateConfigEvent(
   if (!managerConfig.productName) {
     managerConfig.productName = DEFAULT_PRODUCT_NAME;
   }
-  if (managerConfig.designBudget < 0) {
-    managerConfig.designBudget = parseNumber(DEFAULT_DESIGN_BUDGET);
-  }
-  if (managerConfig.marketingBudget < 0) {
-    managerConfig.marketingBudget = parseNumber(DEFAULT_MARKETING_BUDGET);
+  if (managerConfig.budgetPercent < 0) {
+    managerConfig.budgetPercent = parseNumber(DEFAULT_BUDGET_PERCENT);
   }
 
   logWriter.writeLine(`Division Name : ${managerConfig.divisionName}`);
   logWriter.writeLine(`Design City : ${managerConfig.designCity}`);
   logWriter.writeLine(`Product Name : ${managerConfig.productName}`);
   logWriter.writeLine(
-    `Design Budget : $${netscript.formatNumber(managerConfig.designBudget)}`
-  );
-  logWriter.writeLine(
-    `Marketing Budget : $${netscript.formatNumber(
-      managerConfig.marketingBudget
-    )}`
+    `Budget Percent : $${netscript.formatPercent(managerConfig.budgetPercent)}`
   );
 }
 
@@ -173,7 +164,8 @@ function handleProductLifecycleConfigRequest(
 export async function main(netscript: NS) {
   DIVISION_NAMES = netscript.corporation
     .getCorporation()
-    .divisions.map(value => `'${value}'`);
+    .divisions.filter(value => !value.includes(FRAUD_DIVISION_NAME_PREFIX))
+    .map(value => `'${value}'`);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
@@ -185,21 +177,15 @@ export async function main(netscript: NS) {
   const divisionName = cmdArgs[CMD_FLAG_DIVISION_NAME].valueOf() as string;
   const designCity = cmdArgs[CMD_FLAG_DESIGN_CITY_NAME].valueOf() as CityName;
   const productName = cmdArgs[CMD_FLAG_PRODUCT_NAME].valueOf() as string;
-  const designBudget = parseNumber(
-    cmdArgs[CMD_FLAG_DESIGN_BUDGET].valueOf() as string
-  );
-  const marketingBudget = parseNumber(
-    cmdArgs[CMD_FLAG_MARKETING_BUDGET].valueOf() as string
+  const budgetPercent = parseNumber(
+    cmdArgs[CMD_FLAG_BUDGET_PERCENT].valueOf() as string
   );
 
   terminalWriter.writeLine(`Division Name : ${divisionName}`);
   terminalWriter.writeLine(`Design City : ${designCity}`);
   terminalWriter.writeLine(`Product Name : ${productName}`);
   terminalWriter.writeLine(
-    `Design Budget : $${netscript.formatNumber(designBudget)}`
-  );
-  terminalWriter.writeLine(
-    `Marketing Budget : $${netscript.formatNumber(marketingBudget)}`
+    `Budget Percent : $${netscript.formatPercent(budgetPercent)}`
   );
   terminalWriter.writeLine(SECTION_DIVIDER);
 
@@ -238,10 +224,7 @@ export async function main(netscript: NS) {
   scriptLogWriter.writeLine(`Design City : ${designCity}`);
   scriptLogWriter.writeLine(`Product Name : ${productName}`);
   scriptLogWriter.writeLine(
-    `Design Budget : $${netscript.formatNumber(designBudget)}`
-  );
-  scriptLogWriter.writeLine(
-    `Marketing Budget : $${netscript.formatNumber(marketingBudget)}`
+    `Budget Percent : $${netscript.formatPercent(budgetPercent)}`
   );
   scriptLogWriter.writeLine(SECTION_DIVIDER);
 
@@ -249,8 +232,7 @@ export async function main(netscript: NS) {
     divisionName: divisionName,
     designCity: designCity,
     productName: productName,
-    designBudget: designBudget,
-    marketingBudget: marketingBudget,
+    budgetPercent: budgetPercent,
   };
 
   await delayedInfiniteLoop(
@@ -274,11 +256,8 @@ export function autocomplete(data: AutocompleteData, args: string[]) {
   if (lastCmdFlag === getCmdFlag(CMD_FLAG_DESIGN_CITY_NAME)) {
     return CITY_NAMES.map(value => `'${value}'`);
   }
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_DESIGN_BUDGET)) {
-    return BUDGET_AUTOCOMPLETE;
-  }
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_MARKETING_BUDGET)) {
-    return BUDGET_AUTOCOMPLETE;
+  if (lastCmdFlag === getCmdFlag(CMD_FLAG_BUDGET_PERCENT)) {
+    return PERCENT_AUTOCOMPLETE;
   }
   return CMD_FLAGS;
 }

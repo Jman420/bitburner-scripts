@@ -7,46 +7,47 @@ import {
 } from '/scripts/workflows/ui';
 
 import {
-  EventListener,
-  sendMessage,
-  sendMessageRetry,
-} from '/scripts/comms/event-comms';
-import {
   getDivBorderStyle,
   getHeaderDivStyle,
   getHeaderLabelStyle,
 } from '/scripts/controls/style-sheet';
 import {RunScriptButton} from '/scripts/controls/components/run-script-button';
+import {Button} from '/scripts/controls/components/button';
+import {LabeledInput} from '/scripts/controls/components/labeled-input';
+import {Dropdown} from '/scripts/controls/components/dropdown';
+import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
+
+import {CITY_NAMES} from '/scripts/common/shared';
+
+import {
+  EventListener,
+  sendMessage,
+  sendMessageRetry,
+} from '/scripts/comms/event-comms';
+import {ProductLifecycleConfigEvent} from '/scripts/comms/events/product-lifecycle-config-event';
+import {ProductLifecycleConfigResponse} from '/scripts/comms/responses/product-lifecycle-config-response';
+import {ProductLifecycleConfigRequest} from '/scripts/comms/requests/product-lifecycle-config-request';
+
+import {parseNumber} from '/scripts/workflows/parsing';
 import {getPid, runScript} from '/scripts/workflows/execution';
+import {getCmdFlag} from '/scripts/workflows/cmd-args';
 import {
   PRODUCT_LIFECYCLE_SCRIPT,
   ProductLifecycleConfig,
-  getDivisions,
-} from '/scripts/workflows/corporation';
-import {Button} from '/scripts/controls/components/button';
-import {LabeledInput} from '/scripts/controls/components/labeled-input';
-import {ProductLifecycleConfigEvent} from '/scripts/comms/events/product-lifecycle-config-event';
-import {parseNumber} from '/scripts/workflows/parsing';
-import {Dropdown} from '/scripts/controls/components/dropdown';
-import {CITY_NAMES} from '/scripts/common/shared';
-import {ProductLifecycleConfigResponse} from '/scripts/comms/responses/product-lifecycle-config-response';
-import {ProductLifecycleConfigRequest} from '/scripts/comms/requests/product-lifecycle-config-request';
-import {getCmdFlag} from '/scripts/workflows/cmd-args';
+} from '/scripts/workflows/corporation-shared';
 import {
-  CMD_FLAG_DESIGN_BUDGET,
   CMD_FLAG_DESIGN_CITY_NAME,
   CMD_FLAG_DIVISION_NAME,
-  CMD_FLAG_MARKETING_BUDGET,
   CMD_FLAG_PRODUCT_NAME,
+  CMD_FLAG_BUDGET_PERCENT,
 } from '/scripts/corp-product';
-import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
+import {FRAUD_DIVISION_NAME_PREFIX} from '/scripts/workflows/corporation-shared';
 
 interface InterfaceControls {
   divisionName?: HTMLSelectElement;
   designCity?: HTMLSelectElement;
   productName?: HTMLInputElement;
-  designBudget?: HTMLInputElement;
-  marketingBudget?: HTMLInputElement;
+  budgetPercent?: HTMLInputElement;
 }
 
 const React = getReactModel().reactNS;
@@ -55,8 +56,7 @@ const useState = React.useState;
 const DIVISION_NAME_ID = 'product-divisionName';
 const DESIGN_CITY_ID = 'designCity';
 const PRODUCT_NAME_ID = 'productName';
-const DESIGN_BUDGET_ID = 'designBudget';
-const MARKETING_BUDGET_ID = 'marketingBudget';
+const BUDGET_PERCENT_ID = 'budgetPercent';
 
 function getInterfaceControls() {
   const doc = getDocument();
@@ -70,12 +70,7 @@ function getInterfaceControls() {
     productName: doc.getElementById(PRODUCT_NAME_ID) as
       | HTMLInputElement
       | undefined,
-    designBudget: doc.getElementById(DESIGN_BUDGET_ID) as
-      | HTMLInputElement
-      | undefined,
-    marketingBudget: doc.getElementById(MARKETING_BUDGET_ID) as
-      | HTMLInputElement
-      | undefined,
+    budgetPercent: doc.getElementById(BUDGET_PERCENT_ID) as HTMLInputElement,
   };
   return result;
 }
@@ -85,8 +80,7 @@ function handleProductLifecycleConfigResponse(
   netscript: NS,
   eventListener: EventListener,
   setProductName: ReactSetStateFunction<string>,
-  setDesignBudget: ReactSetStateFunction<string>,
-  setMarketingBudget: ReactSetStateFunction<string>
+  setBudgetPercent: ReactSetStateFunction<string>
 ) {
   if (!responseData.config) {
     return;
@@ -98,8 +92,7 @@ function handleProductLifecycleConfigResponse(
 
   const config = responseData.config;
   setProductName(config.productName);
-  setDesignBudget(netscript.formatNumber(config.designBudget));
-  setMarketingBudget(netscript.formatNumber(config.marketingBudget));
+  setBudgetPercent(netscript.formatNumber(config.budgetPercent, 2));
 
   const interfaceControls = getInterfaceControls();
   if (interfaceControls.divisionName) {
@@ -114,8 +107,7 @@ async function handleToggleProductLifecycleManager(
   netscript: NS,
   eventListener: EventListener,
   setProductName: ReactSetStateFunction<string>,
-  setDesignBudget: ReactSetStateFunction<string>,
-  setMarketingBudget: ReactSetStateFunction<string>
+  setBudgetPercent: ReactSetStateFunction<string>
 ) {
   let scriptPid = getPid(netscript, PRODUCT_LIFECYCLE_SCRIPT);
   if (!scriptPid) {
@@ -133,13 +125,9 @@ async function handleToggleProductLifecycleManager(
       scriptArgs.push(getCmdFlag(CMD_FLAG_PRODUCT_NAME));
       scriptArgs.push(config.productName);
     }
-    if (!isNaN(config.designBudget)) {
-      scriptArgs.push(getCmdFlag(CMD_FLAG_DESIGN_BUDGET));
-      scriptArgs.push(netscript.formatNumber(config.designBudget));
-    }
-    if (!isNaN(config.marketingBudget)) {
-      scriptArgs.push(getCmdFlag(CMD_FLAG_MARKETING_BUDGET));
-      scriptArgs.push(netscript.formatNumber(config.marketingBudget));
+    if (!isNaN(config.budgetPercent)) {
+      scriptArgs.push(getCmdFlag(CMD_FLAG_BUDGET_PERCENT));
+      scriptArgs.push(netscript.formatNumber(config.budgetPercent));
     }
     scriptPid = runScript(
       netscript,
@@ -156,8 +144,7 @@ async function handleToggleProductLifecycleManager(
       netscript,
       eventListener,
       setProductName,
-      setDesignBudget,
-      setMarketingBudget
+      setBudgetPercent
     );
     sendMessageRetry(
       netscript,
@@ -179,10 +166,7 @@ function getProductLifecycleConfig() {
     designCity: (interfaceControls.designCity?.selectedOptions[0].value ??
       'Sector-12') as CityName,
     productName: interfaceControls.productName?.value ?? '',
-    designBudget: parseNumber(interfaceControls.designBudget?.value ?? ''),
-    marketingBudget: parseNumber(
-      interfaceControls.marketingBudget?.value ?? ''
-    ),
+    budgetPercent: parseNumber(interfaceControls.budgetPercent?.value ?? ''),
   };
   return config;
 }
@@ -204,12 +188,14 @@ function ProductLifecycleUI({
   const uiTheme = netscript.ui.getTheme();
 
   const [productName, setProductName] = useState('');
-  const [designBudget, setDesignBudget] = useState('');
-  const [marketingBudget, setMarketingBudget] = useState('');
+  const [budgetPercent, setBudgetPercent] = useState('');
   const targetRunning = Boolean(getPid(netscript, PRODUCT_LIFECYCLE_SCRIPT));
 
-  const divisionNames = getDivisions(netscript).filter(
-    value => netscript.corporation.getDivision(value).makesProducts
+  const corporationInfo = netscript.corporation.getCorporation();
+  const divisionNames = corporationInfo.divisions.filter(
+    value =>
+      netscript.corporation.getDivision(value).makesProducts &&
+      !value.includes(FRAUD_DIVISION_NAME_PREFIX)
   );
   const cityNames = ['', ...CITY_NAMES];
 
@@ -220,8 +206,7 @@ function ProductLifecycleUI({
       netscript,
       eventListener,
       setProductName,
-      setDesignBudget,
-      setMarketingBudget
+      setBudgetPercent
     );
     sendMessage(
       new ProductLifecycleConfigRequest(eventListener.subscriberName)
@@ -239,8 +224,7 @@ function ProductLifecycleUI({
             netscript,
             eventListener,
             setProductName,
-            setDesignBudget,
-            setMarketingBudget
+            setBudgetPercent
           )}
           scriptAlreadyRunning={targetRunning}
           uiStyle={uiStyle}
@@ -268,7 +252,7 @@ function ProductLifecycleUI({
         />
         <LabeledInput
           id={PRODUCT_NAME_ID}
-          title="Product"
+          title="Product Name"
           placeholder="Name"
           value={productName}
           setValueFunc={setProductName}
@@ -276,20 +260,11 @@ function ProductLifecycleUI({
           uiTheme={uiTheme}
         />
         <LabeledInput
-          id={DESIGN_BUDGET_ID}
-          title="Design"
-          placeholder="Budget"
-          value={designBudget}
-          setValueFunc={setDesignBudget}
-          uiStyle={uiStyle}
-          uiTheme={uiTheme}
-        />
-        <LabeledInput
-          id={MARKETING_BUDGET_ID}
-          title="Marketing"
-          placeholder="Budget"
-          value={marketingBudget}
-          setValueFunc={setMarketingBudget}
+          id={BUDGET_PERCENT_ID}
+          title="Budget Percent"
+          placeholder="Percent"
+          value={budgetPercent}
+          setValueFunc={setBudgetPercent}
           uiStyle={uiStyle}
           uiTheme={uiTheme}
         />

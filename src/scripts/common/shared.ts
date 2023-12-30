@@ -1,3 +1,5 @@
+import {CityName} from '@ns';
+
 const SCRIPTS_PATH = '/scripts';
 const HOME_SERVER_NAME = 'home';
 
@@ -8,7 +10,7 @@ const CITY_NAMES = [
   'New Tokyo',
   'Ishima',
   'Volhaven',
-];
+] as CityName[];
 
 function randomIntWithinRange(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1) + min);

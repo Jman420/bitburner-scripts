@@ -8,8 +8,9 @@ import {
   getHeaderLabelStyle,
 } from '/scripts/controls/style-sheet';
 import {Button} from '/scripts/controls/components/button';
+
 import {getPid, runScript} from '/scripts/workflows/execution';
-import {SMART_SUPPLY_SCRIPT} from '/scripts/workflows/corporation';
+import {SMART_SUPPLY_SCRIPT} from '/scripts/workflows/corporation-shared';
 import {
   TAIL_HEIGHT,
   TAIL_WIDTH,

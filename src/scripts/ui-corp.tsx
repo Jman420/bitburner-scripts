@@ -15,10 +15,10 @@ const React = getReactModel().reactNS;
 const MODULE_NAME = 'ui-corp';
 const SUBSCRIBER_NAME = 'ui-corp';
 
-const TAIL_X_POS = 1510;
-const TAIL_Y_POS = 1;
+const TAIL_X_POS = 1837;
+const TAIL_Y_POS = 60;
 const TAIL_WIDTH = 505;
-const TAIL_HEIGHT = 610;
+const TAIL_HEIGHT = 710;
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {

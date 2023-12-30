@@ -1,5 +1,5 @@
 import {ResponseBase} from '/scripts/comms/response-base';
-import {ProductLifecycleConfig} from '/scripts/workflows/corporation';
+import {ProductLifecycleConfig} from '/scripts/workflows/corporation-shared';
 
 const MESSAGE_TYPE = 'productLifecycleConfigResponse';
 

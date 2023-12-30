@@ -11,9 +11,11 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
-import {initializeScript} from '/scripts/workflows/execution';
-import {EXPORT_FORMULA} from '/scripts/workflows/corporation';
 import {openTail} from '/scripts/workflows/ui';
+
+import {initializeScript} from '/scripts/workflows/execution';
+import {EXPORT_FORMULA} from '/scripts/workflows/corporation-shared';
+import {FRAUD_DIVISION_NAME_PREFIX} from '/scripts/workflows/corporation-shared';
 
 export const CMD_FLAG_DIVISION_NAME = 'division';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_DIVISION_NAME, '']];
@@ -33,7 +35,8 @@ let DIVISION_NAMES: string[];
 export async function main(netscript: NS) {
   DIVISION_NAMES = netscript.corporation
     .getCorporation()
-    .divisions.map(value => `'${value}'`);
+    .divisions.map(value => `'${value}'`)
+    .filter(value => !value.includes(FRAUD_DIVISION_NAME_PREFIX));
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
@@ -67,7 +70,8 @@ export async function main(netscript: NS) {
   const corpInfo = corpApi.getCorporation();
   const importMap = new Map<string, string[]>();
   for (const importDivisionName of corpInfo.divisions.filter(
-    value => value !== divisionName
+    value =>
+      value !== divisionName && !value.includes(FRAUD_DIVISION_NAME_PREFIX)
   )) {
     const importDivisionInfo = corpApi.getDivision(importDivisionName);
     const importIndustryInfo = corpApi.getIndustryData(importDivisionInfo.type);

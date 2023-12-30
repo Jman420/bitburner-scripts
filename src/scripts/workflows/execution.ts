@@ -43,7 +43,7 @@ function runScript(
     hostname = netscript.getHostname();
   }
 
-  if (netscript.isRunning(scriptName, hostname)) {
+  if (netscript.isRunning(scriptName, hostname, ...args)) {
     return -1;
   }
 

@@ -1,5 +1,5 @@
 import {EventBase} from '/scripts/comms/event-base';
-import {TeaPartyConfig} from '/scripts/workflows/corporation';
+import {TeaPartyConfig} from '/scripts/workflows/corporation-shared';
 
 const MESSAGE_TYPE = 'corpTeaPartyConfigEvent';
 

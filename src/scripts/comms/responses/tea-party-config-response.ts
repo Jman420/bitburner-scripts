@@ -1,5 +1,5 @@
 import {ResponseBase} from '/scripts/comms/response-base';
-import {TeaPartyConfig} from '/scripts/workflows/corporation';
+import {TeaPartyConfig} from '/scripts/workflows/corporation-shared';
 
 const MESSAGE_TYPE = 'stocksTraderConfigResponse';
 

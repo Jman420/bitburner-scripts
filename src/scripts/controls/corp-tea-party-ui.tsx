@@ -26,8 +26,11 @@ import {Button} from '/scripts/controls/components/button';
 import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
 
 import {parseNumber} from '/scripts/workflows/parsing';
-import {TEA_PARTY_SCRIPT, TeaPartyConfig} from '/scripts/workflows/corporation';
 import {getPid, runScript} from '/scripts/workflows/execution';
+import {
+  TEA_PARTY_SCRIPT,
+  TeaPartyConfig,
+} from '/scripts/workflows/corporation-shared';
 
 const React = getReactModel().reactNS;
 const useState = React.useState;
