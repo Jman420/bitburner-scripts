@@ -5,7 +5,8 @@
     "sync/**",
     "dist/**",
     "NetscriptDefinitions.d.ts",
-    "src/scripts/libs/**"
+    "src/scripts/libs/**",
+    "src/scripts/netscript-services/*.js"
   ],
   "rules": {
     "node/no-unpublished-import": "off"
