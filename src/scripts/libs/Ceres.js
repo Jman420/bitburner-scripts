@@ -1,6 +1,10 @@
+import { getDocument, getWindow } from '/scripts/workflows/ui';
+
+const doc = getDocument();
+const win = getWindow();
 
 var CeresModule = (function() {
-  var _scriptDir = typeof document !== 'undefined' && document.currentScript ? document.currentScript.src : undefined;
+  var _scriptDir = typeof doc !== 'undefined' && doc.currentScript ? doc.currentScript.src : undefined;
   if (typeof __filename !== 'undefined') _scriptDir = _scriptDir || __filename;
   return (
 function(CeresModule) {
@@ -60,7 +64,7 @@ var ENVIRONMENT_IS_WEB = false;
 var ENVIRONMENT_IS_WORKER = false;
 var ENVIRONMENT_IS_NODE = false;
 var ENVIRONMENT_IS_SHELL = false;
-ENVIRONMENT_IS_WEB = typeof window === 'object';
+ENVIRONMENT_IS_WEB = typeof win === 'object';
 ENVIRONMENT_IS_WORKER = typeof importScripts === 'function';
 // N.b. Electron.js environment is simultaneously a NODE-environment, but
 // also a web environment.
@@ -201,8 +205,8 @@ if (ENVIRONMENT_IS_SHELL) {
 if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
   if (ENVIRONMENT_IS_WORKER) { // Check worker, not web, since window could be polyfilled
     scriptDirectory = self.location.href;
-  } else if (typeof document !== 'undefined' && document.currentScript) { // web
-    scriptDirectory = document.currentScript.src;
+  } else if (typeof doc !== 'undefined' && doc.currentScript) { // web
+    scriptDirectory = doc.currentScript.src;
   }
   // When MODULARIZE, this JS may be executed later, after document.currentScript
   // is gone, so we saved it, and we use it here instead of any other info.
@@ -282,7 +286,7 @@ if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
 // end include: web_or_worker_shell_read.js
   }
 
-  setWindowTitle = function(title) { document.title = title };
+  setWindowTitle = function(title) { doc.title = title };
 } else
 {
 }
@@ -4355,12 +4359,12 @@ var calledMain = false;
 
 dependenciesFulfilled = function runCaller() {
   // If run has never been called, and we should call run (INVOKE_RUN is true, and Module.noInitialRun is not false)
-  if (!calledRun) run();
+  if (!calledRun) execute();
   if (!calledRun) dependenciesFulfilled = runCaller; // try this again later, after new deps are fulfilled
 };
 
 /** @type {function(Array=)} */
-function run(args) {
+function execute(args) {
   args = args || arguments_;
 
   if (runDependencies > 0) {
@@ -4406,7 +4410,7 @@ function run(args) {
     doRun();
   }
 }
-Module['run'] = run;
+Module['run'] = execute;
 
 /** @param {boolean|number=} implicit */
 function exit(status, implicit) {
@@ -4443,7 +4447,7 @@ if (Module['preInit']) {
 
 noExitRuntime = true;
 
-run();
+execute();
 
 
 
