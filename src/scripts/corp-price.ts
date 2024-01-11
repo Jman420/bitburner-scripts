@@ -17,6 +17,10 @@ import {
   getOptimalProductMarkup,
   getOptimalSellingPrice,
 } from '/scripts/workflows/corporation-optimization';
+import {
+  NetscriptPackage,
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 const MODULE_NAME = 'corp-price';
 const SUBSCRIBER_NAME = 'corp-price';
@@ -30,7 +34,10 @@ const UPDATE_DELAY = 0;
 
 let productMarkupCache: Map<string, number>;
 
-async function purgeProductMarkupCache(netscript: NS) {
+async function purgeProductMarkupCache(nsPackage: NetscriptPackage) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   await waitForState(netscript, CorpState.START);
 
   for (const productKey of productMarkupCache.keys()) {
@@ -38,38 +45,43 @@ async function purgeProductMarkupCache(netscript: NS) {
     const divisionName = productKeyInfo[0];
     const productName = productKeyInfo[2];
 
-    const divisionInfo = netscript.corporation.getDivision(divisionName);
+    const divisionInfo =
+      await nsLocator.corporation['getDivision'](divisionName);
     if (!divisionInfo.products.includes(productName)) {
       productMarkupCache.delete(productKey);
     }
   }
 }
 
-async function manageOutputPricing(netscript: NS, logWriter: Logger) {
+async function manageOutputPricing(
+  nsPackage: NetscriptPackage,
+  logWriter: Logger
+) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   await waitForState(netscript, CorpState.EXPORT);
 
   logWriter.writeLine('Setting up output pricing...');
-  const corpApi = netscript.corporation;
-  const corporationInfo = corpApi.getCorporation();
+  const corpApi = nsLocator.corporation;
+  const corporationInfo = await corpApi['getCorporation']();
   for (const divisionName of corporationInfo.divisions.filter(
     value => !value.includes(FRAUD_DIVISION_NAME_PREFIX)
   )) {
     logWriter.writeLine(`  Division : ${divisionName} ...`);
-    const divisionInfo = corpApi.getDivision(divisionName);
-    const industryInfo = netscript.corporation.getIndustryData(
-      divisionInfo.type
-    );
+    const divisionInfo = await corpApi['getDivision'](divisionName);
+    const industryInfo = await corpApi['getIndustryData'](divisionInfo.type);
 
     for (const cityName of divisionInfo.cities) {
       logWriter.writeLine(`    City : ${cityName}`);
       for (const producedMaterial of industryInfo.producedMaterials ?? []) {
-        const materialInfo = corpApi.getMaterial(
+        const materialInfo = await corpApi['getMaterial'](
           divisionName,
           cityName,
           producedMaterial
         );
         const optimalPrice = await getOptimalSellingPrice(
-          netscript,
+          nsLocator,
           divisionName,
           cityName,
           materialInfo
@@ -77,7 +89,7 @@ async function manageOutputPricing(netscript: NS, logWriter: Logger) {
         const optimalPriceString = optimalPrice
           ? optimalPrice.toString()
           : 'MP';
-        corpApi.sellMaterial(
+        await corpApi['sellMaterial'](
           divisionName,
           cityName,
           producedMaterial,
@@ -93,7 +105,7 @@ async function manageOutputPricing(netscript: NS, logWriter: Logger) {
         );
       }
       for (const producedProduct of divisionInfo.products) {
-        const productInfo = corpApi.getProduct(
+        const productInfo = await corpApi['getProduct'](
           divisionName,
           cityName,
           producedProduct
@@ -106,7 +118,7 @@ async function manageOutputPricing(netscript: NS, logWriter: Logger) {
         let productMarkup = productMarkupCache.get(productKey);
         if (!productMarkup) {
           productMarkup = await getOptimalProductMarkup(
-            netscript,
+            nsLocator,
             divisionName,
             cityName,
             productInfo
@@ -114,8 +126,8 @@ async function manageOutputPricing(netscript: NS, logWriter: Logger) {
           productMarkupCache.set(productKey, productMarkup);
         }
 
-        const optimalPrice = getOptimalSellingPrice(
-          netscript,
+        const optimalPrice = await getOptimalSellingPrice(
+          nsLocator,
           divisionName,
           cityName,
           productInfo,
@@ -124,7 +136,7 @@ async function manageOutputPricing(netscript: NS, logWriter: Logger) {
         const optimalPriceString = optimalPrice
           ? optimalPrice.toString()
           : 'MP';
-        corpApi.sellProduct(
+        await corpApi['sellProduct'](
           divisionName,
           cityName,
           producedProduct,
@@ -147,6 +159,8 @@ async function manageOutputPricing(netscript: NS, logWriter: Logger) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Corporate Pricing Setup');
@@ -163,7 +177,7 @@ export async function main(netscript: NS) {
       netscript,
       UPDATE_DELAY,
       manageOutputPricing,
-      netscript,
+      nsPackage,
       scriptLogWriter
     )
   );
@@ -172,7 +186,7 @@ export async function main(netscript: NS) {
       netscript,
       UPDATE_DELAY,
       purgeProductMarkupCache,
-      netscript
+      nsPackage
     )
   );
   await Promise.allSettled(taskPromises);

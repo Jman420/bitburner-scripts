@@ -37,6 +37,10 @@ import {
   getOptimalDivisionFactoryAndStorage,
   getOptimalIndustryMaterials,
 } from '/scripts/workflows/corporation-optimization';
+import {
+  NetscriptLocator,
+  NetscriptPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 const BUDGET_RATIO_PRODUCT_DIVISION = {
   rawProduction: 0.17,
@@ -95,29 +99,35 @@ async function waitForState(netscript: NS, state: CorpStateName) {
 }
 
 async function waitForResearch(
-  netscript: NS,
+  nsPackage: NetscriptPackage,
   divisionName: string,
   targetResearchPoints: number
 ) {
-  const corpApi = netscript.corporation;
-  let divisionInfo = corpApi.getDivision(divisionName);
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
+  const corpApi = nsLocator.corporation;
+  let divisionInfo = await corpApi['getDivision'](divisionName);
   while (divisionInfo.researchPoints < targetResearchPoints) {
-    await corpApi.nextUpdate();
-    divisionInfo = corpApi.getDivision(divisionName);
+    await netscript.corporation.nextUpdate();
+    divisionInfo = await corpApi['getDivision'](divisionName);
   }
 }
 
 async function waitForMoraleAndEnergy(
-  netscript: NS,
+  nsPackage: NetscriptPackage,
   divisionName: string,
   targetMorale = 100,
   targetEnergy = 100
 ) {
-  const corpApi = netscript.corporation;
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
+  const corpApi = nsLocator.corporation;
   const officesMaxedOut = new Set<CityName>();
   while (officesMaxedOut.size < CITY_NAMES.length) {
     for (const cityName of CITY_NAMES) {
-      const officeInfo = corpApi.getOffice(divisionName, cityName);
+      const officeInfo = await corpApi['getOffice'](divisionName, cityName);
       if (
         officeInfo.avgMorale >= targetMorale &&
         officeInfo.avgEnergy >= targetEnergy
@@ -129,33 +139,43 @@ async function waitForMoraleAndEnergy(
   }
 }
 
-async function buyMaterial(
-  netscript: NS,
+async function purchaseMaterial(
+  nsPackage: NetscriptPackage,
   divisionName: string,
   cityName: CityName,
   materialName: CorpMaterialName,
   amount: number
 ) {
-  const corpApi = netscript.corporation;
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
+  const corpApi = nsLocator.corporation;
   const buyAmount = amount / 10;
-  corpApi.buyMaterial(divisionName, cityName, materialName, buyAmount);
+  await corpApi['buyMaterial'](divisionName, cityName, materialName, buyAmount);
   await waitForState(netscript, 'PURCHASE');
-  corpApi.buyMaterial(divisionName, cityName, materialName, 0);
+  await corpApi['buyMaterial'](divisionName, cityName, materialName, 0);
 }
 
-async function sellMaterial(
-  netscript: NS,
+async function saleMaterial(
+  nsPackage: NetscriptPackage,
   divisionName: string,
   cityName: CityName,
   materialName: CorpMaterialName,
   amount: number
 ) {
-  const corpApi = netscript.corporation;
-  let materialInfo = corpApi.getMaterial(divisionName, cityName, materialName);
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
+  const corpApi = nsLocator.corporation;
+  let materialInfo = await corpApi['getMaterial'](
+    divisionName,
+    cityName,
+    materialName
+  );
   const targetAmount = materialInfo.stored - amount;
   while (materialInfo.stored > targetAmount && materialInfo.stored > 0) {
     const sellAmount = materialInfo.stored - targetAmount;
-    corpApi.sellMaterial(
+    await corpApi['sellMaterial'](
       divisionName,
       cityName,
       materialName,
@@ -163,31 +183,43 @@ async function sellMaterial(
       'MP'
     );
     await waitForState(netscript, 'PURCHASE');
-    corpApi.sellMaterial(divisionName, cityName, materialName, '0', 'MP');
+    await corpApi['sellMaterial'](
+      divisionName,
+      cityName,
+      materialName,
+      '0',
+      'MP'
+    );
 
-    materialInfo = corpApi.getMaterial(divisionName, cityName, materialName);
+    materialInfo = await corpApi['getMaterial'](
+      divisionName,
+      cityName,
+      materialName
+    );
   }
 }
 
-function manageIndustryMaterials(
-  netscript: NS,
+async function manageIndustryMaterials(
+  nsPackage: NetscriptPackage,
   divisionName: string,
   cities: CityName[],
   industryMaterials: Map<CorpMaterialName, number>
 ) {
-  const corpApi = netscript.corporation;
-  const divisionInfo = corpApi.getDivision(divisionName);
-  const industryInfo = corpApi.getIndustryData(divisionInfo.type);
+  const nsLocator = nsPackage.locator;
+
+  const corpApi = nsLocator.corporation;
+  const divisionInfo = await corpApi['getDivision'](divisionName);
+  const industryInfo = await corpApi['getIndustryData'](divisionInfo.type);
   const reservedSpaceRatio = industryInfo.makesMaterials
     ? MATERIAL_DIVISION_RESERVED_SPACE_RATIO
     : PRODUCT_DIVISION_RESERVED_SPACE_RATIO;
   const result = new Array<Promise<void>>();
   for (const cityName of cities) {
-    const warehouseInfo = corpApi.getWarehouse(divisionName, cityName);
+    const warehouseInfo = await corpApi['getWarehouse'](divisionName, cityName);
     const availableSpace = warehouseInfo.size - warehouseInfo.sizeUsed;
 
     for (const [materialName, targetAmount] of industryMaterials.entries()) {
-      const materialInfo = corpApi.getMaterial(
+      const materialInfo = await corpApi['getMaterial'](
         divisionName,
         cityName,
         materialName
@@ -198,8 +230,8 @@ function manageIndustryMaterials(
           continue;
         }
         result.push(
-          buyMaterial(
-            netscript,
+          purchaseMaterial(
+            nsPackage,
             divisionName,
             cityName,
             materialName,
@@ -208,8 +240,8 @@ function manageIndustryMaterials(
         );
       } else if (amountDifference < 0) {
         result.push(
-          sellMaterial(
-            netscript,
+          saleMaterial(
+            nsPackage,
             divisionName,
             cityName,
             materialName,
@@ -223,25 +255,30 @@ function manageIndustryMaterials(
 }
 
 async function buyIndustryMaterials(
-  netscript: NS,
+  nsPackage: NetscriptPackage,
   divisionName: DivisionNames,
   spaceRatio: number
 ) {
-  const corpApi = netscript.corporation;
-  const divisionInfo = corpApi.getDivision(divisionName);
-  const warehouseInfo = corpApi.getWarehouse(divisionName, BENCHMARK_OFFICE);
-  const optimalIndustryMaterials = addStockedIndustryMaterials(
-    netscript,
+  const nsLocator = nsPackage.locator;
+
+  const corpApi = nsLocator.corporation;
+  const divisionInfo = await corpApi['getDivision'](divisionName);
+  const warehouseInfo = await corpApi['getWarehouse'](
     divisionName,
-    getOptimalIndustryMaterials(
-      netscript,
+    BENCHMARK_OFFICE
+  );
+  const optimalIndustryMaterials = await addStockedIndustryMaterials(
+    nsLocator,
+    divisionName,
+    await getOptimalIndustryMaterials(
+      nsLocator,
       divisionInfo.type,
       (warehouseInfo.size - warehouseInfo.sizeUsed) * spaceRatio
     )
   );
   await Promise.allSettled(
-    manageIndustryMaterials(
-      netscript,
+    await manageIndustryMaterials(
+      nsPackage,
       divisionName,
       CITY_NAMES,
       optimalIndustryMaterials
@@ -249,13 +286,13 @@ async function buyIndustryMaterials(
   );
 }
 
-function hireEmployees(
-  netscript: NS,
+async function hireEmployees(
+  nsLocator: NetscriptLocator,
   divisionName: string,
   cityName: CityName
 ) {
   while (
-    netscript.corporation.hireEmployee(
+    await nsLocator.corporation['hireEmployee'](
       divisionName,
       cityName,
       EmployeePosition.RESEARCH_DEVELOPMENT
@@ -263,34 +300,37 @@ function hireEmployees(
   );
 }
 
-function createDivision(
-  netscript: NS,
+async function createDivision(
+  nsLocator: NetscriptLocator,
   divisionName: string,
   industryType: CorpIndustryName
 ) {
-  const corpApi = netscript.corporation;
-  const corporationInfo = corpApi.getCorporation();
+  const corpApi = nsLocator.corporation;
+  const corporationInfo = await corpApi['getCorporation']();
 
   if (!corporationInfo.divisions.includes(divisionName)) {
-    corpApi.expandIndustry(industryType, divisionName);
+    await corpApi['expandIndustry'](industryType, divisionName);
   }
-  const divisionInfo = corpApi.getDivision(divisionName);
+  const divisionInfo = await corpApi['getDivision'](divisionName);
 
   for (const cityName of CITY_NAMES) {
     if (!divisionInfo.cities.includes(cityName)) {
-      corpApi.expandCity(divisionName, cityName);
+      await corpApi['expandCity'](divisionName, cityName);
     }
-    if (!corpApi.hasWarehouse(divisionName, cityName)) {
-      corpApi.purchaseWarehouse(divisionName, cityName);
+    if (!(await corpApi['hasWarehouse'](divisionName, cityName))) {
+      await corpApi['purchaseWarehouse'](divisionName, cityName);
     }
-    hireEmployees(netscript, divisionName, cityName);
+    await hireEmployees(nsLocator, divisionName, cityName);
   }
-  return corpApi.getDivision(divisionName);
+  return await corpApi['getDivision'](divisionName);
 }
 
-function createFraudDivisions(netscript: NS, totalDivisions: number) {
-  const corpApi = netscript.corporation;
-  const corporationInfo = corpApi.getCorporation();
+async function createFraudDivisions(
+  nsLocator: NetscriptLocator,
+  totalDivisions: number
+) {
+  const corpApi = nsLocator.corporation;
+  const corporationInfo = await corpApi['getCorporation']();
   for (
     let divisionCounter = 0;
     divisionCounter < totalDivisions;
@@ -300,95 +340,99 @@ function createFraudDivisions(netscript: NS, totalDivisions: number) {
       .toString()
       .padStart(2, '0')}`;
     if (!corporationInfo.divisions.includes(divisionName)) {
-      corpApi.expandIndustry(IndustryType.RESTAURANT, divisionName);
+      await corpApi['expandIndustry'](IndustryType.RESTAURANT, divisionName);
     }
   }
 }
 
-function buyCorpUpgrade(
-  netscript: NS,
+async function buyCorpUpgrade(
+  nsLocator: NetscriptLocator,
   upgradeName: UpgradeName,
   targetLevel: number
 ) {
-  const corpApi = netscript.corporation;
+  const corpApi = nsLocator.corporation;
   for (
-    let upgradeCounter = corpApi.getUpgradeLevel(upgradeName);
+    let upgradeCounter = await corpApi['getUpgradeLevel'](upgradeName);
     upgradeCounter < targetLevel;
     upgradeCounter++
   ) {
-    corpApi.levelUpgrade(upgradeName);
+    await corpApi['levelUpgrade'](upgradeName);
   }
-  return corpApi.getUpgradeLevel(upgradeName);
+  return await corpApi['getUpgradeLevel'](upgradeName);
 }
 
-function buyAdvert(netscript: NS, divisionName: string, targetLevel: number) {
-  const corpApi = netscript.corporation;
+async function buyAdvert(
+  nsLocator: NetscriptLocator,
+  divisionName: string,
+  targetLevel: number
+) {
+  const corpApi = nsLocator.corporation;
   for (
-    let advertCounter = corpApi.getHireAdVertCount(divisionName);
+    let advertCounter = await corpApi['getHireAdVertCount'](divisionName);
     advertCounter < targetLevel;
     advertCounter++
   ) {
-    corpApi.hireAdVert(divisionName);
+    await corpApi['hireAdVert'](divisionName);
   }
-  return corpApi.getHireAdVertCount(divisionName);
+  return await corpApi['getHireAdVertCount'](divisionName);
 }
 
-function buyMaxAdvert(
-  netscript: NS,
+async function buyMaxAdvert(
+  nsLocator: NetscriptLocator,
   divisionName: string,
   divisionBudget: number
 ) {
-  const corpApi = netscript.corporation;
-  const currentLevel = corpApi.getHireAdVertCount(divisionName);
+  const corpApi = nsLocator.corporation;
+  const currentLevel = await corpApi['getHireAdVertCount'](divisionName);
   const maxLevel = getMaxAffordableAdvertLevel(currentLevel, divisionBudget);
 
-  buyAdvert(netscript, divisionName, maxLevel);
+  await buyAdvert(nsLocator, divisionName, maxLevel);
 }
 
-function upgradeWarehouse(
-  netscript: NS,
+async function improveWarehouse(
+  nsLocator: NetscriptLocator,
   divisionName: string,
   cityName: CityName,
   targetLevel: number
 ) {
-  const corpApi = netscript.corporation;
-  const buyAmount =
-    targetLevel - corpApi.getWarehouse(divisionName, cityName).level;
+  const corpApi = nsLocator.corporation;
+  const warehouseInfo = await corpApi['getWarehouse'](divisionName, cityName);
+  const buyAmount = targetLevel - warehouseInfo.level;
   if (buyAmount > 0) {
-    corpApi.upgradeWarehouse(divisionName, cityName, buyAmount);
+    await corpApi['upgradeWarehouse'](divisionName, cityName, buyAmount);
   }
 }
 
-function upgradeOffices(
-  netscript: NS,
+async function upgradeOffices(
+  nsLocator: NetscriptLocator,
   divisionName: string,
   cities: CityName[],
   officeSize: number
 ) {
-  const corpApi = netscript.corporation;
+  const corpApi = nsLocator.corporation;
   for (const cityName of cities) {
-    const officeInfo = corpApi.getOffice(divisionName, cityName);
+    const officeInfo = await corpApi['getOffice'](divisionName, cityName);
     if (officeInfo.size < officeSize) {
-      corpApi.upgradeOfficeSize(
+      await corpApi['upgradeOfficeSize'](
         divisionName,
         cityName,
         officeSize - officeInfo.size
       );
-      hireEmployees(netscript, divisionName, cityName);
+      hireEmployees(nsLocator, divisionName, cityName);
     }
   }
 }
 
-function assignEmployees(
-  netscript: NS,
+async function assignEmployees(
+  nsLocator: NetscriptLocator,
   divisionName: string,
   officeAssignments: OfficeAssignments[]
 ) {
-  const corpApi = netscript.corporation;
+  const corpApi = nsLocator.corporation;
 
   for (const assigments of officeAssignments) {
     for (const employeePosition of Object.values(EmployeePosition)) {
-      corpApi.setAutoJobAssignment(
+      await corpApi['setAutoJobAssignment'](
         divisionName,
         assigments.city,
         employeePosition,
@@ -399,7 +443,7 @@ function assignEmployees(
       assignedPosition,
       workerAmount,
     ] of assigments.assignments.entries()) {
-      corpApi.setAutoJobAssignment(
+      await corpApi['setAutoJobAssignment'](
         divisionName,
         assigments.city,
         assignedPosition,
@@ -409,23 +453,23 @@ function assignEmployees(
   }
 }
 
-function setupExport(
-  netscript: NS,
+async function setupExport(
+  nsLocator: NetscriptLocator,
   sourceDivisionName: string,
   sourceCityName: CityName,
   targetDivisionName: string,
   targetCityName: CityName,
   materialName: MaterialName
 ) {
-  const corpApi = netscript.corporation;
-  corpApi.cancelExportMaterial(
+  const corpApi = nsLocator.corporation;
+  await corpApi['cancelExportMaterial'](
     sourceDivisionName,
     sourceCityName,
     targetDivisionName,
     targetCityName,
     materialName
   );
-  corpApi.exportMaterial(
+  await corpApi['exportMaterial'](
     sourceDivisionName,
     sourceCityName,
     targetDivisionName,
@@ -435,20 +479,20 @@ function setupExport(
   );
 }
 
-function removeAllExports(
-  netscript: NS,
+async function removeAllExports(
+  nsLocator: NetscriptLocator,
   sourceDivisionName: string,
   sourceCityName: CityName,
   materialName: MaterialName
 ) {
-  const corpApi = netscript.corporation;
-  const materialInfo = corpApi.getMaterial(
+  const corpApi = nsLocator.corporation;
+  const materialInfo = await corpApi['getMaterial'](
     sourceDivisionName,
     sourceCityName,
     materialName
   );
   for (const exportInfo of materialInfo.exports) {
-    corpApi.cancelExportMaterial(
+    await corpApi['cancelExportMaterial'](
       sourceDivisionName,
       sourceCityName,
       exportInfo.division,
@@ -458,14 +502,14 @@ function removeAllExports(
   }
 }
 
-function improveProductDivision(
-  netscript: NS,
+async function improveProductDivision(
+  nsLocator: NetscriptLocator,
   divisionName: string,
   budget: number,
   upgradeAdvert = true
 ) {
-  const corpApi = netscript.corporation;
-  const divisionInfo = corpApi.getDivision(divisionName);
+  const corpApi = nsLocator.corporation;
+  const divisionInfo = await corpApi['getDivision'](divisionName);
   const budgetRatios =
     divisionInfo.awareness === Number.MAX_VALUE
       ? BUDGET_RATIO_PRODUCT_DIVISION_MAX_ADVERT
@@ -473,28 +517,28 @@ function improveProductDivision(
 
   const employeeStatsUpgradeBudget =
     (budget * budgetRatios.employeeStatUpgrades) / 4;
-  const currentCreativityUpgradeLevel = corpApi.getUpgradeLevel(
+  const currentCreativityUpgradeLevel = await corpApi['getUpgradeLevel'](
     UpgradeName.NUOPTIMAL_NOOTROPIC_INJECTOR_IMPLANTS
   );
   const creativityUpgradeInfo =
     CorpUpgradesData[UpgradeName.NUOPTIMAL_NOOTROPIC_INJECTOR_IMPLANTS];
-  const currentCharismaUpgradeLevel = corpApi.getUpgradeLevel(
+  const currentCharismaUpgradeLevel = await corpApi['getUpgradeLevel'](
     UpgradeName.SPEECH_PROCESSOR_IMPLANTS
   );
   const charismaUpgradeInfo =
     CorpUpgradesData[UpgradeName.SPEECH_PROCESSOR_IMPLANTS];
-  const currentIntelligenceUpgradeLevel = corpApi.getUpgradeLevel(
+  const currentIntelligenceUpgradeLevel = await corpApi['getUpgradeLevel'](
     UpgradeName.NEURAL_ACCELERATORS
   );
   const intelligenceUpgradeInfo =
     CorpUpgradesData[UpgradeName.NEURAL_ACCELERATORS];
-  const currentEfficiencyUpgradeLevel = corpApi.getUpgradeLevel(
+  const currentEfficiencyUpgradeLevel = await corpApi['getUpgradeLevel'](
     UpgradeName.FOCUS_WIRES
   );
   const efficiencyUpgradeInfo = CorpUpgradesData[UpgradeName.FOCUS_WIRES];
 
-  buyCorpUpgrade(
-    netscript,
+  await buyCorpUpgrade(
+    nsLocator,
     UpgradeName.NUOPTIMAL_NOOTROPIC_INJECTOR_IMPLANTS,
     getMaxAffordableUpgradeLevel(
       creativityUpgradeInfo.basePrice,
@@ -503,8 +547,8 @@ function improveProductDivision(
       employeeStatsUpgradeBudget
     )
   );
-  buyCorpUpgrade(
-    netscript,
+  await buyCorpUpgrade(
+    nsLocator,
     UpgradeName.SPEECH_PROCESSOR_IMPLANTS,
     getMaxAffordableUpgradeLevel(
       charismaUpgradeInfo.basePrice,
@@ -513,8 +557,8 @@ function improveProductDivision(
       employeeStatsUpgradeBudget
     )
   );
-  buyCorpUpgrade(
-    netscript,
+  await buyCorpUpgrade(
+    nsLocator,
     UpgradeName.NEURAL_ACCELERATORS,
     getMaxAffordableUpgradeLevel(
       intelligenceUpgradeInfo.basePrice,
@@ -523,8 +567,8 @@ function improveProductDivision(
       employeeStatsUpgradeBudget
     )
   );
-  buyCorpUpgrade(
-    netscript,
+  await buyCorpUpgrade(
+    nsLocator,
     UpgradeName.FOCUS_WIRES,
     getMaxAffordableUpgradeLevel(
       efficiencyUpgradeInfo.basePrice,
@@ -535,12 +579,12 @@ function improveProductDivision(
   );
 
   const salesBotBudget = budget * budgetRatios.salesBot;
-  const currentSalesBotLevel = corpApi.getUpgradeLevel(
+  const currentSalesBotLevel = await corpApi['getUpgradeLevel'](
     UpgradeName.ABC_SALES_BOTS
   );
   const salesBotUpgradeInfo = CorpUpgradesData[UpgradeName.ABC_SALES_BOTS];
-  buyCorpUpgrade(
-    netscript,
+  await buyCorpUpgrade(
+    nsLocator,
     UpgradeName.ABC_SALES_BOTS,
     getMaxAffordableUpgradeLevel(
       salesBotUpgradeInfo.basePrice,
@@ -551,13 +595,13 @@ function improveProductDivision(
   );
 
   const projectInsightBudget = budget * budgetRatios.projectInsight;
-  const currentProjectInsightLevel = corpApi.getUpgradeLevel(
+  const currentProjectInsightLevel = await corpApi['getUpgradeLevel'](
     UpgradeName.PROJECT_INSIGHT
   );
   const projectInsightUpgradeInfo =
     CorpUpgradesData[UpgradeName.PROJECT_INSIGHT];
-  buyCorpUpgrade(
-    netscript,
+  await buyCorpUpgrade(
+    nsLocator,
     UpgradeName.PROJECT_INSIGHT,
     getMaxAffordableUpgradeLevel(
       projectInsightUpgradeInfo.basePrice,
@@ -568,26 +612,30 @@ function improveProductDivision(
   );
 
   const rawProductionBudget = budget * budgetRatios.rawProduction;
-  const optimalFactoryStorageUpgrades = getOptimalDivisionFactoryAndStorage(
-    netscript,
-    divisionName,
-    rawProductionBudget
-  );
+  const optimalFactoryStorageUpgrades =
+    await getOptimalDivisionFactoryAndStorage(
+      nsLocator,
+      divisionName,
+      rawProductionBudget
+    );
   if (optimalFactoryStorageUpgrades) {
-    buyCorpUpgrade(
-      netscript,
+    await buyCorpUpgrade(
+      nsLocator,
       UpgradeName.SMART_STORAGE,
       optimalFactoryStorageUpgrades.smartStorageLevel
     );
-    buyCorpUpgrade(
-      netscript,
+    await buyCorpUpgrade(
+      nsLocator,
       UpgradeName.SMART_FACTORIES,
       optimalFactoryStorageUpgrades.smartFactoriesLevel
     );
     for (const cityName of CITY_NAMES) {
-      const warehouseInfo = corpApi.getWarehouse(divisionName, cityName);
+      const warehouseInfo = await corpApi['getWarehouse'](
+        divisionName,
+        cityName
+      );
       if (warehouseInfo.level < optimalFactoryStorageUpgrades.warehouseLevel) {
-        corpApi.upgradeWarehouse(
+        await corpApi['upgradeWarehouse'](
           divisionName,
           cityName,
           optimalFactoryStorageUpgrades.warehouseLevel - warehouseInfo.level
@@ -598,19 +646,19 @@ function improveProductDivision(
 
   if (upgradeAdvert) {
     const advertisingBudget = budget * budgetRatios.wilsonAdvert;
-    const optimalAdvertisingUpgrades = getOptimalAdvert(
-      netscript,
+    const optimalAdvertisingUpgrades = await getOptimalAdvert(
+      nsLocator,
       divisionName,
       advertisingBudget
     );
     if (optimalAdvertisingUpgrades) {
-      buyCorpUpgrade(
-        netscript,
+      await buyCorpUpgrade(
+        nsLocator,
         UpgradeName.WILSON_ANALYTICS,
         optimalAdvertisingUpgrades.wilsonLevel
       );
-      buyAdvert(
-        netscript,
+      await buyAdvert(
+        nsLocator,
         divisionName,
         optimalAdvertisingUpgrades.advertLevel
       );
@@ -618,25 +666,25 @@ function improveProductDivision(
   }
 
   const officeBudget = budget * budgetRatios.office;
-  improveProductDivisionOffices(netscript, divisionName, officeBudget);
+  await improveProductDivisionOffices(nsLocator, divisionName, officeBudget);
 }
 
-function improveProductDivisionOffices(
-  netscript: NS,
+async function improveProductDivisionOffices(
+  nsLocator: NetscriptLocator,
   divisionName: string,
   budget: number
 ) {
-  improveProductMainOffice(netscript, divisionName, budget * 0.5);
-  improveProductSupportOffices(netscript, divisionName, budget * 0.5);
+  await improveProductMainOffice(nsLocator, divisionName, budget * 0.5);
+  await improveProductSupportOffices(nsLocator, divisionName, budget * 0.5);
 }
 
-function improveProductMainOffice(
-  netscript: NS,
+async function improveProductMainOffice(
+  nsLocator: NetscriptLocator,
   divisionName: string,
   budget: number
 ) {
-  const corpApi = netscript.corporation;
-  const officeInfo = corpApi.getOffice(
+  const corpApi = nsLocator.corporation;
+  const officeInfo = await corpApi['getOffice'](
     divisionName,
     DEFAULT_PRODUCT_DESIGN_OFFICE
   );
@@ -645,10 +693,10 @@ function improveProductMainOffice(
     return;
   }
 
-  const assignmentRatios = corpApi.hasResearched(
+  const assignmentRatios = (await corpApi['hasResearched'](
     divisionName,
     ResearchName.MARKET_TA_2
-  )
+  ))
     ? EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE_TA2
     : EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE;
   const employeeAssignments = calculateAssignmentCounts(
@@ -660,25 +708,25 @@ function improveProductMainOffice(
     assignments: employeeAssignments,
   };
 
-  upgradeOffices(
-    netscript,
+  await upgradeOffices(
+    nsLocator,
     divisionName,
     [DEFAULT_PRODUCT_DESIGN_OFFICE],
     maxOfficeSize
   );
-  assignEmployees(netscript, divisionName, [officeAssignments]);
+  await assignEmployees(nsLocator, divisionName, [officeAssignments]);
 }
 
-function improveProductSupportOffices(
-  netscript: NS,
+async function improveProductSupportOffices(
+  nsLocator: NetscriptLocator,
   divisionName: string,
   budget: number
 ) {
-  const corpApi = netscript.corporation;
+  const corpApi = nsLocator.corporation;
   const officeBudget = budget / 5;
 
   for (const cityName of DEFAULT_PRODUCT_RESEARCH_OFFICES) {
-    const officeInfo = corpApi.getOffice(divisionName, cityName);
+    const officeInfo = await corpApi['getOffice'](divisionName, cityName);
     const maxOfficeSize = getMaxAffordableOfficeSize(
       officeInfo.size,
       officeBudget
@@ -699,43 +747,43 @@ function improveProductSupportOffices(
       assignments: employeeAssignments,
     };
 
-    upgradeOffices(netscript, divisionName, [cityName], maxOfficeSize);
-    assignEmployees(netscript, divisionName, [officeAssignments]);
+    upgradeOffices(nsLocator, divisionName, [cityName], maxOfficeSize);
+    assignEmployees(nsLocator, divisionName, [officeAssignments]);
   }
 }
 
-function improveSupportDivision(
-  netscript: NS,
+async function improveSupportDivision(
+  nsLocator: NetscriptLocator,
   divisionName: string,
   budget: number
 ) {
-  const corpApi = netscript.corporation;
+  const corpApi = nsLocator.corporation;
 
   const warehouseBudget =
     (budget * BUDGET_RATIO_SUPPORT_DIVISION.warehouse) / 6;
   const officeBudget = (budget * BUDGET_RATIO_SUPPORT_DIVISION.office) / 6;
   for (const cityName of CITY_NAMES) {
-    const warehouseInfo = corpApi.getWarehouse(divisionName, cityName);
+    const warehouseInfo = await corpApi['getWarehouse'](divisionName, cityName);
     const maxWarehouseLevel = getMaxAffordableWarehouseLevel(
       warehouseInfo.level,
       warehouseBudget
     );
     if (maxWarehouseLevel > warehouseInfo.level) {
-      corpApi.upgradeWarehouse(
+      await corpApi['upgradeWarehouse'](
         divisionName,
         cityName,
         maxWarehouseLevel - warehouseInfo.level
       );
     }
 
-    let officeInfo = corpApi.getOffice(divisionName, cityName);
+    let officeInfo = await corpApi['getOffice'](divisionName, cityName);
     const maxOfficeSize = getMaxAffordableOfficeSize(
       officeInfo.size,
       officeBudget
     );
-    upgradeOffices(netscript, divisionName, [cityName], maxOfficeSize);
+    await upgradeOffices(nsLocator, divisionName, [cityName], maxOfficeSize);
 
-    officeInfo = corpApi.getOffice(divisionName, cityName);
+    officeInfo = await corpApi['getOffice'](divisionName, cityName);
     const upgradedOfficeSize = officeInfo.size;
     const researchAssignmentCount = Math.min(
       Math.floor(upgradedOfficeSize * 0.2),
@@ -755,19 +803,19 @@ function improveSupportDivision(
       city: cityName,
       assignments: employeeAssignments,
     };
-    assignEmployees(netscript, divisionName, [officeAssignments]);
+    await assignEmployees(nsLocator, divisionName, [officeAssignments]);
   }
 }
 
-function buyResearchUpgrades(
-  netscript: NS,
+async function buyResearchUpgrades(
+  nsLocator: NetscriptLocator,
   divisionName: string,
   researchUpgrades: ResearchName[]
 ) {
-  const corpApi = netscript.corporation;
+  const corpApi = nsLocator.corporation;
   for (const upgradeName of researchUpgrades) {
-    if (!corpApi.hasResearched(divisionName, upgradeName)) {
-      corpApi.research(divisionName, upgradeName);
+    if (!(await corpApi['hasResearched'](divisionName, upgradeName))) {
+      await corpApi['research'](divisionName, upgradeName);
     }
   }
 }
@@ -780,8 +828,8 @@ export {
   waitForState,
   waitForResearch,
   waitForMoraleAndEnergy,
-  buyMaterial,
-  sellMaterial,
+  purchaseMaterial,
+  saleMaterial,
   manageIndustryMaterials,
   buyIndustryMaterials,
   createDivision,
@@ -789,7 +837,7 @@ export {
   buyCorpUpgrade,
   buyAdvert,
   buyMaxAdvert,
-  upgradeWarehouse,
+  improveWarehouse,
   upgradeOffices,
   assignEmployees,
   setupExport,

@@ -10,6 +10,11 @@ import {waitForState} from '/scripts/workflows/corporation-actions';
 import {getOfficeLimitedProduction} from '/scripts/workflows/corporation-formulas';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
 import {sendMessage} from '/scripts/comms/event-comms';
+import {
+  NetscriptLocator,
+  NetscriptPackage,
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 const MODULE_NAME = 'corp-supply';
 const SUBSCRIBER_NAME = 'corp-supply';
@@ -25,16 +30,21 @@ const MAX_CONGESTION_COUNT = 5;
 let officeProductionMap: Map<string, number>;
 let warehouseCongestionMap: Map<string, number>;
 
-async function handleShutdown(netscript: NS) {
-  const corpApi = netscript.corporation;
-  const corporationInfo = corpApi.getCorporation();
+async function handleShutdown(nsLocator: NetscriptLocator) {
+  const corpApi = nsLocator.corporation;
+  const corporationInfo = await corpApi['getCorporation']();
   for (const divisionName of corporationInfo.divisions) {
-    const divisionInfo = corpApi.getDivision(divisionName);
-    const industryInfo = corpApi.getIndustryData(divisionInfo.type);
+    const divisionInfo = await corpApi['getDivision'](divisionName);
+    const industryInfo = await corpApi['getIndustryData'](divisionInfo.type);
     for (const officeCityName of divisionInfo.cities) {
       for (const materialName of Object.keys(industryInfo.requiredMaterials)) {
-        corpApi.buyMaterial(divisionName, officeCityName, materialName, 0);
-        corpApi.sellMaterial(
+        await corpApi['buyMaterial'](
+          divisionName,
+          officeCityName,
+          materialName,
+          0
+        );
+        await corpApi['sellMaterial'](
           divisionName,
           officeCityName,
           materialName,
@@ -55,20 +65,29 @@ function isWarehouseCongested(officeKey: string) {
   return congestionCount > MAX_CONGESTION_COUNT;
 }
 
-async function monitorOfficeProduction(netscript: NS, logWriter: Logger) {
+async function monitorOfficeProduction(
+  nsPackage: NetscriptPackage,
+  logWriter: Logger
+) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   await waitForState(netscript, 'PURCHASE');
 
   logWriter.writeLine(SECTION_DIVIDER);
   logWriter.writeLine('Monitoring Office Production');
-  const corpApi = netscript.corporation;
-  const corporationInfo = corpApi.getCorporation();
+  const corpApi = nsLocator.corporation;
+  const corporationInfo = await corpApi['getCorporation']();
   for (const divisionName of corporationInfo.divisions) {
-    const divisionInfo = corpApi.getDivision(divisionName);
-    const industryInfo = corpApi.getIndustryData(divisionInfo.type);
+    const divisionInfo = await corpApi['getDivision'](divisionName);
+    const industryInfo = await corpApi['getIndustryData'](divisionInfo.type);
     for (const officeCityName of divisionInfo.cities) {
-      const officeInfo = corpApi.getOffice(divisionName, officeCityName);
+      const officeInfo = await corpApi['getOffice'](
+        divisionName,
+        officeCityName
+      );
       if (
-        !corpApi.hasWarehouse(divisionName, officeCityName) ||
+        !(await corpApi['hasWarehouse'](divisionName, officeCityName)) ||
         officeInfo.numEmployees < 1
       ) {
         continue;
@@ -77,22 +96,22 @@ async function monitorOfficeProduction(netscript: NS, logWriter: Logger) {
       const officeKey = getOfficeKey(divisionName, officeCityName);
       let officeProduction = 0;
       if (industryInfo.makesMaterials) {
-        officeProduction += getOfficeLimitedProduction(
-          netscript,
+        officeProduction += await getOfficeLimitedProduction(
+          nsLocator,
           divisionName,
           officeCityName
         );
       }
       if (industryInfo.makesProducts) {
         for (const productName of divisionInfo.products) {
-          const productInfo = corpApi.getProduct(
+          const productInfo = await corpApi['getProduct'](
             divisionName,
             officeCityName,
             productName
           );
           if (productInfo.developmentProgress >= 100) {
-            officeProduction += getOfficeLimitedProduction(
-              netscript,
+            officeProduction += await getOfficeLimitedProduction(
+              nsLocator,
               divisionName,
               officeCityName,
               productInfo.size
@@ -109,20 +128,29 @@ async function monitorOfficeProduction(netscript: NS, logWriter: Logger) {
   }
 }
 
-async function monitorWarehouseCongestion(netscript: NS, logWriter: Logger) {
+async function monitorWarehouseCongestion(
+  nsPackage: NetscriptPackage,
+  logWriter: Logger
+) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   await waitForState(netscript, 'PRODUCTION');
 
   logWriter.writeLine(SECTION_DIVIDER);
   logWriter.writeLine('Monitoring Warehouse Congestion');
-  const corpApi = netscript.corporation;
-  const corporationInfo = corpApi.getCorporation();
+  const corpApi = nsLocator.corporation;
+  const corporationInfo = await corpApi['getCorporation']();
   for (const divisionName of corporationInfo.divisions) {
-    const divisionInfo = corpApi.getDivision(divisionName);
-    const industryInfo = corpApi.getIndustryData(divisionInfo.type);
+    const divisionInfo = await corpApi['getDivision'](divisionName);
+    const industryInfo = await corpApi['getIndustryData'](divisionInfo.type);
     for (const officeCityName of divisionInfo.cities) {
-      const officeInfo = corpApi.getOffice(divisionName, officeCityName);
+      const officeInfo = await corpApi['getOffice'](
+        divisionName,
+        officeCityName
+      );
       if (
-        !corpApi.hasWarehouse(divisionName, officeCityName) ||
+        !(await corpApi['hasWarehouse'](divisionName, officeCityName)) ||
         officeInfo.numEmployees < 1
       ) {
         continue;
@@ -130,7 +158,7 @@ async function monitorWarehouseCongestion(netscript: NS, logWriter: Logger) {
 
       let allOutputsProduced = true;
       for (const materialName of industryInfo.producedMaterials ?? []) {
-        const materialInfo = corpApi.getMaterial(
+        const materialInfo = await corpApi['getMaterial'](
           divisionName,
           officeCityName,
           materialName
@@ -139,7 +167,7 @@ async function monitorWarehouseCongestion(netscript: NS, logWriter: Logger) {
           allOutputsProduced && materialInfo.productionAmount > 0;
       }
       for (const productName of divisionInfo.products) {
-        const productInfo = corpApi.getProduct(
+        const productInfo = await corpApi['getProduct'](
           divisionName,
           officeCityName,
           productName
@@ -169,20 +197,26 @@ async function monitorWarehouseCongestion(netscript: NS, logWriter: Logger) {
   }
 }
 
-async function manageWarehouse(netscript: NS, logWriter: Logger) {
+async function manageWarehouse(nsPackage: NetscriptPackage, logWriter: Logger) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   await waitForState(netscript, 'START');
 
   logWriter.writeLine(SECTION_DIVIDER);
   logWriter.writeLine('Managing Warehouse Storage');
-  const corpApi = netscript.corporation;
-  const corporationInfo = corpApi.getCorporation();
+  const corpApi = nsLocator.corporation;
+  const corporationInfo = await corpApi['getCorporation']();
   for (const divisionName of corporationInfo.divisions) {
-    const divisionInfo = corpApi.getDivision(divisionName);
-    const industryInfo = corpApi.getIndustryData(divisionInfo.type);
+    const divisionInfo = await corpApi['getDivision'](divisionName);
+    const industryInfo = await corpApi['getIndustryData'](divisionInfo.type);
     for (const officeCityName of divisionInfo.cities) {
-      const officeInfo = corpApi.getOffice(divisionName, officeCityName);
+      const officeInfo = await corpApi['getOffice'](
+        divisionName,
+        officeCityName
+      );
       if (
-        !corpApi.hasWarehouse(divisionName, officeCityName) ||
+        !(await corpApi['hasWarehouse'](divisionName, officeCityName)) ||
         officeInfo.numEmployees < 1
       ) {
         continue;
@@ -196,20 +230,25 @@ async function manageWarehouse(netscript: NS, logWriter: Logger) {
         for (const materialName of Object.keys(
           industryInfo.requiredMaterials
         )) {
-          const materialInfo = corpApi.getMaterial(
+          const materialInfo = await corpApi['getMaterial'](
             divisionName,
             officeCityName,
             materialName
           );
           const sellAmount = materialInfo.stored / 10;
-          corpApi.sellMaterial(
+          await corpApi['sellMaterial'](
             divisionName,
             officeCityName,
             materialName,
             `${sellAmount}`,
             '0'
           );
-          corpApi.buyMaterial(divisionName, officeCityName, materialName, 0);
+          await corpApi['buyMaterial'](
+            divisionName,
+            officeCityName,
+            materialName,
+            0
+          );
           warehouseCongestionMap.set(officeKey, 0);
           logWriter.writeLine(`    ${materialName} - ${sellAmount}`);
         }
@@ -217,7 +256,7 @@ async function manageWarehouse(netscript: NS, logWriter: Logger) {
         logWriter.writeLine(
           `  ${divisionName} - ${officeCityName} : Purchases`
         );
-        const warehouseInfo = corpApi.getWarehouse(
+        const warehouseInfo = await corpApi['getWarehouse'](
           divisionName,
           officeCityName
         );
@@ -230,7 +269,7 @@ async function manageWarehouse(netscript: NS, logWriter: Logger) {
         )) {
           const productionRequiredAmount =
             officeProduction * requiredCoefficient;
-          const materialData = corpApi.getMaterialData(
+          const materialData = await corpApi['getMaterialData'](
             materialName as CorpMaterialName
           );
           const maxAmount = warehouseFreeSpace / materialData.size;
@@ -247,7 +286,7 @@ async function manageWarehouse(netscript: NS, logWriter: Logger) {
         for (const [materialName, requiredCoefficient] of Object.entries(
           industryInfo.requiredMaterials
         )) {
-          const materialInfo = corpApi.getMaterial(
+          const materialInfo = await corpApi['getMaterial'](
             divisionName,
             officeCityName,
             materialName
@@ -258,7 +297,7 @@ async function manageWarehouse(netscript: NS, logWriter: Logger) {
           );
           inputMaterialAmounts.set(materialName, buyAmount);
 
-          const materialData = corpApi.getMaterialData(
+          const materialData = await corpApi['getMaterialData'](
             materialName as CorpMaterialName
           );
           requiredSpace += buyAmount * materialData.size;
@@ -281,13 +320,13 @@ async function manageWarehouse(netscript: NS, logWriter: Logger) {
           materialName,
           buyAmount,
         ] of inputMaterialAmounts.entries()) {
-          corpApi.buyMaterial(
+          await corpApi['buyMaterial'](
             divisionName,
             officeCityName,
             materialName,
             buyAmount / 10
           );
-          corpApi.sellMaterial(
+          await corpApi['sellMaterial'](
             divisionName,
             officeCityName,
             materialName,
@@ -303,8 +342,11 @@ async function manageWarehouse(netscript: NS, logWriter: Logger) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
+
   netscript.atExit(async () => {
-    handleShutdown(netscript);
+    handleShutdown(nsLocator);
     await sendMessage(new ExitEvent(), SUBSCRIBER_NAME);
   });
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
@@ -323,7 +365,7 @@ export async function main(netscript: NS) {
       netscript,
       UPDATE_DELAY,
       monitorOfficeProduction,
-      netscript,
+      nsPackage,
       scriptLogWriter
     )
   );
@@ -334,7 +376,7 @@ export async function main(netscript: NS) {
       netscript,
       UPDATE_DELAY,
       monitorWarehouseCongestion,
-      netscript,
+      nsPackage,
       scriptLogWriter
     )
   );
@@ -344,7 +386,7 @@ export async function main(netscript: NS) {
       netscript,
       UPDATE_DELAY,
       manageWarehouse,
-      netscript,
+      nsPackage,
       scriptLogWriter
     )
   );

@@ -1,4 +1,4 @@
-import {CityName, CorpIndustryData, CorpMaterialName, NS} from '@ns';
+import {CityName, CorpIndustryData, CorpMaterialName} from '@ns';
 
 import {
   EmployeePosition,
@@ -15,6 +15,7 @@ import {
   INDUSTRY_MULTIPLIER_MATERIALS,
   ResearchUpgrade,
 } from '/scripts/workflows/corporation-shared';
+import {NetscriptLocator} from '/scripts/netscript-services/netscript-locator';
 
 interface OfficeAssignments {
   city: CityName;
@@ -178,9 +179,13 @@ function getAdvertisingFactor(
   return advertisingFactor;
 }
 
-function getDivisionProductLimit(netscript: NS, divisionName: string) {
+async function getDivisionProductLimit(
+  nsLocator: NetscriptLocator,
+  divisionName: string
+) {
+  const corpApi = nsLocator.corporation;
   if (
-    netscript.corporation.hasResearched(
+    await corpApi['hasResearched'](
       divisionName,
       ResearchName.UPGRADE_CAPACITY_2
     )
@@ -188,7 +193,7 @@ function getDivisionProductLimit(netscript: NS, divisionName: string) {
     return 5;
   }
   if (
-    netscript.corporation.hasResearched(
+    await corpApi['hasResearched'](
       divisionName,
       ResearchName.UPGRADE_CAPACITY_1
     )
@@ -216,12 +221,13 @@ function getDivisionProductionMultiplier(
   return Math.max(Math.pow(cityMultiplier, 0.73), 1) * 6;
 }
 
-function getOfficeProductionMultiplier(
-  netscript: NS,
+async function getOfficeProductionMultiplier(
+  nsLocator: NetscriptLocator,
   divisionName: string,
   cityName: CityName
 ) {
-  const officeInfo = netscript.corporation.getOffice(divisionName, cityName);
+  const corpApi = nsLocator.corporation;
+  const officeInfo = await corpApi['getOffice'](divisionName, cityName);
   const operationsProd = officeInfo.employeeProductionByJob.Operations;
   const engineerProd = officeInfo.employeeProductionByJob.Engineer;
   const managementProd = officeInfo.employeeProductionByJob.Management;
@@ -237,20 +243,20 @@ function getOfficeProductionMultiplier(
 
   const balancingMultiplier = 0.05;
   let officeProductionMultiplier = productionMultiplier * balancingMultiplier;
-  const divisionInfo = netscript.corporation.getDivision(divisionName);
+  const divisionInfo = await corpApi['getDivision'](divisionName);
   if (divisionInfo.makesProducts) {
     officeProductionMultiplier *= 0.5;
   }
   return officeProductionMultiplier;
 }
 
-function getOfficeMaxProduction(
-  netscript: NS,
+async function getOfficeMaxProduction(
+  nsLocator: NetscriptLocator,
   divisionName: string,
   cityName: CityName
 ) {
-  const corpApi = netscript.corporation;
-  const divisionInfo = corpApi.getDivision(divisionName);
+  const corpApi = nsLocator.corporation;
+  const divisionInfo = await corpApi['getDivision'](divisionName);
 
   const smartFactoriesUpgradeInfo =
     CorpUpgradesData[UpgradeName.SMART_FACTORIES];
@@ -261,28 +267,33 @@ function getOfficeMaxProduction(
   const fulcrumUpgradeResearchInfo =
     CorpResearchesData[ResearchName.UPGRADE_FULCRUM];
 
-  const officeMultiplier = getOfficeProductionMultiplier(
-    netscript,
+  const officeMultiplier = await getOfficeProductionMultiplier(
+    nsLocator,
     divisionName,
     cityName
   );
   const divisionProductionMultiplier = divisionInfo.productionMult;
+  const smartFactoriesLevel = await corpApi['getUpgradeLevel'](
+    smartFactoriesUpgradeInfo.name
+  );
   const upgradesMultiplier =
-    1 +
-    corpApi.getUpgradeLevel(smartFactoriesUpgradeInfo.name) *
-      smartFactoriesUpgradeInfo.benefit;
+    1 + smartFactoriesLevel * smartFactoriesUpgradeInfo.benefit;
+  const hasDroneAssembly = await corpApi['hasResearched'](
+    divisionName,
+    ResearchName.DRONES_ASSEMBLY
+  );
+  const hasAssemblers = await corpApi['hasResearched'](
+    divisionName,
+    ResearchName.SELF_CORRECTING_ASSEMBLERS
+  );
+  const hasFulcrum = await corpApi['hasResearched'](
+    divisionName,
+    ResearchName.UPGRADE_FULCRUM
+  );
   const researchMultiplier =
-    (corpApi.hasResearched(divisionName, ResearchName.DRONES_ASSEMBLY)
-      ? dronesAssemblyResearchInfo.productionMult
-      : 1) *
-    (corpApi.hasResearched(
-      divisionName,
-      ResearchName.SELF_CORRECTING_ASSEMBLERS
-    )
-      ? selfCorrectingAssemblersResearchInfo.productionMult
-      : 1) *
-    (divisionInfo.makesProducts &&
-    corpApi.hasResearched(divisionName, ResearchName.UPGRADE_FULCRUM)
+    (hasDroneAssembly ? dronesAssemblyResearchInfo.productionMult : 1) *
+    (hasAssemblers ? selfCorrectingAssemblersResearchInfo.productionMult : 1) *
+    (divisionInfo.makesProducts && hasFulcrum
       ? fulcrumUpgradeResearchInfo.productProductionMult
       : 1);
 
@@ -294,20 +305,20 @@ function getOfficeMaxProduction(
   );
 }
 
-function getOfficeLimitedProduction(
-  netscript: NS,
+async function getOfficeLimitedProduction(
+  nsLocator: NetscriptLocator,
   divisionName: string,
   cityName: CityName,
   productSize?: number
 ) {
-  const corpApi = netscript.corporation;
-  const divisionInfo = corpApi.getDivision(divisionName);
-  const industryInfo = corpApi.getIndustryData(divisionInfo.type);
+  const corpApi = nsLocator.corporation;
+  const divisionInfo = await corpApi['getDivision'](divisionName);
+  const industryInfo = await corpApi['getIndustryData'](divisionInfo.type);
 
   let outputUnitStorageSpaceChange = productSize ? productSize : 0;
   if (!productSize) {
     for (const materialName of industryInfo.producedMaterials ?? []) {
-      const materialInfo = corpApi.getMaterialData(materialName);
+      const materialInfo = await corpApi['getMaterialData'](materialName);
       outputUnitStorageSpaceChange += materialInfo.size;
     }
   }
@@ -315,16 +326,16 @@ function getOfficeLimitedProduction(
   for (const [materialName, requiredCoefficient] of Object.entries(
     industryInfo.requiredMaterials
   )) {
-    const materialInfo = corpApi.getMaterialData(
+    const materialInfo = await corpApi['getMaterialData'](
       materialName as CorpMaterialName
     );
     outputUnitStorageSpaceChange -= materialInfo.size * requiredCoefficient;
   }
 
   let limitedProduction =
-    getOfficeMaxProduction(netscript, divisionName, cityName) * 10;
+    (await getOfficeMaxProduction(nsLocator, divisionName, cityName)) * 10;
   if (outputUnitStorageSpaceChange > 0) {
-    const warehouseInfo = corpApi.getWarehouse(divisionName, cityName);
+    const warehouseInfo = await corpApi['getWarehouse'](divisionName, cityName);
     const adjustedProduction =
       (warehouseInfo.size - warehouseInfo.sizeUsed) /
       outputUnitStorageSpaceChange;
@@ -418,15 +429,15 @@ function getPricingBalanceFactor(
   );
 }
 
-function addStockedIndustryMaterials(
-  netscript: NS,
+async function addStockedIndustryMaterials(
+  nsLocator: NetscriptLocator,
   divisionName: string,
   optimalIndustryMaterials: Map<CorpMaterialName, number>
 ) {
-  const corpApi = netscript.corporation;
+  const corpApi = nsLocator.corporation;
   const result = new Map<CorpMaterialName, number>();
   for (const materialName of INDUSTRY_MULTIPLIER_MATERIALS) {
-    const storedMaterialInfo = corpApi.getMaterial(
+    const storedMaterialInfo = await corpApi['getMaterial'](
       divisionName,
       BENCHMARK_OFFICE,
       materialName
@@ -437,16 +448,19 @@ function addStockedIndustryMaterials(
   return result;
 }
 
-function getAffordableResearchUpgrades(netscript: NS, divisionName: string) {
-  const corpApi = netscript.corporation;
-  const divisionInfo = corpApi.getDivision(divisionName);
+async function getAffordableResearchUpgrades(
+  nsLocator: NetscriptLocator,
+  divisionName: string
+) {
+  const corpApi = nsLocator.corporation;
+  const divisionInfo = await corpApi['getDivision'](divisionName);
   const researchPriorities = divisionInfo.makesProducts
     ? RESEARCH_PRIORITIES_PRODUCT_DIVISION
     : RESEARCH_PRIORITIES_SUPPORT_DIVISION;
   const result = new Array<ResearchName>();
   let availableResearchPoints = divisionInfo.researchPoints;
   for (const researchUpgrade of researchPriorities) {
-    const upgradeCost = corpApi.getResearchCost(
+    const upgradeCost = await corpApi['getResearchCost'](
       divisionName,
       researchUpgrade.name
     );
@@ -454,7 +468,7 @@ function getAffordableResearchUpgrades(netscript: NS, divisionName: string) {
       availableResearchPoints >=
       upgradeCost * researchUpgrade.safetyCostMultiplier;
     if (
-      !corpApi.hasResearched(divisionName, researchUpgrade.name) &&
+      !(await corpApi['hasResearched'](divisionName, researchUpgrade.name)) &&
       upgradeAffordable
     ) {
       availableResearchPoints -= upgradeCost;

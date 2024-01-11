@@ -45,6 +45,7 @@ import {
   CMD_FLAG_DESIGN_CITY_NAME,
   CMD_FLAG_DIVISION_NAME,
 } from '/scripts/corp-product';
+import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
 const MODULE_NAME = 'corp-round4';
 const SUBSCRIBER_NAME = 'corp-round4';
@@ -60,13 +61,16 @@ const TOBACCO_MATERIALS_SPACE_RATIO = 0.85;
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Corporation Automation - Investor Round 4');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
-  const corpApi = netscript.corporation;
-  const investmentOfferInfo = corpApi.getInvestmentOffer();
+  const corpApi = nsLocator.corporation;
+  const investmentOfferInfo = await corpApi['getInvestmentOffer']();
   if (investmentOfferInfo.round !== 4) {
     terminalWriter.writeLine(
       `Invalid investor round : ${investmentOfferInfo.round}.  Script meant for investor round 4.`
@@ -74,7 +78,7 @@ export async function main(netscript: NS) {
     return;
   }
 
-  let tobaccoDivisionInfo = corpApi.getDivision(DivisionNames.TOBACCO);
+  let tobaccoDivisionInfo = await corpApi['getDivision'](DivisionNames.TOBACCO);
   const latestProductName = tobaccoDivisionInfo.products.at(-1) ?? '';
   if (!latestProductName) {
     terminalWriter.writeLine(
@@ -108,14 +112,14 @@ export async function main(netscript: NS) {
   scriptLogWriter.writeLine(
     'Improving Tobacco Division & re-assigning employees...'
   );
-  const corporationInfo = corpApi.getCorporation();
-  improveProductDivision(
-    netscript,
+  let corpInfo = await corpApi['getCorporation']();
+  await improveProductDivision(
+    nsLocator,
     DivisionNames.TOBACCO,
-    corporationInfo.funds * 0.99 - 1e9
+    corpInfo.funds * 0.99 - 1e9
   );
   await buyIndustryMaterials(
-    netscript,
+    nsPackage,
     DivisionNames.TOBACCO,
     TOBACCO_MATERIALS_SPACE_RATIO
   );
@@ -123,7 +127,7 @@ export async function main(netscript: NS) {
 
   scriptLogWriter.writeLine('Setting up corporate improvement loop...');
   let cycleCount = 0;
-  let latestProductInfo = corpApi.getProduct(
+  let latestProductInfo = await corpApi['getProduct'](
     DivisionNames.TOBACCO,
     BENCHMARK_OFFICE,
     latestProductName
@@ -137,10 +141,10 @@ export async function main(netscript: NS) {
     latestProductInfo.effectiveRating <= 0
   ) {
     let purchasedUpgrades = false;
-    let corporationInfo = corpApi.getCorporation();
-    const profit = corporationInfo.revenue - corporationInfo.expenses;
+    corpInfo = await corpApi['getCorporation']();
+    const profit = corpInfo.revenue - corpInfo.expenses;
     if (tobaccoDivisionInfo.awareness < Number.MAX_VALUE) {
-      const currentWilsonLevel = corpApi.getUpgradeLevel(
+      const currentWilsonLevel = await corpApi['getUpgradeLevel'](
         UpgradeName.WILSON_ANALYTICS
       );
       const wilsonUpgradeInfo = CorpUpgradesData[UpgradeName.WILSON_ANALYTICS];
@@ -154,79 +158,81 @@ export async function main(netscript: NS) {
         scriptLogWriter.writeLine(
           `  Upgrading Wilson Analytics to level ${maxWilsonLevel}`
         );
-        buyCorpUpgrade(netscript, UpgradeName.WILSON_ANALYTICS, maxWilsonLevel);
+        await buyCorpUpgrade(
+          nsLocator,
+          UpgradeName.WILSON_ANALYTICS,
+          maxWilsonLevel
+        );
         purchasedUpgrades = true;
       }
 
-      const advertBudget = corporationInfo.funds * 0.5;
-      if (
-        profit >= 1e20 &&
-        advertBudget >= corpApi.getHireAdVertCost(DivisionNames.TOBACCO)
-      ) {
+      const advertLevel = await corpApi['getHireAdVertCost'](
+        DivisionNames.TOBACCO
+      );
+      const advertBudget = corpInfo.funds * 0.5;
+      if (profit >= 1e20 && advertBudget >= advertLevel) {
         scriptLogWriter.writeLine('Upgrading Tobacco Division Advert...');
-        buyMaxAdvert(netscript, DivisionNames.TOBACCO, advertBudget);
+        await buyMaxAdvert(nsLocator, DivisionNames.TOBACCO, advertBudget);
         purchasedUpgrades = true;
       }
     }
 
-    const agrucultureResearchUpgrades = getAffordableResearchUpgrades(
-      netscript,
+    const agrucultureResearchUpgrades = await getAffordableResearchUpgrades(
+      nsLocator,
       DivisionNames.AGRICULTURE
     );
     if (agrucultureResearchUpgrades.length > 0) {
       scriptLogWriter.writeLine(
         `  Buying research upgrades for Agriculture Division : ${agrucultureResearchUpgrades}`
       );
-      buyResearchUpgrades(
-        netscript,
+      await buyResearchUpgrades(
+        nsLocator,
         DivisionNames.AGRICULTURE,
         agrucultureResearchUpgrades
       );
       purchasedUpgrades = true;
     }
-    const chemicalResearchUpgrades = getAffordableResearchUpgrades(
-      netscript,
+    const chemicalResearchUpgrades = await getAffordableResearchUpgrades(
+      nsLocator,
       DivisionNames.CHEMICAL
     );
     if (chemicalResearchUpgrades.length > 0) {
       scriptLogWriter.writeLine(
         `  Buying research upgrades for Chemical Division : ${chemicalResearchUpgrades}`
       );
-      buyResearchUpgrades(
-        netscript,
+      await buyResearchUpgrades(
+        nsLocator,
         DivisionNames.CHEMICAL,
         chemicalResearchUpgrades
       );
       purchasedUpgrades = true;
     }
-    const tobaccoResearchUpgrades = getAffordableResearchUpgrades(
-      netscript,
+    const tobaccoResearchUpgrades = await getAffordableResearchUpgrades(
+      nsLocator,
       DivisionNames.TOBACCO
     );
     if (tobaccoResearchUpgrades.length > 0) {
       scriptLogWriter.writeLine(
         `  Buying research upgrades for Tobacco Division : ${tobaccoResearchUpgrades}`
       );
-      buyResearchUpgrades(
-        netscript,
+      await buyResearchUpgrades(
+        nsLocator,
         DivisionNames.TOBACCO,
         tobaccoResearchUpgrades
       );
       purchasedUpgrades = true;
     }
 
-    corporationInfo = corpApi.getCorporation();
-    const totalFunds = corporationInfo.funds;
+    corpInfo = await corpApi['getCorporation']();
+    const totalFunds = corpInfo.funds;
     let availableFunds = totalFunds;
 
-    const upgradeTobacco =
-      6 *
-        corpApi.getOfficeSizeUpgradeCost(
-          DivisionNames.TOBACCO,
-          BENCHMARK_OFFICE,
-          1
-        ) <
-      availableFunds * 0.001;
+    const tobaccoOfficeSize = await corpApi['getOfficeSizeUpgradeCost'](
+      DivisionNames.TOBACCO,
+      BENCHMARK_OFFICE,
+      1
+    );
+    const upgradeTobacco = 6 * tobaccoOfficeSize < availableFunds * 0.001;
     if (cycleCount % 10 === 0 || upgradeTobacco) {
       const tobaccoBudget = totalFunds * 0.9;
       availableFunds -= tobaccoBudget;
@@ -235,28 +241,27 @@ export async function main(netscript: NS) {
           tobaccoBudget
         )}`
       );
-      improveProductDivision(
-        netscript,
+      await improveProductDivision(
+        nsLocator,
         DivisionNames.TOBACCO,
         tobaccoBudget,
         false
       );
-      buyIndustryMaterials(
-        netscript,
+      await buyIndustryMaterials(
+        nsPackage,
         DivisionNames.TOBACCO,
         TOBACCO_MATERIALS_SPACE_RATIO
       );
       purchasedUpgrades = true;
     }
 
+    const agricultureOfficeSize = await corpApi['getOfficeSizeUpgradeCost'](
+      DivisionNames.AGRICULTURE,
+      BENCHMARK_OFFICE,
+      1
+    );
     const upgradeAgriculture =
-      6 *
-        corpApi.getOfficeSizeUpgradeCost(
-          DivisionNames.AGRICULTURE,
-          BENCHMARK_OFFICE,
-          1
-        ) <
-      availableFunds * 1e-4;
+      6 * agricultureOfficeSize < availableFunds * 1e-4;
     if (cycleCount % 15 === 0 || upgradeAgriculture) {
       const agricultureBudget = Math.max(
         Math.min(profit * 0.99, totalFunds * 0.09, availableFunds),
@@ -269,13 +274,13 @@ export async function main(netscript: NS) {
             agricultureBudget
           )}`
         );
-        improveSupportDivision(
-          netscript,
+        await improveSupportDivision(
+          nsLocator,
           DivisionNames.AGRICULTURE,
           agricultureBudget
         );
-        buyIndustryMaterials(
-          netscript,
+        await buyIndustryMaterials(
+          nsPackage,
           DivisionNames.AGRICULTURE,
           AGRICULTURE_MATERIALS_SPACE_RATIO
         );
@@ -283,14 +288,12 @@ export async function main(netscript: NS) {
       }
     }
 
-    const upgradeChemical =
-      6 *
-        corpApi.getOfficeSizeUpgradeCost(
-          DivisionNames.CHEMICAL,
-          BENCHMARK_OFFICE,
-          1
-        ) <
-      availableFunds * 1e-5;
+    const chemicalOfficeSize = await corpApi['getOfficeSizeUpgradeCost'](
+      DivisionNames.CHEMICAL,
+      BENCHMARK_OFFICE,
+      1
+    );
+    const upgradeChemical = 6 * chemicalOfficeSize < availableFunds * 1e-5;
     if (cycleCount % 20 === 0 || upgradeChemical) {
       const chemicalBudget = Math.max(
         Math.min(profit * 0.01, totalFunds * 0.01, availableFunds),
@@ -303,13 +306,13 @@ export async function main(netscript: NS) {
             chemicalBudget
           )}`
         );
-        improveSupportDivision(
-          netscript,
+        await improveSupportDivision(
+          nsLocator,
           DivisionNames.CHEMICAL,
           chemicalBudget
         );
-        buyIndustryMaterials(
-          netscript,
+        await buyIndustryMaterials(
+          nsPackage,
           DivisionNames.CHEMICAL,
           CHEMICAL_MATERIALS_SPACE_RATIO
         );
@@ -323,8 +326,8 @@ export async function main(netscript: NS) {
 
     await waitForState(netscript, CorpState.START);
 
-    tobaccoDivisionInfo = corpApi.getDivision(DivisionNames.TOBACCO);
-    latestProductInfo = corpApi.getProduct(
+    tobaccoDivisionInfo = await corpApi['getDivision'](DivisionNames.TOBACCO);
+    latestProductInfo = await corpApi['getProduct'](
       DivisionNames.TOBACCO,
       BENCHMARK_OFFICE,
       latestProductName
@@ -341,11 +344,14 @@ export async function main(netscript: NS) {
     'Shifting all Product Offices to Production to boost investment offer...'
   );
   for (const cityName of DEFAULT_PRODUCT_RESEARCH_OFFICES) {
-    const officeInfo = corpApi.getOffice(DivisionNames.TOBACCO, cityName);
-    const assignmentRatios = corpApi.hasResearched(
+    const officeInfo = await corpApi['getOffice'](
+      DivisionNames.TOBACCO,
+      cityName
+    );
+    const assignmentRatios = (await corpApi['hasResearched'](
       DivisionNames.TOBACCO,
       ResearchName.MARKET_TA_2
-    )
+    ))
       ? EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE_TA2
       : EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE;
     const employeeAssignments = calculateAssignmentCounts(
@@ -356,7 +362,9 @@ export async function main(netscript: NS) {
       city: cityName,
       assignments: employeeAssignments,
     };
-    assignEmployees(netscript, DivisionNames.TOBACCO, [officeAssignments]);
+    await assignEmployees(nsLocator, DivisionNames.TOBACCO, [
+      officeAssignments,
+    ]);
   }
 
   scriptLogWriter.writeLine('Waiting for investment offer to stabalize...');

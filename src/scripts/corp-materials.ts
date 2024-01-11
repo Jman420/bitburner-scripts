@@ -17,10 +17,14 @@ import {CITY_NAMES} from '/scripts/common/shared';
 
 import {initializeScript} from '/scripts/workflows/execution';
 import {
-  buyMaterial,
-  sellMaterial,
+  purchaseMaterial,
+  saleMaterial,
 } from '/scripts/workflows/corporation-actions';
 import {getOptimalIndustryMaterials} from '/scripts/workflows/corporation-optimization';
+import {
+  NetscriptPackage,
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 export const CMD_FLAG_DIVISION_NAME = 'division';
 export const CMD_FLAG_CITY_NAMES = 'cities';
@@ -42,19 +46,23 @@ const TAIL_HEIGHT = 490;
 
 let DIVISION_NAMES: string[];
 
-function purchaseMaterials(
-  netscript: NS,
+async function purchaseMaterials(
+  nsPackage: NetscriptPackage,
   logWriter: Logger,
   divisionName: string,
   cityNames: CityName[],
   storageSize: number
 ) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+  const corpApi = nsLocator.corporation;
+
   logWriter.writeLine(
     `Determining optimal materials for division ${divisionName}`
   );
-  const divisionInfo = netscript.corporation.getDivision(divisionName);
-  const optimalAmounts = getOptimalIndustryMaterials(
-    netscript,
+  const divisionInfo = await corpApi['getDivision'](divisionName);
+  const optimalAmounts = await getOptimalIndustryMaterials(
+    nsLocator,
     divisionInfo.type,
     storageSize
   );
@@ -74,10 +82,7 @@ function purchaseMaterials(
 
   const transactionPromises = new Array<Promise<void>>();
   for (const cityName of cityNames) {
-    const warehouseInfo = netscript.corporation.getWarehouse(
-      divisionName,
-      cityName
-    );
+    const warehouseInfo = await corpApi['getWarehouse'](divisionName, cityName);
     logWriter.writeLine(
       `City : ${cityName} - Storage : ${netscript.formatNumber(
         warehouseInfo.size
@@ -85,7 +90,7 @@ function purchaseMaterials(
     );
     if (warehouseInfo.size >= storageSize) {
       for (const [materialName, materialAmount] of optimalAmounts) {
-        const officeMaterialInfo = netscript.corporation.getMaterial(
+        const officeMaterialInfo = await corpApi['getMaterial'](
           divisionName,
           cityName,
           materialName
@@ -98,8 +103,8 @@ function purchaseMaterials(
             )}`
           );
           transactionPromises.push(
-            buyMaterial(
-              netscript,
+            purchaseMaterial(
+              nsPackage,
               divisionName,
               cityName,
               materialName,
@@ -113,8 +118,8 @@ function purchaseMaterials(
             )}`
           );
           transactionPromises.push(
-            sellMaterial(
-              netscript,
+            saleMaterial(
+              nsPackage,
               divisionName,
               cityName,
               materialName,
@@ -139,9 +144,11 @@ function purchaseMaterials(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  DIVISION_NAMES = netscript.corporation
-    .getCorporation()
-    .divisions.map(value => `'${value}'`);
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
+
+  const corpInfo = await nsLocator.corporation['getCorporation']();
+  DIVISION_NAMES = corpInfo.divisions.map(value => `'${value}'`);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
@@ -179,8 +186,8 @@ export async function main(netscript: NS) {
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
-  const purchasePromises = purchaseMaterials(
-    netscript,
+  const purchasePromises = await purchaseMaterials(
+    nsPackage,
     scriptLogWriter,
     divisionName,
     cityNames,

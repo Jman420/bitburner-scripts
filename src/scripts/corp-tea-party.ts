@@ -24,6 +24,10 @@ import {EventListener, sendMessage} from '/scripts/comms/event-comms';
 import {TeaPartyConfigEvent} from '/scripts/comms/events/tea-party-config-event';
 import {TeaPartyConfigRequest} from '/scripts/comms/requests/tea-party-config-request';
 import {TeaPartyConfigResponse} from '/scripts/comms/responses/tea-party-config-response';
+import {
+  NetscriptPackage,
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 const DEFAULT_MORALE_LIMIT = 95;
 const DEFAULT_ENERGY_LIMIT = 98;
@@ -52,24 +56,22 @@ const UPDATE_DELAY = 0;
 
 let managerConfig: TeaPartyConfig;
 
-async function manageTeaParty(netscript: NS, logWriter: Logger) {
-  const corpInfo = netscript.corporation.getCorporation();
+async function manageTeaParty(nsPackage: NetscriptPackage, logWriter: Logger) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
+  const corpApi = nsLocator.corporation;
+  const corpInfo = await corpApi['getCorporation']();
   for (const divisionName of corpInfo.divisions) {
-    const divisionInfo = netscript.corporation.getDivision(divisionName);
+    const divisionInfo = await corpApi['getDivision'](divisionName);
     for (const cityName of divisionInfo.cities) {
-      const officeInfo = netscript.corporation.getOffice(
-        divisionName,
-        cityName
-      );
+      const officeInfo = await corpApi['getOffice'](divisionName, cityName);
       const officeHasEmployees = officeInfo.numEmployees > 0;
       if (
         officeHasEmployees &&
         officeInfo.avgEnergy <= managerConfig.energyLimit
       ) {
-        const teaPurchased = netscript.corporation.buyTea(
-          divisionName,
-          cityName
-        );
+        const teaPurchased = await corpApi['buyTea'](divisionName, cityName);
         logWriter.writeLine(
           `Tea purchased for ${divisionName} office in ${cityName} : ${teaPurchased}`
         );
@@ -78,7 +80,7 @@ async function manageTeaParty(netscript: NS, logWriter: Logger) {
         officeHasEmployees &&
         officeInfo.avgMorale <= managerConfig.moraleLimit
       ) {
-        netscript.corporation.throwParty(
+        await corpApi['throwParty'](
           divisionName,
           cityName,
           managerConfig.partyFunds
@@ -136,6 +138,8 @@ function handleTeaPartyConfigRequest(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Corporate Tea Party Automation');
@@ -190,7 +194,7 @@ export async function main(netscript: NS) {
     netscript,
     UPDATE_DELAY,
     manageTeaParty,
-    netscript,
+    nsPackage,
     scriptLogWriter
   );
 }

@@ -3,7 +3,6 @@ import {
   CorpIndustryName,
   CorpMaterialName,
   Material,
-  NS,
   Product,
 } from '@ns';
 import {Ceres} from '/scripts/libs/Ceres';
@@ -34,6 +33,7 @@ import {
   getWarehouseCost,
   getWarehouseSize,
 } from '/scripts/workflows/corporation-formulas';
+import {NetscriptLocator} from '/scripts/netscript-services/netscript-locator';
 
 interface OptimalDivisionFactoryAndStorageInfo {
   production: number;
@@ -99,22 +99,25 @@ function calculateOptimalIndustryMaterials(
   return results;
 }
 
-function getOptimalIndustryMaterials(
-  netscript: NS,
+async function getOptimalIndustryMaterials(
+  nsLocator: NetscriptLocator,
   industryType: CorpIndustryName,
   storageSize: number,
   wholeNumResults = true
 ) {
-  const corpApi = netscript.corporation;
-  const industryData = corpApi.getIndustryData(industryType);
+  const corpApi = nsLocator.corporation;
+  const industryData = await corpApi['getIndustryData'](industryType);
   const industryFactors = [
     industryData.hardwareFactor ?? 0,
     industryData.aiCoreFactor ?? 0,
     industryData.robotFactor ?? 0,
     industryData.realEstateFactor ?? 0,
   ];
-  const materialSizes = INDUSTRY_MULTIPLIER_MATERIALS.map(
-    materialName => corpApi.getMaterialData(materialName).size
+  const materialSizes = await Promise.all(
+    INDUSTRY_MULTIPLIER_MATERIALS.map(
+      async materialName =>
+        (await corpApi['getMaterialData'](materialName)).size
+    )
   );
 
   const results = new Map<CorpMaterialName, number>();
@@ -130,28 +133,31 @@ function getOptimalIndustryMaterials(
   return results;
 }
 
-function getOptimalDivisionFactoryAndStorage(
-  netscript: NS,
+async function getOptimalDivisionFactoryAndStorage(
+  nsLocator: NetscriptLocator,
   divisionName: string,
   budget: number,
   industryMaterialsRatio = 0.8
 ) {
-  const corpApi = netscript.corporation;
-  const divisionInfo = corpApi.getDivision(divisionName);
-  const industryInfo = corpApi.getIndustryData(divisionInfo.type);
-  const warehouseInfo = corpApi.getWarehouse(divisionName, BENCHMARK_OFFICE);
+  const corpApi = nsLocator.corporation;
+  const divisionInfo = await corpApi['getDivision'](divisionName);
+  const industryInfo = await corpApi['getIndustryData'](divisionInfo.type);
+  const warehouseInfo = await corpApi['getWarehouse'](
+    divisionName,
+    BENCHMARK_OFFICE
+  );
 
-  const currentSmartStorageLevel = corpApi.getUpgradeLevel(
+  const currentSmartStorageLevel = await corpApi['getUpgradeLevel'](
     UpgradeName.SMART_STORAGE
   );
-  const currentSmartFactoryLevel = corpApi.getUpgradeLevel(
+  const currentSmartFactoryLevel = await corpApi['getUpgradeLevel'](
     UpgradeName.SMART_FACTORIES
   );
   const currentWarehouseLevel = warehouseInfo.level;
-  const researchStorageMultiplier = corpApi.hasResearched(
+  const researchStorageMultiplier = (await corpApi['hasResearched'](
     divisionName,
     ResearchName.DRONES_TRANSPORT
-  )
+  ))
     ? CorpResearchesData[ResearchName.DRONES_TRANSPORT].storageMult
     : 1;
 
@@ -216,8 +222,8 @@ function getOptimalDivisionFactoryAndStorage(
         warehouseLevel,
         researchStorageMultiplier
       );
-      const industryMaterials = getOptimalIndustryMaterials(
-        netscript,
+      const industryMaterials = await getOptimalIndustryMaterials(
+        nsLocator,
         divisionInfo.type,
         warehouseSize * industryMaterialsRatio
       );
@@ -262,12 +268,16 @@ function getOptimalDivisionFactoryAndStorage(
   return optimalInfo;
 }
 
-function getOptimalAdvert(netscript: NS, divisionName: string, budget: number) {
-  const corpApi = netscript.corporation;
-  const divisionInfo = corpApi.getDivision(divisionName);
-  const industryInfo = corpApi.getIndustryData(divisionInfo.type);
+async function getOptimalAdvert(
+  nsLocator: NetscriptLocator,
+  divisionName: string,
+  budget: number
+) {
+  const corpApi = nsLocator.corporation;
+  const divisionInfo = await corpApi['getDivision'](divisionName);
+  const industryInfo = await corpApi['getIndustryData'](divisionInfo.type);
 
-  const currentWilsonLevel = corpApi.getUpgradeLevel(
+  const currentWilsonLevel = await corpApi['getUpgradeLevel'](
     UpgradeName.WILSON_ANALYTICS
   );
   const wilsonUpgradeInfo = CorpUpgradesData[UpgradeName.WILSON_ANALYTICS];
@@ -277,7 +287,7 @@ function getOptimalAdvert(netscript: NS, divisionName: string, budget: number) {
     currentWilsonLevel,
     budget
   );
-  const currentAdvertLevel = corpApi.getHireAdVertCount(divisionName);
+  const currentAdvertLevel = await corpApi['getHireAdVertCount'](divisionName);
   const maxAdvertLevel = getMaxAffordableAdvertLevel(
     currentAdvertLevel,
     budget
@@ -355,15 +365,15 @@ function getOptimalAdvert(netscript: NS, divisionName: string, budget: number) {
 }
 
 async function getOptimalProductMarkup(
-  netscript: NS,
+  nsLocator: NetscriptLocator,
   divisionName: string,
   cityName: CityName,
   productInfo: Product
 ) {
-  const corpApi = netscript.corporation;
-  const divisionInfo = corpApi.getDivision(divisionName);
-  const industryInfo = corpApi.getIndustryData(divisionInfo.type);
-  const officeInfo = corpApi.getOffice(divisionName, cityName);
+  const corpApi = nsLocator.corporation;
+  const divisionInfo = await corpApi['getDivision'](divisionName);
+  const industryInfo = await corpApi['getIndustryData'](divisionInfo.type);
+  const officeInfo = await corpApi['getOffice'](divisionName, cityName);
   const employeeProductionByJob = officeInfo.employeeProductionByJob;
 
   const designInvestmentFactor =
@@ -531,17 +541,17 @@ async function getOptimalProductMarkup(
 function isProduct(item: Material | Product): item is Product {
   return 'rating' in item;
 }
-function getOptimalSellingPrice(
-  netscript: NS,
+async function getOptimalSellingPrice(
+  nsLocator: NetscriptLocator,
   divisionName: string,
   cityName: CityName,
   itemInfo: Material | Product,
   productMarkup?: number
 ) {
-  const corpApi = netscript.corporation;
+  const corpApi = nsLocator.corporation;
   if (
-    !corpApi.hasUnlock(UnlockName.MARKET_DATA_COMPETITION) ||
-    !corpApi.hasUnlock(UnlockName.MARKET_RESEARCH_DEMAND)
+    !(await corpApi['hasUnlock'](UnlockName.MARKET_DATA_COMPETITION)) ||
+    !(await corpApi['hasUnlock'](UnlockName.MARKET_RESEARCH_DEMAND))
   ) {
     return undefined;
   }
@@ -551,7 +561,7 @@ function getOptimalSellingPrice(
     return undefined;
   }
 
-  const officeInfo = corpApi.getOffice(divisionName, cityName);
+  const officeInfo = await corpApi['getOffice'](divisionName, cityName);
   let markupLimit: number;
   let itemMultiplier: number;
   let marketPrice: number;
@@ -564,14 +574,14 @@ function getOptimalSellingPrice(
     itemMultiplier = 0.5 * Math.pow(itemInfo.effectiveRating, 0.65);
     marketPrice = itemInfo.productionCost;
   } else {
-    markupLimit =
-      itemInfo.quality / corpApi.getMaterialData(itemInfo.name).baseMarkup;
+    const materialData = await corpApi['getMaterialData'](itemInfo.name);
+    markupLimit = itemInfo.quality / materialData.baseMarkup;
     itemMultiplier = itemInfo.quality + 0.001;
     marketPrice = itemInfo.marketPrice;
   }
 
-  const divisionInfo = corpApi.getDivision(divisionName);
-  const industryInfo = corpApi.getIndustryData(divisionInfo.type);
+  const divisionInfo = await corpApi['getDivision'](divisionName);
+  const industryInfo = await corpApi['getIndustryData'](divisionInfo.type);
   const businessFactor = getBusinessFactor(
     officeInfo.employeeProductionByJob[EmployeePosition.BUSINESS]
   );
@@ -588,7 +598,9 @@ function getOptimalSellingPrice(
     (itemDemand * (100 - itemCompetition)) / 100
   );
 
-  const salesBotsLevel = corpApi.getUpgradeLevel(UpgradeName.ABC_SALES_BOTS);
+  const salesBotsLevel = await corpApi['getUpgradeLevel'](
+    UpgradeName.ABC_SALES_BOTS
+  );
   const salesBotsUpgradeInfo = CorpUpgradesData[UpgradeName.ABC_SALES_BOTS];
   const salesBotUpgradeBenefit =
     salesBotsLevel * salesBotsUpgradeInfo.benefit + 1;

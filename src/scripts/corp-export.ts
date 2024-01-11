@@ -16,6 +16,7 @@ import {openTail} from '/scripts/workflows/ui';
 import {initializeScript} from '/scripts/workflows/execution';
 import {EXPORT_FORMULA} from '/scripts/workflows/corporation-shared';
 import {FRAUD_DIVISION_NAME_PREFIX} from '/scripts/workflows/corporation-shared';
+import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
 export const CMD_FLAG_DIVISION_NAME = 'division';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_DIVISION_NAME, '']];
@@ -33,9 +34,12 @@ let DIVISION_NAMES: string[];
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  DIVISION_NAMES = netscript.corporation
-    .getCorporation()
-    .divisions.map(value => `'${value}'`)
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
+
+  const corpInfo = await nsLocator.corporation['getCorporation']();
+  DIVISION_NAMES = corpInfo.divisions
+    .map(value => `'${value}'`)
     .filter(value => !value.includes(FRAUD_DIVISION_NAME_PREFIX));
 
   initializeScript(netscript, SUBSCRIBER_NAME);
@@ -63,18 +67,19 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('See script logs for export setup details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  const corpApi = netscript.corporation;
+  const corpApi = nsLocator.corporation;
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
 
   scriptLogWriter.writeLine('Building Import Map...');
-  const corpInfo = corpApi.getCorporation();
   const importMap = new Map<string, string[]>();
   for (const importDivisionName of corpInfo.divisions.filter(
     value =>
       value !== divisionName && !value.includes(FRAUD_DIVISION_NAME_PREFIX)
   )) {
-    const importDivisionInfo = corpApi.getDivision(importDivisionName);
-    const importIndustryInfo = corpApi.getIndustryData(importDivisionInfo.type);
+    const importDivisionInfo = await corpApi['getDivision'](importDivisionName);
+    const importIndustryInfo = await corpApi['getIndustryData'](
+      importDivisionInfo.type
+    );
     for (const [importMaterialName, importAmount] of Object.entries(
       importIndustryInfo.requiredMaterials
     )) {
@@ -94,14 +99,16 @@ export async function main(netscript: NS) {
   scriptLogWriter.writeLine(
     `Setting up exports for division ${divisionName} ...`
   );
-  const exportDivisionInfo = corpApi.getDivision(divisionName);
-  const exportIndustryInfo = corpApi.getIndustryData(exportDivisionInfo.type);
+  const exportDivisionInfo = await corpApi['getDivision'](divisionName);
+  const exportIndustryInfo = await corpApi['getIndustryData'](
+    exportDivisionInfo.type
+  );
   for (const cityName of exportDivisionInfo.cities) {
     for (const exportMaterialName of exportIndustryInfo.producedMaterials ??
       []) {
       const importDivisions = importMap.get(exportMaterialName) ?? [];
       for (const importDivisionName of importDivisions) {
-        const exportMaterialInfo = corpApi.getMaterial(
+        const exportMaterialInfo = await corpApi['getMaterial'](
           divisionName,
           cityName,
           exportMaterialName
@@ -115,7 +122,7 @@ export async function main(netscript: NS) {
           scriptLogWriter.writeLine(
             `  Removing existing export to division ${importDivisionName} for material ${exportMaterialName}`
           );
-          corpApi.cancelExportMaterial(
+          await corpApi['cancelExportMaterial'](
             divisionName,
             cityName,
             importDivisionName,
@@ -126,7 +133,7 @@ export async function main(netscript: NS) {
         scriptLogWriter.writeLine(
           `  Setting up export to division ${importDivisionName} for material ${exportMaterialName}`
         );
-        corpApi.exportMaterial(
+        await corpApi['exportMaterial'](
           divisionName,
           cityName,
           importDivisionName,

@@ -1,4 +1,4 @@
-import {AutocompleteData, NS} from '@ns';
+import {NS} from '@ns';
 
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
@@ -6,7 +6,6 @@ import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 import {
   CmdArgsSchema,
   getCmdFlag,
-  getLastCmdFlag,
   getSchemaFlags,
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
@@ -61,6 +60,7 @@ import {
   CMD_FLAG_DESIGN_CITY_NAME,
   CMD_FLAG_DIVISION_NAME,
 } from '/scripts/corp-product';
+import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
 const CMD_FLAG_AGRICULTURE_BUDGET = 'agricultureBudget';
 const CMD_FLAG_CHEMICAL_BUDGET = 'chemicalBudget';
@@ -89,6 +89,9 @@ const TOBACCO_MATERIALS_SPACE_RATIO = 0.95;
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Corporation Automation - Investor Round 3');
@@ -107,8 +110,8 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine(`Materials Budget : ${materialsBudget}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
-  const corpApi = netscript.corporation;
-  const investmentOfferInfo = corpApi.getInvestmentOffer();
+  const corpApi = nsLocator.corporation;
+  const investmentOfferInfo = await corpApi['getInvestmentOffer']();
   if (investmentOfferInfo.round !== 3) {
     terminalWriter.writeLine(
       `Invalid investor round : ${investmentOfferInfo.round}.  Script meant for investor round 3.`
@@ -116,8 +119,8 @@ export async function main(netscript: NS) {
     return;
   }
 
-  const corporationInfo = corpApi.getCorporation();
-  if (corporationInfo.funds < REQUIRED_FUNDS) {
+  let corpInfo = await corpApi['getCorporation']();
+  if (corpInfo.funds < REQUIRED_FUNDS) {
     terminalWriter.writeLine(
       `Insufficient funds for round 3.  Required funds : ${netscript.formatNumber(
         REQUIRED_FUNDS
@@ -125,7 +128,7 @@ export async function main(netscript: NS) {
     );
     return;
   }
-  const fraudDivisions = MAX_DIVISIONS - corporationInfo.divisions.length;
+  const fraudDivisions = MAX_DIVISIONS - corpInfo.divisions.length;
   if (fraudDivisions < 0) {
     terminalWriter.writeLine(
       `Too many divisions created.  Please sell ${-fraudDivisions} divisions.`
@@ -147,31 +150,31 @@ export async function main(netscript: NS) {
   runScript(netscript, TEA_PARTY_SCRIPT);
 
   scriptLogWriter.writeLine('Buying Market Demand & Competition unlocks...');
-  corpApi.purchaseUnlock(UnlockName.MARKET_RESEARCH_DEMAND);
-  corpApi.purchaseUnlock(UnlockName.MARKET_DATA_COMPETITION);
+  await corpApi['purchaseUnlock'](UnlockName.MARKET_RESEARCH_DEMAND);
+  await corpApi['purchaseUnlock'](UnlockName.MARKET_DATA_COMPETITION);
 
   scriptLogWriter.writeLine('Creating Tobacco Division...');
-  createDivision(netscript, DivisionNames.TOBACCO, IndustryType.TOBACCO);
+  await createDivision(nsLocator, DivisionNames.TOBACCO, IndustryType.TOBACCO);
 
   scriptLogWriter.writeLine('Setting up export supply chains...');
   for (const cityName of CITY_NAMES) {
-    removeAllExports(
-      netscript,
+    await removeAllExports(
+      nsLocator,
       DivisionNames.AGRICULTURE,
       cityName,
       MaterialName.PLANTS
     );
 
-    setupExport(
-      netscript,
+    await setupExport(
+      nsLocator,
       DivisionNames.AGRICULTURE,
       cityName,
       DivisionNames.TOBACCO,
       cityName,
       MaterialName.PLANTS
     );
-    setupExport(
-      netscript,
+    await setupExport(
+      nsLocator,
       DivisionNames.AGRICULTURE,
       cityName,
       DivisionNames.CHEMICAL,
@@ -183,17 +186,17 @@ export async function main(netscript: NS) {
   scriptLogWriter.writeLine(
     `Creating ${fraudDivisions} fraudulent divisions to boost investment offers...`
   );
-  createFraudDivisions(netscript, fraudDivisions);
+  await createFraudDivisions(nsLocator, fraudDivisions);
 
   scriptLogWriter.writeLine('Improving Tobacco Division...');
   const productDivisionBudget =
-    corporationInfo.funds * 0.99 -
+    corpInfo.funds * 0.99 -
     agricultureBudget -
     chemicalBudget -
     materialsBudget -
     1e9;
-  improveProductDivision(
-    netscript,
+  await improveProductDivision(
+    nsLocator,
     DivisionNames.TOBACCO,
     productDivisionBudget
   );
@@ -212,39 +215,45 @@ export async function main(netscript: NS) {
   );
 
   scriptLogWriter.writeLine('Improving Agriculture & Chemical Divisions...');
-  improveSupportDivision(
-    netscript,
+  await improveSupportDivision(
+    nsLocator,
     DivisionNames.AGRICULTURE,
     agricultureBudget
   );
-  improveSupportDivision(netscript, DivisionNames.CHEMICAL, chemicalBudget);
+  await improveSupportDivision(
+    nsLocator,
+    DivisionNames.CHEMICAL,
+    chemicalBudget
+  );
 
   scriptLogWriter.writeLine('Buying optimal industry materials...');
   const industryMaterialTasks = new Array<Promise<void>>();
   industryMaterialTasks.push(
     buyIndustryMaterials(
-      netscript,
+      nsPackage,
       DivisionNames.AGRICULTURE,
       AGRICULTURE_MATERIALS_SPACE_RATIO
     )
   );
   industryMaterialTasks.push(
     buyIndustryMaterials(
-      netscript,
+      nsPackage,
       DivisionNames.CHEMICAL,
       CHEMICAL_MATERIALS_SPACE_RATIO
     )
   );
   industryMaterialTasks.push(
     buyIndustryMaterials(
-      netscript,
+      nsPackage,
       DivisionNames.TOBACCO,
       TOBACCO_MATERIALS_SPACE_RATIO
     )
   );
   await Promise.allSettled(industryMaterialTasks);
 
-  const tobaccoDivisionInfo = corpApi.getDivision(DivisionNames.TOBACCO);
+  const tobaccoDivisionInfo = await corpApi['getDivision'](
+    DivisionNames.TOBACCO
+  );
   const productName = tobaccoDivisionInfo.products.at(-1);
   if (!productName) {
     scriptLogWriter.writeLine(
@@ -261,7 +270,7 @@ export async function main(netscript: NS) {
   scriptLogWriter.writeLine(
     'Waiting for product development & effectiveness rating...'
   );
-  let productInfo = corpApi.getProduct(
+  let productInfo = await corpApi['getProduct'](
     DivisionNames.TOBACCO,
     DEFAULT_PRODUCT_DESIGN_OFFICE,
     productName
@@ -271,10 +280,10 @@ export async function main(netscript: NS) {
     productInfo.effectiveRating <= 0
   ) {
     let purchasedUpgrades = false;
-    const corporationInfo = corpApi.getCorporation();
-    const profit = corporationInfo.revenue - corporationInfo.expenses;
+    corpInfo = await corpApi['getCorporation']();
+    const profit = corpInfo.revenue - corpInfo.expenses;
     if (tobaccoDivisionInfo.awareness < Number.MAX_VALUE) {
-      const currentWilsonLevel = corpApi.getUpgradeLevel(
+      const currentWilsonLevel = await corpApi['getUpgradeLevel'](
         UpgradeName.WILSON_ANALYTICS
       );
       const wilsonUpgradeInfo = CorpUpgradesData[UpgradeName.WILSON_ANALYTICS];
@@ -288,61 +297,65 @@ export async function main(netscript: NS) {
         scriptLogWriter.writeLine(
           `  Upgrading Wilson Analytics to level ${maxWilsonLevel}`
         );
-        buyCorpUpgrade(netscript, UpgradeName.WILSON_ANALYTICS, maxWilsonLevel);
+        await buyCorpUpgrade(
+          nsLocator,
+          UpgradeName.WILSON_ANALYTICS,
+          maxWilsonLevel
+        );
         purchasedUpgrades = true;
       }
 
-      const advertBudget = corporationInfo.funds * 0.5;
-      if (
-        profit >= 1e20 &&
-        advertBudget >= corpApi.getHireAdVertCost(DivisionNames.TOBACCO)
-      ) {
+      const advertBudget = corpInfo.funds * 0.5;
+      const advertLevel = await corpApi['getHireAdVertCount'](
+        DivisionNames.AGRICULTURE
+      );
+      if (profit >= 1e20 && advertBudget >= advertLevel) {
         scriptLogWriter.writeLine('Upgrading Tobacco Division Advert...');
-        buyMaxAdvert(netscript, DivisionNames.TOBACCO, advertBudget);
+        await buyMaxAdvert(nsLocator, DivisionNames.TOBACCO, advertBudget);
         purchasedUpgrades = true;
       }
     }
 
-    const agrucultureResearchUpgrades = getAffordableResearchUpgrades(
-      netscript,
+    const agrucultureResearchUpgrades = await getAffordableResearchUpgrades(
+      nsLocator,
       DivisionNames.AGRICULTURE
     );
     if (agrucultureResearchUpgrades.length > 0) {
       scriptLogWriter.writeLine(
         `  Buying research upgrades for Agriculture Division : ${agrucultureResearchUpgrades}`
       );
-      buyResearchUpgrades(
-        netscript,
+      await buyResearchUpgrades(
+        nsLocator,
         DivisionNames.AGRICULTURE,
         agrucultureResearchUpgrades
       );
       purchasedUpgrades = true;
     }
-    const chemicalResearchUpgrades = getAffordableResearchUpgrades(
-      netscript,
+    const chemicalResearchUpgrades = await getAffordableResearchUpgrades(
+      nsLocator,
       DivisionNames.CHEMICAL
     );
     if (chemicalResearchUpgrades.length > 0) {
       scriptLogWriter.writeLine(
         `  Buying research upgrades for Chemical Division : ${chemicalResearchUpgrades}`
       );
-      buyResearchUpgrades(
-        netscript,
+      await buyResearchUpgrades(
+        nsLocator,
         DivisionNames.CHEMICAL,
         chemicalResearchUpgrades
       );
       purchasedUpgrades = true;
     }
-    const tobaccoResearchUpgrades = getAffordableResearchUpgrades(
-      netscript,
+    const tobaccoResearchUpgrades = await getAffordableResearchUpgrades(
+      nsLocator,
       DivisionNames.TOBACCO
     );
     if (tobaccoResearchUpgrades.length > 0) {
       scriptLogWriter.writeLine(
         `  Buying research upgrades for Tobacco Division : ${tobaccoResearchUpgrades}`
       );
-      buyResearchUpgrades(
-        netscript,
+      await buyResearchUpgrades(
+        nsLocator,
         DivisionNames.TOBACCO,
         tobaccoResearchUpgrades
       );
@@ -354,7 +367,7 @@ export async function main(netscript: NS) {
     }
 
     await waitForState(netscript, CorpState.START);
-    productInfo = corpApi.getProduct(
+    productInfo = await corpApi['getProduct'](
       DivisionNames.TOBACCO,
       DEFAULT_PRODUCT_DESIGN_OFFICE,
       productName
@@ -370,11 +383,14 @@ export async function main(netscript: NS) {
     'Shifting all Product Offices to Production to boost investment offer...'
   );
   for (const cityName of DEFAULT_PRODUCT_RESEARCH_OFFICES) {
-    const officeInfo = corpApi.getOffice(DivisionNames.TOBACCO, cityName);
-    const assignmentRatios = corpApi.hasResearched(
+    const officeInfo = await corpApi['getOffice'](
+      DivisionNames.TOBACCO,
+      cityName
+    );
+    const assignmentRatios = (await corpApi['hasResearched'](
       DivisionNames.TOBACCO,
       ResearchName.MARKET_TA_2
-    )
+    ))
       ? EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE_TA2
       : EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE;
     const employeeAssignments = calculateAssignmentCounts(
@@ -385,7 +401,9 @@ export async function main(netscript: NS) {
       city: cityName,
       assignments: employeeAssignments,
     };
-    assignEmployees(netscript, DivisionNames.TOBACCO, [officeAssignments]);
+    await assignEmployees(nsLocator, DivisionNames.TOBACCO, [
+      officeAssignments,
+    ]);
   }
 
   scriptLogWriter.writeLine('Waiting for investment offer to stabalize...');
@@ -404,10 +422,6 @@ export async function main(netscript: NS) {
   );
 }
 
-export function autocomplete(data: AutocompleteData, args: string[]) {
-  const lastCmdFlag = getLastCmdFlag(args);
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_AGRICULTURE_BUDGET)) {
-    return ['specific', 'options', 'for', 'flag'];
-  }
+export function autocomplete() {
   return CMD_FLAGS;
 }

@@ -28,7 +28,7 @@ import {
   buyCorpUpgrade,
   manageIndustryMaterials,
   createDivision,
-  upgradeWarehouse,
+  improveWarehouse,
   waitForMoraleAndEnergy,
 } from '/scripts/workflows/corporation-actions';
 import {
@@ -43,6 +43,7 @@ import {
   PRICING_SETUP_SCRIPT,
   SMART_SUPPLY_SCRIPT,
 } from '/scripts/workflows/corporation-shared';
+import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
 const CMD_FLAG_MATERIALS_RATIO = 'materialsRatio';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_MATERIALS_RATIO, 0.87]];
@@ -60,6 +61,9 @@ const TARGET_ADVERT_LEVEL = 2;
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Corporation Automation - Investor Round 1');
@@ -72,8 +76,8 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine(`Materials Ratio : ${materialsRatio}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
-  const corpApi = netscript.corporation;
-  const investmentOfferInfo = corpApi.getInvestmentOffer();
+  const corpApi = nsLocator.corporation;
+  const investmentOfferInfo = await corpApi['getInvestmentOffer']();
   if (investmentOfferInfo.round !== 1) {
     terminalWriter.writeLine(
       `Invalid investor round : ${investmentOfferInfo.round}.  Script meant for investor round 1.`
@@ -89,7 +93,7 @@ export async function main(netscript: NS) {
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   scriptLogWriter.writeLine('Creating Agriculture Division...');
   createDivision(
-    netscript,
+    nsLocator,
     DivisionNames.AGRICULTURE,
     IndustryType.AGRICULTURE
   );
@@ -97,14 +101,14 @@ export async function main(netscript: NS) {
   scriptLogWriter.writeLine(
     'Calculating optimal storage & factory upgrades...'
   );
-  const corporationInfo = corpApi.getCorporation();
-  const advertCost = getAdvertCost(
-    corpApi.getHireAdVertCount(DivisionNames.AGRICULTURE),
-    TARGET_ADVERT_LEVEL
+  const corporationInfo = await corpApi['getCorporation']();
+  const advertLevel = await corpApi['getHireAdVertCount'](
+    DivisionNames.AGRICULTURE
   );
+  const advertCost = getAdvertCost(advertLevel, TARGET_ADVERT_LEVEL);
   const upgradesBudget = corporationInfo.funds - advertCost;
-  const optimalUpgrades = getOptimalDivisionFactoryAndStorage(
-    netscript,
+  const optimalUpgrades = await getOptimalDivisionFactoryAndStorage(
+    nsLocator,
     DivisionNames.AGRICULTURE,
     upgradesBudget,
     materialsRatio
@@ -137,24 +141,24 @@ export async function main(netscript: NS) {
   );
 
   scriptLogWriter.writeLine('Buying optimal storage & factory ugrades...');
-  buyCorpUpgrade(
-    netscript,
+  await buyCorpUpgrade(
+    nsLocator,
     UpgradeName.SMART_STORAGE,
     optimalUpgrades.smartStorageLevel
   );
-  buyCorpUpgrade(
-    netscript,
+  await buyCorpUpgrade(
+    nsLocator,
     UpgradeName.SMART_FACTORIES,
     optimalUpgrades.smartFactoriesLevel
   );
-  buyAdvert(netscript, DivisionNames.AGRICULTURE, TARGET_ADVERT_LEVEL);
+  await buyAdvert(nsLocator, DivisionNames.AGRICULTURE, TARGET_ADVERT_LEVEL);
 
   scriptLogWriter.writeLine(
     'Upgrading warehouses to optimal level & setting output sales...'
   );
   for (const cityName of CITY_NAMES) {
-    upgradeWarehouse(
-      netscript,
+    await improveWarehouse(
+      nsLocator,
       DivisionNames.AGRICULTURE,
       cityName,
       optimalUpgrades.warehouseLevel
@@ -162,16 +166,16 @@ export async function main(netscript: NS) {
   }
 
   scriptLogWriter.writeLine('Waiting for Morale & Energy to max out (100)...');
-  await waitForMoraleAndEnergy(netscript, DivisionNames.AGRICULTURE);
+  await waitForMoraleAndEnergy(nsPackage, DivisionNames.AGRICULTURE);
 
   scriptLogWriter.writeLine('Buying optimal industry materials...');
-  const optimalIndustryMaterials = getOptimalIndustryMaterials(
-    netscript,
+  const optimalIndustryMaterials = await getOptimalIndustryMaterials(
+    nsLocator,
     IndustryType.AGRICULTURE,
     optimalUpgrades.warehouseSize * materialsRatio
   );
-  const industryMaterialsTasks = manageIndustryMaterials(
-    netscript,
+  const industryMaterialsTasks = await manageIndustryMaterials(
+    nsPackage,
     DivisionNames.AGRICULTURE,
     CITY_NAMES,
     optimalIndustryMaterials
@@ -190,8 +194,8 @@ export async function main(netscript: NS) {
     [EmployeePosition.ENGINEER, 1],
     [EmployeePosition.BUSINESS, 1],
   ]);
-  assignEmployees(
-    netscript,
+  await assignEmployees(
+    nsLocator,
     DivisionNames.AGRICULTURE,
     generateOfficeAssignments(workerAssigments)
   );

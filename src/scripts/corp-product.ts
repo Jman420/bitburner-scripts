@@ -32,6 +32,10 @@ import {EventListener, sendMessage} from '/scripts/comms/event-comms';
 import {ProductLifecycleConfigEvent} from '/scripts/comms/events/product-lifecycle-config-event';
 import {ProductLifecycleConfigRequest} from '/scripts/comms/requests/product-lifecycle-config-request';
 import {ProductLifecycleConfigResponse} from '/scripts/comms/responses/product-lifecycle-config-response';
+import {
+  NetscriptPackage,
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 const DEFAULT_DESIGN_CITY = 'Sector-12';
 const DEFAULT_PRODUCT_NAME = 'Product';
@@ -64,13 +68,19 @@ const UPDATE_DELAY = 0;
 let DIVISION_NAMES: string[];
 let managerConfig: ProductLifecycleConfig;
 
-async function manageProductLifecycle(netscript: NS, logWriter: Logger) {
+async function manageProductLifecycle(
+  nsPackage: NetscriptPackage,
+  logWriter: Logger
+) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   let productVersion = 0;
-  const corpApi = netscript.corporation;
-  const corporationInfo = corpApi.getCorporation();
-  const divisionInfo = corpApi.getDivision(managerConfig.divisionName);
+  const corpApi = nsLocator.corporation;
+  const corporationInfo = await corpApi['getCorporation']();
+  const divisionInfo = await corpApi['getDivision'](managerConfig.divisionName);
   for (const productName of divisionInfo.products) {
-    const productInfo = corpApi.getProduct(
+    const productInfo = await corpApi['getProduct'](
       managerConfig.divisionName,
       managerConfig.designCity,
       productName
@@ -89,8 +99,8 @@ async function manageProductLifecycle(netscript: NS, logWriter: Logger) {
   }
   productVersion++;
 
-  const productLimit = getDivisionProductLimit(
-    netscript,
+  const productLimit = await getDivisionProductLimit(
+    nsLocator,
     managerConfig.divisionName
   );
   if (divisionInfo.products.length >= productLimit) {
@@ -98,7 +108,10 @@ async function manageProductLifecycle(netscript: NS, logWriter: Logger) {
     logWriter.writeLine(
       `Discontinuing product in division ${managerConfig.divisionName} : ${eolProductName}`
     );
-    corpApi.discontinueProduct(managerConfig.divisionName, eolProductName);
+    await corpApi['discontinueProduct'](
+      managerConfig.divisionName,
+      eolProductName
+    );
   }
 
   const newProductName = `${managerConfig.productName}${PRODUCT_VERSION_SUFFIX}${productVersion}`;
@@ -110,7 +123,7 @@ async function manageProductLifecycle(netscript: NS, logWriter: Logger) {
       budget
     )}`
   );
-  corpApi.makeProduct(
+  await corpApi['makeProduct'](
     managerConfig.divisionName,
     managerConfig.designCity,
     newProductName,
@@ -162,9 +175,12 @@ function handleProductLifecycleConfigRequest(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  DIVISION_NAMES = netscript.corporation
-    .getCorporation()
-    .divisions.filter(value => !value.includes(FRAUD_DIVISION_NAME_PREFIX))
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
+
+  const corpInfo = await nsLocator.corporation['getCorporation']();
+  DIVISION_NAMES = corpInfo.divisions
+    .filter(value => !value.includes(FRAUD_DIVISION_NAME_PREFIX))
     .map(value => `'${value}'`);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
@@ -239,7 +255,7 @@ export async function main(netscript: NS) {
     netscript,
     UPDATE_DELAY,
     manageProductLifecycle,
-    netscript,
+    nsPackage,
     scriptLogWriter
   );
 }

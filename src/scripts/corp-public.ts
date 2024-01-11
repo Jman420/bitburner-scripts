@@ -43,6 +43,10 @@ import {
   getAffordableResearchUpgrades,
   getMaxAffordableUpgradeLevel,
 } from '/scripts/workflows/corporation-formulas';
+import {
+  NetscriptPackage,
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 const MODULE_NAME = 'corp-public';
 const SUBSCRIBER_NAME = 'corp-public';
@@ -58,14 +62,22 @@ const UPDATE_DELAY = 0;
 
 let cycleCount: number;
 
-async function manageDivisionImprovements(netscript: NS, logWriter: Logger) {
+async function manageDivisionImprovements(
+  nsPackage: NetscriptPackage,
+  logWriter: Logger
+) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   let purchasedUpgrades = false;
-  const corpApi = netscript.corporation;
-  let corporationInfo = corpApi.getCorporation();
-  const profit = corporationInfo.revenue - corporationInfo.expenses;
-  const tobaccoDivisionInfo = corpApi.getDivision(DivisionNames.TOBACCO);
+  const corpApi = nsLocator.corporation;
+  let corpInfo = await corpApi['getCorporation']();
+  const profit = corpInfo.revenue - corpInfo.expenses;
+  const tobaccoDivisionInfo = await corpApi['getDivision'](
+    DivisionNames.TOBACCO
+  );
   if (tobaccoDivisionInfo.awareness < Number.MAX_VALUE) {
-    const currentWilsonLevel = corpApi.getUpgradeLevel(
+    const currentWilsonLevel = await corpApi['getUpgradeLevel'](
       UpgradeName.WILSON_ANALYTICS
     );
     const wilsonUpgradeInfo = CorpUpgradesData[UpgradeName.WILSON_ANALYTICS];
@@ -79,79 +91,82 @@ async function manageDivisionImprovements(netscript: NS, logWriter: Logger) {
       logWriter.writeLine(
         `Upgrading Wilson Analytics to level ${maxWilsonLevel}`
       );
-      buyCorpUpgrade(netscript, UpgradeName.WILSON_ANALYTICS, maxWilsonLevel);
+      await buyCorpUpgrade(
+        nsLocator,
+        UpgradeName.WILSON_ANALYTICS,
+        maxWilsonLevel
+      );
       purchasedUpgrades = true;
     }
 
-    const advertBudget = corporationInfo.funds * 0.5;
+    const advertBudget = corpInfo.funds * 0.5;
     if (
       profit >= 1e20 &&
-      advertBudget >= corpApi.getHireAdVertCost(DivisionNames.TOBACCO)
+      advertBudget >=
+        (await corpApi['getHireAdVertCost'](DivisionNames.TOBACCO))
     ) {
       logWriter.writeLine('Upgrading Tobacco Division Advert...');
-      buyMaxAdvert(netscript, DivisionNames.TOBACCO, advertBudget);
+      await buyMaxAdvert(nsLocator, DivisionNames.TOBACCO, advertBudget);
       purchasedUpgrades = true;
     }
   }
 
-  const agrucultureResearchUpgrades = getAffordableResearchUpgrades(
-    netscript,
+  const agrucultureResearchUpgrades = await getAffordableResearchUpgrades(
+    nsLocator,
     DivisionNames.AGRICULTURE
   );
   if (agrucultureResearchUpgrades.length > 0) {
     logWriter.writeLine(
       `Buying research upgrades for Agriculture Division : ${agrucultureResearchUpgrades}`
     );
-    buyResearchUpgrades(
-      netscript,
+    await buyResearchUpgrades(
+      nsLocator,
       DivisionNames.AGRICULTURE,
       agrucultureResearchUpgrades
     );
     purchasedUpgrades = true;
   }
-  const chemicalResearchUpgrades = getAffordableResearchUpgrades(
-    netscript,
+  const chemicalResearchUpgrades = await getAffordableResearchUpgrades(
+    nsLocator,
     DivisionNames.CHEMICAL
   );
   if (chemicalResearchUpgrades.length > 0) {
     logWriter.writeLine(
       `Buying research upgrades for Chemical Division : ${chemicalResearchUpgrades}`
     );
-    buyResearchUpgrades(
-      netscript,
+    await buyResearchUpgrades(
+      nsLocator,
       DivisionNames.CHEMICAL,
       chemicalResearchUpgrades
     );
     purchasedUpgrades = true;
   }
-  const tobaccoResearchUpgrades = getAffordableResearchUpgrades(
-    netscript,
+  const tobaccoResearchUpgrades = await getAffordableResearchUpgrades(
+    nsLocator,
     DivisionNames.TOBACCO
   );
   if (tobaccoResearchUpgrades.length > 0) {
     logWriter.writeLine(
       `Buying research upgrades for Tobacco Division : ${tobaccoResearchUpgrades}`
     );
-    buyResearchUpgrades(
-      netscript,
+    await buyResearchUpgrades(
+      nsLocator,
       DivisionNames.TOBACCO,
       tobaccoResearchUpgrades
     );
     purchasedUpgrades = true;
   }
 
-  corporationInfo = corpApi.getCorporation();
-  const totalFunds = corporationInfo.funds;
+  corpInfo = await corpApi['getCorporation']();
+  const totalFunds = corpInfo.funds;
   let availableFunds = totalFunds;
 
-  const upgradeTobacco =
-    6 *
-      corpApi.getOfficeSizeUpgradeCost(
-        DivisionNames.TOBACCO,
-        BENCHMARK_OFFICE,
-        1
-      ) <
-    availableFunds * 0.001;
+  const tobaccoOfficeSize = await corpApi['getOfficeSizeUpgradeCost'](
+    DivisionNames.TOBACCO,
+    BENCHMARK_OFFICE,
+    1
+  );
+  const upgradeTobacco = 6 * tobaccoOfficeSize < availableFunds * 0.001;
   if (cycleCount % 10 === 0 || upgradeTobacco) {
     const tobaccoBudget = totalFunds * 0.9;
     availableFunds -= tobaccoBudget;
@@ -160,23 +175,23 @@ async function manageDivisionImprovements(netscript: NS, logWriter: Logger) {
         tobaccoBudget
       )}`
     );
-    const origWarehouseInfo = corpApi.getWarehouse(
+    const origWarehouseInfo = await corpApi['getWarehouse'](
       DivisionNames.TOBACCO,
       BENCHMARK_OFFICE
     );
-    improveProductDivision(
-      netscript,
+    await improveProductDivision(
+      nsLocator,
       DivisionNames.TOBACCO,
       tobaccoBudget,
       false
     );
-    const improvedWarehouseInfo = corpApi.getWarehouse(
+    const improvedWarehouseInfo = await corpApi['getWarehouse'](
       DivisionNames.TOBACCO,
       BENCHMARK_OFFICE
     );
     if (improvedWarehouseInfo.size > origWarehouseInfo.size) {
-      buyIndustryMaterials(
-        netscript,
+      await buyIndustryMaterials(
+        nsPackage,
         DivisionNames.TOBACCO,
         MATERIALS_SPACE_RATIO
       );
@@ -184,14 +199,12 @@ async function manageDivisionImprovements(netscript: NS, logWriter: Logger) {
     purchasedUpgrades = true;
   }
 
-  const upgradeAgriculture =
-    6 *
-      corpApi.getOfficeSizeUpgradeCost(
-        DivisionNames.AGRICULTURE,
-        BENCHMARK_OFFICE,
-        1
-      ) <
-    availableFunds * 1e-4;
+  const agricultureOfficeSize = await corpApi['getOfficeSizeUpgradeCost'](
+    DivisionNames.AGRICULTURE,
+    BENCHMARK_OFFICE,
+    1
+  );
+  const upgradeAgriculture = 6 * agricultureOfficeSize < availableFunds * 1e-4;
   if (cycleCount % 15 === 0 || upgradeAgriculture) {
     const agricultureBudget = Math.max(
       Math.min(profit * 0.99, totalFunds * 0.09, availableFunds),
@@ -204,22 +217,22 @@ async function manageDivisionImprovements(netscript: NS, logWriter: Logger) {
           agricultureBudget
         )}`
       );
-      const origWarehouseInfo = corpApi.getWarehouse(
+      const origWarehouseInfo = await corpApi['getWarehouse'](
         DivisionNames.AGRICULTURE,
         BENCHMARK_OFFICE
       );
-      improveSupportDivision(
-        netscript,
+      await improveSupportDivision(
+        nsLocator,
         DivisionNames.AGRICULTURE,
         agricultureBudget
       );
-      const improvedWarehouseInfo = corpApi.getWarehouse(
+      const improvedWarehouseInfo = await corpApi['getWarehouse'](
         DivisionNames.AGRICULTURE,
         BENCHMARK_OFFICE
       );
       if (improvedWarehouseInfo.size > origWarehouseInfo.size) {
-        buyIndustryMaterials(
-          netscript,
+        await buyIndustryMaterials(
+          nsPackage,
           DivisionNames.AGRICULTURE,
           MATERIALS_SPACE_RATIO
         );
@@ -228,14 +241,12 @@ async function manageDivisionImprovements(netscript: NS, logWriter: Logger) {
     }
   }
 
-  const upgradeChemical =
-    6 *
-      corpApi.getOfficeSizeUpgradeCost(
-        DivisionNames.CHEMICAL,
-        BENCHMARK_OFFICE,
-        1
-      ) <
-    availableFunds * 1e-5;
+  const chemicalOfficeSize = await corpApi['getOfficeSizeUpgradeCost'](
+    DivisionNames.CHEMICAL,
+    BENCHMARK_OFFICE,
+    1
+  );
+  const upgradeChemical = 6 * chemicalOfficeSize < availableFunds * 1e-5;
   if (cycleCount % 20 === 0 || upgradeChemical) {
     const chemicalBudget = Math.max(
       Math.min(profit * 0.01, totalFunds * 0.01, availableFunds),
@@ -248,18 +259,22 @@ async function manageDivisionImprovements(netscript: NS, logWriter: Logger) {
           chemicalBudget
         )}`
       );
-      const origWarehouseInfo = corpApi.getWarehouse(
+      const origWarehouseInfo = await corpApi['getWarehouse'](
         DivisionNames.CHEMICAL,
         BENCHMARK_OFFICE
       );
-      improveSupportDivision(netscript, DivisionNames.CHEMICAL, chemicalBudget);
-      const improvedWarehouseInfo = corpApi.getWarehouse(
+      await improveSupportDivision(
+        nsLocator,
+        DivisionNames.CHEMICAL,
+        chemicalBudget
+      );
+      const improvedWarehouseInfo = await corpApi['getWarehouse'](
         DivisionNames.CHEMICAL,
         BENCHMARK_OFFICE
       );
       if (improvedWarehouseInfo.size > origWarehouseInfo.size) {
-        buyIndustryMaterials(
-          netscript,
+        await buyIndustryMaterials(
+          nsPackage,
           DivisionNames.CHEMICAL,
           MATERIALS_SPACE_RATIO
         );
@@ -278,13 +293,16 @@ async function manageDivisionImprovements(netscript: NS, logWriter: Logger) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Corporation Automation - Public');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
-  const corpApi = netscript.corporation;
-  const corporationInfo = corpApi.getCorporation();
+  const corpApi = nsLocator.corporation;
+  const corporationInfo = await corpApi['getCorporation']();
   if (!corporationInfo.public) {
     terminalWriter.writeLine(
       'Invalid corporation state.  Script meant for public corporation.'
@@ -320,7 +338,7 @@ export async function main(netscript: NS) {
     netscript,
     UPDATE_DELAY,
     manageDivisionImprovements,
-    netscript,
+    nsPackage,
     scriptLogWriter
   );
 }
