@@ -18,6 +18,10 @@ import {
   SKILL_SCORE_PROPERTIES,
   getMemberDetails,
 } from '/scripts/workflows/gangs';
+import {
+  NetscriptPackage,
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 const MODULE_NAME = 'gangs-monitor';
 const SUBSCRIBER_NAME = 'gangs-monitor';
@@ -46,9 +50,15 @@ let currentGangMembers: MemberDetails[];
 let currentEnemiesInfo: GangOtherInfo;
 let currentEnemyNames: string[];
 
-async function updateGangDetails(netscript: NS, logWriter: Logger) {
+async function updateGangDetails(
+  nsPackage: NetscriptPackage,
+  logWriter: Logger
+) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   logWriter.writeLine('Checking for gang metrics changes...');
-  const gangInfo = netscript.gang.getGangInformation();
+  const gangInfo = await nsLocator.gang['getGangInformation']();
   let gangInfoChanged = false;
   for (
     let monitoredPropertyIndex = 0;
@@ -63,7 +73,7 @@ async function updateGangDetails(netscript: NS, logWriter: Logger) {
       currentGangInfo[monitoredProperty] !== gangInfo[monitoredProperty];
   }
 
-  const gangMembers = getMemberDetails(netscript);
+  const gangMembers = await getMemberDetails(nsPackage);
   let gangMembersChanged = currentGangMembers.length !== gangMembers.length;
   for (
     let memberCounter = 0;
@@ -95,7 +105,7 @@ async function updateGangDetails(netscript: NS, logWriter: Logger) {
   }
 
   logWriter.writeLine('Checking for enemy gang metrics changes...');
-  const enemiesInfo = netscript.gang.getOtherGangInformation();
+  const enemiesInfo = await nsLocator.gang['getOtherGangInformation']();
   const enemyNames = Object.keys(enemiesInfo);
   let enemiesInfoChanged = currentEnemyNames.length !== enemyNames.length;
   for (
@@ -136,17 +146,20 @@ async function updateGangDetails(netscript: NS, logWriter: Logger) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   logWriter.writeLine('Gang Monitor & Event Dispatcher');
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Initializing & sending initial events...');
-  currentGangInfo = netscript.gang.getGangInformation();
-  currentGangMembers = getMemberDetails(netscript);
+  currentGangInfo = await nsLocator.gang['getGangInformation']();
+  currentGangMembers = await getMemberDetails(nsPackage);
   sendMessage(new GangInfoChangedEvent(currentGangInfo, currentGangMembers));
 
-  currentEnemiesInfo = netscript.gang.getOtherGangInformation();
+  currentEnemiesInfo = await nsLocator.gang['getOtherGangInformation']();
   currentEnemyNames = Object.keys(currentEnemiesInfo);
   sendMessage(
     new GangEnemiesChangedEvent(currentEnemiesInfo, currentEnemyNames)
@@ -157,7 +170,7 @@ export async function main(netscript: NS) {
     netscript,
     UPDATE_DELAY,
     updateGangDetails,
-    netscript,
+    nsPackage,
     logWriter
   );
 }

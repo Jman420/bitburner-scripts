@@ -32,7 +32,7 @@ const SERVICE_SCRIPT_NETSCRIPT_PATH_FIELD = 'netscript.path';
 const SERVICE_SCRIPT_FUNCTION_FIELD = 'FUNCTION_NAME';
 const SERVICE_SCRIPT_SHUTDOWN_DELAY = 'SHUTDOWN_DELAY';
 
-const DEFAULT_SHUTDOWN_DELAY = 'await netscript.asleep(250)';
+const DEFAULT_SHUTDOWN_DELAY = 'await netscript.asleep(500)';
 const SHUTDOWN_DELAY_MAP = new Map<string, string>([
   [
     'netscript.corporation',

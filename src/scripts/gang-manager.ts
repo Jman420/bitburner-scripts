@@ -33,7 +33,7 @@ import {
   recruitAvailableMembers,
   memberStatsSatisfyLimit,
   ascendEligible,
-  ascendMember,
+  ascendGangMember,
   getUpgradeCosts,
   getCriminalTaskDetails,
   getTrainingStatus,
@@ -49,6 +49,11 @@ import {
 import {openTail} from '/scripts/workflows/ui';
 import {GangConfigRequest} from '/scripts/comms/requests/gang-config-request';
 import {GangConfigResponse} from '/scripts/comms/responses/gang-config-response';
+import {
+  NetscriptLocator,
+  NetscriptPackage,
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 const CMD_FLAG_MEMBER_NAME_PREFIX = 'memberNamePrefix';
 const CMD_FLAG_PURCHASE_AUGMENTATIONS = 'purchaseAugmentations';
@@ -85,9 +90,9 @@ let formWarParty = false;
 let engageWarfare = false;
 let reduceWantedPenalty = false;
 
-function manageGang(
+async function manageGang(
   eventData: GangInfoChangedEvent,
-  netscript: NS,
+  nsPackage: NetscriptPackage,
   logWriter: Logger,
   memberNamePrefix: string
 ) {
@@ -95,13 +100,16 @@ function manageGang(
     return;
   }
 
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   const gangInfo = eventData.gangInfo;
   const gangMembers = eventData.gangMembers;
   logWriter.writeLine(`Managing gang for faction : ${gangInfo.faction}`);
 
   logWriter.writeLine('  Recruiting available members...');
-  const newMembers = recruitAvailableMembers(
-    netscript,
+  const newMembers = await recruitAvailableMembers(
+    nsPackage,
     memberNamePrefix,
     gangMembers.length
   );
@@ -109,7 +117,7 @@ function manageGang(
   logWriter.writeLine(`  Recruited ${newMembers.length} new members.`);
 
   logWriter.writeLine('  Getting augmentation & equipment costs...');
-  const upgradeCosts = getUpgradeCosts(netscript);
+  const upgradeCosts = await getUpgradeCosts(nsPackage);
   const augmentationCosts = upgradeCosts
     .filter(value => value.type === AUGMENTATIONS_UPGRADES_TYPE)
     .sort((valueA, valueB) => valueA.cost - valueB.cost);
@@ -156,9 +164,13 @@ function manageGang(
   for (let memberDetails of gangMembers) {
     // Handle Ascension
     if (
-      ascendEligible(netscript, memberDetails.name, ASCENSION_FACTOR_INCREASE)
+      await ascendEligible(
+        nsLocator,
+        memberDetails.name,
+        ASCENSION_FACTOR_INCREASE
+      )
     ) {
-      memberDetails = ascendMember(netscript, memberDetails.name);
+      memberDetails = await ascendGangMember(nsPackage, memberDetails.name);
       membersAscended++;
       ascendedRespect += memberDetails.earnedRespect;
     }
@@ -177,11 +189,13 @@ function manageGang(
         break;
       }
 
-      netscript.gang.purchaseEquipment(
+      await nsLocator.gang['purchaseEquipment'](
         memberDetails.name,
         augmentationDetails.name
       );
-      memberDetails = getMemberDetails(netscript, memberDetails.name)[0];
+      memberDetails = (
+        await getMemberDetails(nsPackage, memberDetails.name)
+      )[0];
       augmentationsPurchased++;
       augmentationsPurchasedCost += augmentationDetails.cost;
     }
@@ -205,11 +219,13 @@ function manageGang(
         break;
       }
 
-      netscript.gang.purchaseEquipment(
+      await nsLocator.gang['purchaseEquipment'](
         memberDetails.name,
         equipmentDetails.name
       );
-      memberDetails = getMemberDetails(netscript, memberDetails.name)[0];
+      memberDetails = (
+        await getMemberDetails(nsPackage, memberDetails.name)
+      )[0];
       equipmentPurchased++;
       equipmentPurchasedCost += equipmentDetails.cost;
     }
@@ -237,7 +253,7 @@ function manageGang(
     (memberA, memberB) => memberB.skillScore - memberA.skillScore
   );
   for (const memberDetails of gangMembers) {
-    const ascensionResult = netscript.gang.getAscensionResult(
+    const ascensionResult = await nsLocator.gang['getAscensionResult'](
       memberDetails.name
     );
     const trainingStatus = getTrainingStatus(
@@ -255,7 +271,10 @@ function manageGang(
       (trainingStatus.combatAscensionLimitReached &&
         !trainingStatus.combatSkillLimitReached)
     ) {
-      netscript.gang.setMemberTask(memberDetails.name, COMBAT_TRAINING_TASK);
+      await nsLocator.gang['setMemberTask'](
+        memberDetails.name,
+        COMBAT_TRAINING_TASK
+      );
       trainingTeam.push(memberDetails);
     } else if (
       (!trainingStatus.hackingAscensionLimitReached &&
@@ -263,7 +282,10 @@ function manageGang(
       (trainingStatus.hackingAscensionLimitReached &&
         !trainingStatus.hackingSkillLimitReached)
     ) {
-      netscript.gang.setMemberTask(memberDetails.name, HACKING_TRAINING_TASK);
+      await nsLocator.gang['setMemberTask'](
+        memberDetails.name,
+        HACKING_TRAINING_TASK
+      );
       trainingTeam.push(memberDetails);
     } else if (
       (!trainingStatus.charismaAscensionLimitReached &&
@@ -271,13 +293,16 @@ function manageGang(
       (trainingStatus.charismaAscensionLimitReached &&
         !trainingStatus.charismaSkillLimitReached)
     ) {
-      netscript.gang.setMemberTask(memberDetails.name, CHARISMA_TRAINING_TASK);
+      await nsLocator.gang['setMemberTask'](
+        memberDetails.name,
+        CHARISMA_TRAINING_TASK
+      );
       trainingTeam.push(memberDetails);
     }
 
     // Handle Vigilantes
     else if (reduceWantedPenalty) {
-      netscript.gang.setMemberTask(
+      await nsLocator.gang['setMemberTask'](
         memberDetails.name,
         vigilanteTaskDetails.name
       );
@@ -290,7 +315,7 @@ function manageGang(
       warParty.length < WAR_PARTY_SIZE &&
       gangMembers.length > WAR_PARTY_SIZE
     ) {
-      netscript.gang.setMemberTask(memberDetails.name, WAR_PARTY_TASK);
+      await nsLocator.gang['setMemberTask'](memberDetails.name, WAR_PARTY_TASK);
       warParty.push(memberDetails);
     }
 
@@ -309,7 +334,7 @@ function manageGang(
         taskCounter++
       ) {
         crimeTask = eligibleTasks[taskCounter];
-        taskAssigned = netscript.gang.setMemberTask(
+        taskAssigned = await nsLocator.gang['setMemberTask'](
           memberDetails.name,
           crimeTask.name
         );
@@ -322,7 +347,7 @@ function manageGang(
       }
     }
   }
-  netscript.gang.setTerritoryWarfare(engageWarfare);
+  await nsLocator.gang['setTerritoryWarfare'](engageWarfare);
 
   logWriter.writeLine(
     `    Assigned ${trainingTeam.length} members to training`
@@ -343,9 +368,9 @@ function manageGang(
   logWriter.writeLine(ENTRY_DIVIDER);
 }
 
-function handleEnemiesChangedEvent(
+async function handleEnemiesChangedEvent(
   eventData: GangEnemiesChangedEvent,
-  netscript: NS
+  nsLocator: NetscriptLocator
 ) {
   if (!eventData.enemiesInfo || !eventData.enemyNames) {
     return;
@@ -366,7 +391,8 @@ function handleEnemiesChangedEvent(
     engageWarfare =
       engageWarfare ||
       (gangTerritory > 0 &&
-        netscript.gang.getChanceToWinClash(gangName) >= WARTIME_CHANCE_LIMIT);
+        (await nsLocator.gang['getChanceToWinClash'](gangName)) >=
+          WARTIME_CHANCE_LIMIT);
   }
 }
 
@@ -400,6 +426,9 @@ function handleGangConfigRequest(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Automatic Gang Manager');
@@ -410,10 +439,10 @@ export async function main(netscript: NS) {
   const memberNamePrefix = cmdArgs[
     CMD_FLAG_MEMBER_NAME_PREFIX
   ].valueOf() as string;
-  const purchaseAugmentations = cmdArgs[
+  const buyAugmentations = cmdArgs[
     CMD_FLAG_PURCHASE_AUGMENTATIONS
   ].valueOf() as boolean;
-  const purchaseEquipment = cmdArgs[
+  const buyEquipment = cmdArgs[
     CMD_FLAG_PURCHASE_EQUIPMENT
   ].valueOf() as boolean;
   const taskFocusFlag = (
@@ -422,8 +451,8 @@ export async function main(netscript: NS) {
   const taskFocus = TaskFocus[taskFocusFlag];
 
   terminalWriter.writeLine(`New Member Name Prefix : ${memberNamePrefix}`);
-  terminalWriter.writeLine(`Purchase Augmentations : ${purchaseAugmentations}`);
-  terminalWriter.writeLine(`Purchase Equipment : ${purchaseEquipment}`);
+  terminalWriter.writeLine(`Purchase Augmentations : ${buyAugmentations}`);
+  terminalWriter.writeLine(`Purchase Equipment : ${buyEquipment}`);
   terminalWriter.writeLine(`Task Focus : ${taskFocus}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
@@ -445,8 +474,8 @@ export async function main(netscript: NS) {
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
   managerConfig = {
-    buyAugmentations: purchaseAugmentations,
-    buyEquipment: purchaseEquipment,
+    buyAugmentations: buyAugmentations,
+    buyEquipment: buyEquipment,
     taskFocus: taskFocus,
   };
   formWarParty = false;
@@ -458,14 +487,14 @@ export async function main(netscript: NS) {
   eventListener.addListener(
     GangInfoChangedEvent,
     manageGang,
-    netscript,
+    nsPackage,
     scriptLogWriter,
     memberNamePrefix
   );
   eventListener.addListener(
     GangEnemiesChangedEvent,
     handleEnemiesChangedEvent,
-    netscript
+    nsLocator
   );
   eventListener.addListener(
     GangManagerConfigEvent,

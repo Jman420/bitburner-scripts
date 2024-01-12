@@ -5,6 +5,10 @@ import {
   GangTaskStats,
   NS,
 } from '@ns';
+import {
+  NetscriptLocator,
+  NetscriptPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 enum TaskFocus {
   RESPECT = 'respect',
@@ -108,19 +112,21 @@ const SPECIAL_CASE_TASKS = [
   UNASSIGNED_TASK,
 ];
 
-function recruitAvailableMembers(
-  netscript: NS,
+async function recruitAvailableMembers(
+  nsPackage: NetscriptPackage,
   memberNamePrefix: string,
   memberCount: number
 ) {
+  const nsLocator = nsPackage.locator;
+
   const membersRecruited = new Array<MemberDetails>();
   let counter = 0;
   let memberRecruited = true;
   while (counter < memberCount + 1 || memberRecruited) {
     const newMemberName = `${memberNamePrefix}${counter}`;
-    memberRecruited = netscript.gang.recruitMember(newMemberName);
+    memberRecruited = await nsLocator.gang['recruitMember'](newMemberName);
     if (memberRecruited) {
-      const memberDetails = getMemberDetails(netscript, newMemberName);
+      const memberDetails = await getMemberDetails(nsPackage, newMemberName);
       membersRecruited.push(...memberDetails);
     }
     counter++;
@@ -129,7 +135,13 @@ function recruitAvailableMembers(
   return membersRecruited;
 }
 
-function getMemberDetails(netscript: NS, memberName?: string) {
+async function getMemberDetails(
+  nsPackage: NetscriptPackage,
+  memberName?: string
+) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   let memberNames = netscript.gang.getMemberNames();
   if (memberName) {
     memberNames = [memberName];
@@ -137,7 +149,7 @@ function getMemberDetails(netscript: NS, memberName?: string) {
 
   const results = new Array<MemberDetails>();
   for (const name of memberNames) {
-    const memberInfo = netscript.gang.getMemberInformation(name);
+    const memberInfo = await nsLocator.gang['getMemberInformation'](name);
     let ascensionScore = 0;
     for (const ascensionProperty of ASCENSION_SCORE_PROPERTIES) {
       ascensionScore += memberInfo[ascensionProperty] as number;
@@ -194,12 +206,13 @@ function ascensionStatsSatisfyLimit(
   return result;
 }
 
-function ascendEligible(
-  netscript: NS,
+async function ascendEligible(
+  nsLocator: NetscriptLocator,
   memberName: string,
   statFactorIncreaseLimit: number
 ) {
-  const ascentionResults = netscript.gang.getAscensionResult(memberName);
+  const ascentionResults =
+    await nsLocator.gang['getAscensionResult'](memberName);
   if (!ascentionResults) {
     return false;
   }
@@ -218,19 +231,26 @@ function ascendEligible(
   return checksPassed >= 2;
 }
 
-function ascendMember(netscript: NS, memberName: string) {
-  netscript.gang.ascendMember(memberName);
-  return getMemberDetails(netscript, memberName)[0];
+async function ascendGangMember(
+  nsPackage: NetscriptPackage,
+  memberName: string
+) {
+  const nsLocator = nsPackage.locator;
+  await nsLocator.gang['ascendMember'](memberName);
+  return (await getMemberDetails(nsPackage, memberName))[0];
 }
 
-function getUpgradeCosts(netscript: NS) {
+async function getUpgradeCosts(nsPackage: NetscriptPackage) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   const equipmentList = netscript.gang.getEquipmentNames();
   const equipmentCosts = new Array<EquipmentCost>();
   for (const equipmentName of equipmentList) {
     const costDetails = {
       name: equipmentName,
-      cost: netscript.gang.getEquipmentCost(equipmentName),
-      type: netscript.gang.getEquipmentType(equipmentName),
+      cost: await nsLocator.gang['getEquipmentCost'](equipmentName),
+      type: await nsLocator.gang['getEquipmentType'](equipmentName),
     };
 
     equipmentCosts.push(costDetails);
@@ -437,7 +457,7 @@ export {
   memberStatsSatisfyLimit,
   ascensionStatsSatisfyLimit,
   ascendEligible,
-  ascendMember,
+  ascendGangMember,
   getUpgradeCosts,
   getTrainingStatus,
   getVigilanteTaskDetails,
