@@ -37,6 +37,10 @@ import {StockListingsRequest} from '/scripts/comms/requests/stocks-listing-reque
 
 import {analyzeHost} from '/scripts/workflows/recon';
 import {growHost, hackHost} from '/scripts/workflows/orchestration';
+import {
+  NetscriptPackage,
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 const CMD_FLAG_ATTACK_HOSTS = 'attackHosts';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
@@ -135,7 +139,7 @@ function handleStocksSoldEvent(
 }
 
 async function runAttacks(
-  netscript: NS,
+  nsPackage: NetscriptPackage,
   logWriter: Logger,
   attackHosts: string[],
   includeHome: boolean,
@@ -145,12 +149,17 @@ async function runAttacks(
     return;
   }
 
+  const netscript = nsPackage.netscript;
+
   logWriter.writeLine(
     `Manipulating stocks prices for ${targetTransactions.size} symbols...`
   );
   for (const transaction of targetTransactions.values()) {
     logWriter.writeLine(ENTRY_DIVIDER);
-    const symbolHosts = getHostnamesFromSymbol(netscript, transaction.symbol);
+    const symbolHosts = await getHostnamesFromSymbol(
+      nsPackage,
+      transaction.symbol
+    );
     for (const hostname of symbolHosts) {
       logWriter.writeLine(
         `  Attacking ${hostname} (${transaction.symbol}) for transaction type : ${transaction.position}`
@@ -178,6 +187,8 @@ async function runAttacks(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Stock Market Manipulator');
@@ -218,7 +229,7 @@ export async function main(netscript: NS) {
   await infiniteLoop(
     netscript,
     runAttacks,
-    netscript,
+    nsPackage,
     scriptLogWriter,
     attackHosts,
     includeHome,

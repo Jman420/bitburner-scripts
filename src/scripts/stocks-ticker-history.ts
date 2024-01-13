@@ -9,7 +9,7 @@ import {
 } from '/scripts/workflows/execution';
 import {
   FIFTY_PERCENT,
-  getPosition,
+  getStockPosition,
   STOCKS_TICKER_4SIGMA_SCRIPT,
   StockListing,
 } from '/scripts/workflows/stocks';
@@ -18,6 +18,10 @@ import {EventListener, sendMessage} from '/scripts/comms/event-comms';
 import {StocksTickerEvent} from '/scripts/comms/events/stocks-ticker-event';
 import {StockListingsRequest} from '/scripts/comms/requests/stocks-listing-request';
 import {StockListingsResponse} from '/scripts/comms/responses/stocks-listing-response';
+import {
+  getLocatorPackage,
+  NetscriptPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 class FixedLengthQueue<TElement> extends Array<TElement> {
   readonly fixedLength: number;
@@ -53,16 +57,23 @@ const MIN_RECORDS_FOR_FORECAST = 10;
 const HISTORICAL_DETAILS_MAP = new Map<string, HistoricalStockDetails>();
 const STOCK_LISTINGS_MAP = new Map<string, StockListing>();
 
-async function updateStockListings(netscript: NS, logWriter: Logger) {
+async function updateStockListings(
+  nsPackage: NetscriptPackage,
+  logWriter: Logger
+) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   logWriter.writeLine('Updating Stock Listings from Historical Market Data');
   logWriter.writeLine(SECTION_DIVIDER);
 
-  const allSymbols = netscript.stock.getSymbols();
+  const stockApi = nsLocator.stock;
+  const allSymbols = await stockApi['getSymbols']();
   const updatedListings = new Array<StockListing>();
   for (const symbol of allSymbols) {
-    const askPrice = netscript.stock.getAskPrice(symbol);
-    const bidPrice = netscript.stock.getBidPrice(symbol);
-    const stockMaxShares = netscript.stock.getMaxShares(symbol);
+    const askPrice = await stockApi['getAskPrice'](symbol);
+    const bidPrice = await stockApi['getBidPrice'](symbol);
+    const stockMaxShares = await stockApi['getMaxShares'](symbol);
     const currentListing = STOCK_LISTINGS_MAP.get(symbol);
 
     if (
@@ -74,7 +85,7 @@ async function updateStockListings(netscript: NS, logWriter: Logger) {
       logWriter.writeLine(`Updating historical records for ${symbol}`);
       const historicalDetails =
         HISTORICAL_DETAILS_MAP.get(symbol) ?? new HistoricalStockDetails();
-      const currentPrice = netscript.stock.getPrice(symbol);
+      const currentPrice = await stockApi['getPrice'](symbol);
       const previousPrice = historicalDetails.prices.at(0) ?? currentPrice;
       historicalDetails.prices.unshift(currentPrice);
       historicalDetails.priceChanges.unshift(currentPrice / previousPrice);
@@ -95,7 +106,7 @@ async function updateStockListings(netscript: NS, logWriter: Logger) {
           : FIFTY_PERCENT;
 
       logWriter.writeLine(`Updating stock listing for symbol : ${symbol}`);
-      const stockPosition = getPosition(netscript, symbol);
+      const stockPosition = await getStockPosition(nsLocator, symbol);
       const stockListing: StockListing = {
         symbol: symbol,
         askPrice: askPrice,
@@ -139,6 +150,8 @@ function sendListings(eventData: StockListingsRequest) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   logWriter.writeLine('Stock Market Ticker - Historical Market Data');
@@ -158,7 +171,7 @@ export async function main(netscript: NS) {
     netscript,
     UPDATE_DELAY,
     updateStockListings,
-    netscript,
+    nsPackage,
     logWriter
   );
 }

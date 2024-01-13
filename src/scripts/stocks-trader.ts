@@ -22,9 +22,9 @@ import {
   SaleTransaction,
   StocksTraderConfig,
   TransactionPosition,
-  buyStock,
+  buyPosition,
   runStockTicker,
-  sellStock,
+  sellPosition,
 } from '/scripts/workflows/stocks';
 
 import {
@@ -44,6 +44,10 @@ import {openTail} from '/scripts/workflows/ui';
 import {StocksTraderConfigEvent} from '/scripts/comms/events/stocks-trader-config-event';
 import {StocksTraderConfigRequest} from '/scripts/comms/requests/stocks-trader-config-request';
 import {StocksTraderConfigResponse} from '/scripts/comms/responses/stocks-trader-config-response';
+import {
+  NetscriptPackage,
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 const CMD_FLAG_FUNDS_LIMIT_PERCENT = 'fundsLimitPercent';
 const CMD_FLAG_ENABLE_SHORT_SALES = 'enableShort';
@@ -66,9 +70,9 @@ const PURCHASE_FORECAST_MARGIN = 0.1;
 let fundsLimitPercent: number;
 let managerConfig: StocksTraderConfig;
 
-function tradeStocks(
+async function tradeStocks(
   eventData: StocksTickerEvent,
-  netscript: NS,
+  nsPackage: NetscriptPackage,
   logWriter: Logger
 ) {
   const stockListings = eventData.stockListings ?? [];
@@ -78,6 +82,9 @@ function tradeStocks(
   stockListings.sort(
     (listingA, listingB) => listingB.forecastScore - listingA.forecastScore
   );
+
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
 
   // Handle Sales Transactions
   let totalSaleProfits = 0;
@@ -90,11 +97,11 @@ function tradeStocks(
       const saleTransaction: SaleTransaction = {
         symbol: stockDetails.symbol,
         position: TransactionPosition.LONG,
-        profit: sellStock(
+        profit: await sellPosition(
           stockDetails.symbol,
           stockDetails.position.longShares,
           stockDetails.position.longPrice,
-          netscript.stock.sellStock
+          nsLocator.stock['sellStock']
         ),
       };
       totalSaleProfits += saleTransaction.profit;
@@ -106,11 +113,11 @@ function tradeStocks(
       const saleTransaction: SaleTransaction = {
         symbol: stockDetails.symbol,
         position: TransactionPosition.SHORT,
-        profit: sellStock(
+        profit: await sellPosition(
           stockDetails.symbol,
           stockDetails.position.shortShares,
           stockDetails.position.shortPrice,
-          netscript.stock.sellShort
+          nsLocator.stock['sellShort']
         ),
       };
       totalSaleProfits += saleTransaction.profit;
@@ -146,13 +153,13 @@ function tradeStocks(
       const purchaseTransaction: PurchaseTransaction = {
         symbol: stockDetails.symbol,
         position: TransactionPosition.LONG,
-        cost: buyStock(
+        cost: await buyPosition(
           stockDetails.symbol,
           stockDetails.askPrice,
           stockDetails.maxShares,
           stockDetails.position,
           availableFunds,
-          netscript.stock.buyStock
+          nsLocator.stock['buyStock']
         ),
       };
 
@@ -168,13 +175,13 @@ function tradeStocks(
       const purchaseTransaction: PurchaseTransaction = {
         symbol: stockDetails.symbol,
         position: TransactionPosition.LONG,
-        cost: buyStock(
+        cost: await buyPosition(
           stockDetails.symbol,
           stockDetails.bidPrice,
           stockDetails.maxShares,
           stockDetails.position,
           availableFunds,
-          netscript.stock.buyShort
+          nsLocator.stock['buyShort']
         ),
       };
 
@@ -200,9 +207,9 @@ function tradeStocks(
   }
 }
 
-function setupStockTrader(
+async function setupStockTrader(
   eventData: StockListingsResponse,
-  netscript: NS,
+  nsPackage: NetscriptPackage,
   eventListener: EventListener,
   terminalWriter: TerminalLogger,
   scriptLogWriter: ScriptLogger,
@@ -210,25 +217,28 @@ function setupStockTrader(
 ) {
   eventListener.removeListeners(StockListingsResponse, setupStockTrader);
 
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   terminalWriter.writeLine(
     'Selling all stock positions for accurate funds limit calculation...'
   );
   let totalProfit = 0;
   for (const stockListing of eventData.stockListings ?? []) {
     if (stockListing.position.longShares > 0) {
-      totalProfit += sellStock(
+      totalProfit += await sellPosition(
         stockListing.symbol,
         stockListing.position.longShares,
         stockListing.position.longPrice,
-        netscript.stock.sellStock
+        nsLocator.stock['sellStock']
       );
     }
     if (stockListing.position.shortShares > 0) {
-      totalProfit += sellStock(
+      totalProfit += await sellPosition(
         stockListing.symbol,
         stockListing.position.shortShares,
         stockListing.position.shortPrice,
-        netscript.stock.sellShort
+        nsLocator.stock['sellShort']
       );
     }
   }
@@ -263,7 +273,7 @@ function setupStockTrader(
   eventListener.addListener(
     StocksTickerEvent,
     tradeStocks,
-    netscript,
+    nsPackage,
     scriptLogWriter
   );
 
@@ -309,6 +319,8 @@ function handleStocksTraderConfigRequest(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Stock Market Trade Manager');
@@ -364,7 +376,7 @@ export async function main(netscript: NS) {
   eventListener.addListener(
     StockListingsResponse,
     setupStockTrader,
-    netscript,
+    nsPackage,
     eventListener,
     terminalWriter,
     scriptLogWriter,

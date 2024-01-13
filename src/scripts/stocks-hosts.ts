@@ -14,6 +14,7 @@ import {
 
 import {initializeScript} from '/scripts/workflows/execution';
 import {getHostnamesFromSymbol} from '/scripts/workflows/stocks';
+import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_TARGETS, []]];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
@@ -25,7 +26,10 @@ let SYMBOLS_LIST: string[];
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  SYMBOLS_LIST = netscript.stock.getSymbols();
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
+
+  SYMBOLS_LIST = await nsLocator.stock['getSymbols']();
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
@@ -41,7 +45,7 @@ export async function main(netscript: NS) {
 
   for (const symbol of targetSymbols) {
     terminalWriter.writeLine(`Symbol : ${symbol}`);
-    const symbolHosts = getHostnamesFromSymbol(netscript, symbol);
+    const symbolHosts = await getHostnamesFromSymbol(nsPackage, symbol);
     for (const hostname of symbolHosts) {
       terminalWriter.writeLine(`  Host : ${hostname}`);
     }

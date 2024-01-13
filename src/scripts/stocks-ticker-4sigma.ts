@@ -10,7 +10,7 @@ import {
 
 import {
   FIFTY_PERCENT,
-  getPosition,
+  getStockPosition,
   STOCKS_TICKER_HISTORY_SCRIPT,
   StockListing,
 } from '/scripts/workflows/stocks';
@@ -19,6 +19,10 @@ import {EventListener, sendMessage} from '/scripts/comms/event-comms';
 import {StocksTickerEvent} from '/scripts/comms/events/stocks-ticker-event';
 import {StockListingsRequest} from '/scripts/comms/requests/stocks-listing-request';
 import {StockListingsResponse} from '/scripts/comms/responses/stocks-listing-response';
+import {
+  getLocatorPackage,
+  NetscriptPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 const MODULE_NAME = 'stocks-ticker-4sigma';
 const SUBSCRIBER_NAME = 'stocks-ticker-4sigma';
@@ -26,18 +30,25 @@ const SUBSCRIBER_NAME = 'stocks-ticker-4sigma';
 const UPDATE_DELAY = 0;
 const STOCK_LISTINGS_MAP = new Map<string, StockListing>();
 
-async function updateStockListings(netscript: NS, logWriter: Logger) {
+async function updateStockListings(
+  nsPackage: NetscriptPackage,
+  logWriter: Logger
+) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   logWriter.writeLine('Updating Stock Listings from 4Sigma Market Data');
   logWriter.writeLine(SECTION_DIVIDER);
 
-  const allSymbols = netscript.stock.getSymbols();
+  const stockApi = nsLocator.stock;
+  const allSymbols = await stockApi['getSymbols']();
   const updatedListings = new Array<StockListing>();
   for (const symbol of allSymbols) {
-    const askPrice = netscript.stock.getAskPrice(symbol);
-    const bidPrice = netscript.stock.getBidPrice(symbol);
-    const stockMaxShares = netscript.stock.getMaxShares(symbol);
-    const stockVolatility = netscript.stock.getVolatility(symbol);
-    const stockForecast = netscript.stock.getForecast(symbol);
+    const askPrice = await stockApi['getAskPrice'](symbol);
+    const bidPrice = await stockApi['getBidPrice'](symbol);
+    const stockMaxShares = await stockApi['getMaxShares'](symbol);
+    const stockVolatility = await stockApi['getVolatility'](symbol);
+    const stockForecast = await stockApi['getForecast'](symbol);
     const currentListing = STOCK_LISTINGS_MAP.get(symbol);
 
     if (
@@ -49,8 +60,8 @@ async function updateStockListings(netscript: NS, logWriter: Logger) {
       currentListing.forecast !== stockForecast
     ) {
       logWriter.writeLine(`Updating stock listing for symbol : ${symbol}`);
-      const stockMaxShares = netscript.stock.getMaxShares(symbol);
-      const stockPosition = getPosition(netscript, symbol);
+      const stockMaxShares = await stockApi['getMaxShares'](symbol);
+      const stockPosition = await getStockPosition(nsLocator, symbol);
       const stockListing: StockListing = {
         symbol: symbol,
         askPrice: askPrice,
@@ -94,6 +105,8 @@ function sendListings(eventData: StockListingsRequest) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   logWriter.writeLine('Stock Market Ticker - 4Sigma Market Data');
@@ -112,7 +125,7 @@ export async function main(netscript: NS) {
     netscript,
     UPDATE_DELAY,
     updateStockListings,
-    netscript,
+    nsPackage,
     logWriter
   );
 }

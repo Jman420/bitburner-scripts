@@ -1,8 +1,15 @@
 import {NS} from '@ns';
 import {runScript} from '/scripts/workflows/execution';
 import {scanWideNetwork} from '/scripts/workflows/recon';
+import {
+  NetscriptLocator,
+  NetscriptPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
-type BuySellStockFunction = (symbol: string, shares: number) => number;
+type BuySellStockFunction = (
+  symbol: string,
+  shares: number
+) => number | Promise<number>;
 
 enum TransactionPosition {
   LONG = 'LONG',
@@ -77,9 +84,9 @@ function runStockTicker(netscript: NS) {
   return stockForecastPid !== 0;
 }
 
-function getPosition(netscript: NS, symbol: string) {
+async function getStockPosition(nsLocator: NetscriptLocator, symbol: string) {
   const [longShares, longPrice, shortShares, shortPrice] =
-    netscript.stock.getPosition(symbol);
+    await nsLocator.stock['getPosition'](symbol);
   const result: StockPosition = {
     longShares: longShares,
     longPrice: longPrice,
@@ -89,7 +96,7 @@ function getPosition(netscript: NS, symbol: string) {
   return result;
 }
 
-function buyStock(
+async function buyPosition(
   symbol: string,
   price: number,
   maxShares: number,
@@ -107,28 +114,34 @@ function buyStock(
     Math.floor((playerMoney - COMMISSION) / price),
     maxShares - totalPositionShares
   );
-  const purchasePrice = buyStockFunc(symbol, shares);
+  const purchasePrice = await buyStockFunc(symbol, shares);
   return purchasePrice > 0 ? purchasePrice * shares + COMMISSION : 0;
 }
 
-function sellStock(
+async function sellPosition(
   symbol: string,
   shares: number,
   purchasePrice: number,
   sellStockFunc: BuySellStockFunction
 ) {
-  const salePrice = sellStockFunc(symbol, shares);
+  const salePrice = await sellStockFunc(symbol, shares);
   const saleTotal = salePrice * shares;
   const saleCost = purchasePrice * shares + COMMISSION * 2;
   return saleTotal - saleCost;
 }
 
-function getHostnamesFromSymbol(netscript: NS, symbol: string) {
+async function getHostnamesFromSymbol(
+  nsPackage: NetscriptPackage,
+  symbol: string
+) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   const results = new Array<string>();
   const symbolChars = symbol.split('');
   const allHosts = scanWideNetwork(netscript, false);
   for (const hostname of allHosts) {
-    const hostDetails = netscript.getServer(hostname);
+    const hostDetails = await nsLocator['getServer'](hostname);
     let hostOrgName = hostDetails.organizationName.toUpperCase();
 
     if (!hostOrgName.includes('POLICE') && !hostOrgName.includes('NIGHT')) {
@@ -165,8 +178,8 @@ export {
   COMMISSION,
   TOTAL_STOCKS,
   runStockTicker,
-  getPosition,
-  buyStock,
-  sellStock,
+  getStockPosition,
+  buyPosition,
+  sellPosition,
   getHostnamesFromSymbol,
 };
