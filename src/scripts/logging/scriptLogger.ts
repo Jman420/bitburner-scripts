@@ -4,11 +4,6 @@ const DEFAULT_NETSCRIPT_ENABLED_LOGGING = [
   'weaken',
   'grow',
   'hack',
-  'exec',
-  'stock.buyStock',
-  'stock.buyShort',
-  'stock.sellStock',
-  'stock.sellShort',
 ];
 
 class ScriptLogger {
