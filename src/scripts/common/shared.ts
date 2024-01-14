@@ -2,6 +2,7 @@ import {CityName} from '@ns';
 
 const SCRIPTS_PATH = '/scripts';
 const HOME_SERVER_NAME = 'home';
+const NETSCRIPT_SERVER_NAME = 'server-lambda';
 const BASE_RAM_COST = 1.6;
 
 const CITY_NAMES = [
@@ -24,6 +25,7 @@ function isPowerOf2(value: number) {
 export {
   SCRIPTS_PATH,
   HOME_SERVER_NAME,
+  NETSCRIPT_SERVER_NAME,
   CITY_NAMES,
   BASE_RAM_COST,
   randomIntWithinRange,

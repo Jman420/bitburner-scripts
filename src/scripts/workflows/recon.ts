@@ -1,6 +1,6 @@
 import {NS} from '@ns';
 
-import {HOME_SERVER_NAME} from '/scripts/common/shared';
+import {HOME_SERVER_NAME, NETSCRIPT_SERVER_NAME} from '/scripts/common/shared';
 
 interface ServerDetails {
   hostname: string;
@@ -54,7 +54,9 @@ function scanWideNetwork(
     host =>
       (!rootOnly || (rootOnly && netscript.hasRootAccess(host))) &&
       (!requireRam || (requireRam && netscript.getServerMaxRam(host) > 0)) &&
-      (!requireFunds || (requireFunds && netscript.getServerMaxMoney(host) > 0))
+      (!requireFunds ||
+        (requireFunds && netscript.getServerMaxMoney(host) > 0)) &&
+      host !== NETSCRIPT_SERVER_NAME
   );
   if (includeHome) {
     availableHosts.unshift(HOME_SERVER_NAME);

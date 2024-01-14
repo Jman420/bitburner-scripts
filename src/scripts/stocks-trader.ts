@@ -120,7 +120,7 @@ async function tradeStocks(
           nsLocator.stock['sellShort']
         ),
       };
-      totalSaleProfits += saleTransaction.profit;
+      totalSaleProfits += saleTransaction.profit || 0;
       soldStocks.push(saleTransaction);
     }
   }

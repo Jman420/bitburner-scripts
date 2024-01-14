@@ -1,7 +1,4 @@
 import { registerEndpoint, removeEndpoint } from "/scripts/netscript-services/netscript-locator";
-import { delayedInfiniteLoop } from "/scripts/workflows/execution";
-
-const UPDATE_DELAY = 0;
 
 let serviceCalled = false;
 
@@ -22,6 +19,8 @@ async function handleShutdown(netscript) {
 
 /** @param {NS} ns */
 export async function main(netscript) {
+  netscript.enableLog('ALL');
+
   netscript.atExit(() => {
     removeEndpoint(netscript.path, 'FUNCTION_NAME');
   });
@@ -30,5 +29,7 @@ export async function main(netscript) {
   registerEndpoint(netscript.path, 'FUNCTION_NAME', handleServiceCall.bind(undefined, netscript));
   netscript.writePort(netscript.pid, 1);
 
-  await delayedInfiniteLoop(netscript, UPDATE_DELAY, handleShutdown.bind(undefined, netscript));
+  while (true) {
+    await handleShutdown(netscript);
+  }
 }

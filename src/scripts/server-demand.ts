@@ -5,6 +5,7 @@ import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {
   CmdArgsSchema,
+  POWER_2_AUTOCOMPLETE,
   getCmdFlag,
   getLastCmdFlag,
   getSchemaFlags,
@@ -23,11 +24,11 @@ import {
 import {openTail} from '/scripts/workflows/ui';
 
 const CMD_FLAG_AMOUNT = 'amount';
-const CMD_FLAG_RAM_EXPONENT = 'ramExponent';
+const CMD_FLAG_RAM_AMOUNT = 'ramAmount';
 const CMD_FLAG_EXCLUDE_FARM = 'excludeFarm';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_AMOUNT, 0],
-  [CMD_FLAG_RAM_EXPONENT, 0],
+  [CMD_FLAG_RAM_AMOUNT, 0],
   [CMD_FLAG_NAME_PREFIX, DEFAULT_NODE_NAME_PREFIX],
   [CMD_FLAG_EXCLUDE_FARM, false],
 ];
@@ -70,7 +71,7 @@ function getOrders(
       hostname,
       requiredRamUpgrade
     );
-    if (upgradeCost < newServerCost) {
+    if (upgradeCost > 0 && upgradeCost < newServerCost) {
       purchaseOrders.push({
         hostname: hostname,
         ramAmount: requiredRamUpgrade,
@@ -142,13 +143,13 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
   const serverAmount = cmdArgs[CMD_FLAG_AMOUNT].valueOf() as number;
-  const ramExponent = cmdArgs[CMD_FLAG_RAM_EXPONENT].valueOf() as number;
-  const ramRequired = 2 ** ramExponent;
+  const ramAmount = cmdArgs[CMD_FLAG_RAM_AMOUNT].valueOf() as number;
+  const ramRequired = nearestPowerOf2(ramAmount);
   const namePrefix = cmdArgs[CMD_FLAG_NAME_PREFIX].valueOf() as string;
   const excludeFarm = cmdArgs[CMD_FLAG_EXCLUDE_FARM].valueOf() as boolean;
 
   terminalWriter.writeLine(`Server Amount : ${serverAmount}`);
-  terminalWriter.writeLine(`Ram Exponent : ${ramExponent}`);
+  terminalWriter.writeLine(`Ram Amount (GB) : ${ramAmount}`);
   terminalWriter.writeLine(
     `Ram Required : ${netscript.formatRam(ramRequired)}`
   );
@@ -162,9 +163,9 @@ export async function main(netscript: NS) {
     );
     return;
   }
-  if (ramExponent < 1 || ramExponent > 20) {
+  if (ramAmount < 1) {
     terminalWriter.writeLine(
-      `${CMD_FLAG_RAM_EXPONENT} command flag must be a positive number where 0 < x < 20.`
+      `${CMD_FLAG_RAM_AMOUNT} command flag must be a positive number greater than 0.`
     );
     return;
   }
@@ -232,8 +233,8 @@ export function autocomplete(data: AutocompleteData, args: string[]) {
   if (lastCmdFlag === getCmdFlag(CMD_FLAG_AMOUNT)) {
     return ['1', '2', '3', '5', '10', '15', '25'];
   }
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_RAM_EXPONENT)) {
-    return ['1', '2', '3', '5', '10', '15', '20'];
+  if (lastCmdFlag === getCmdFlag(CMD_FLAG_RAM_AMOUNT)) {
+    return POWER_2_AUTOCOMPLETE;
   }
   if (lastCmdFlag === getCmdFlag(CMD_FLAG_NAME_PREFIX)) {
     return [];

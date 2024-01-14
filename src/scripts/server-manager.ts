@@ -168,7 +168,7 @@ export function autocomplete(data: AutocompleteData, args: string[]) {
     return POWER_2_AUTOCOMPLETE;
   }
   if (lastCmdFlag === getCmdFlag(CMD_FLAG_NAME_PREFIX)) {
-    return [];
+    return [DEFAULT_NODE_NAME_PREFIX];
   }
   return CMD_FLAGS;
 }
