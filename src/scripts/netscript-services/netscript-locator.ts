@@ -28,6 +28,8 @@ type NetscriptPackage = {
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 type ServiceFunc = (...args: any[]) => any;
 
+const DEBUG = false;
+
 const DEFAULT_MEMBER_PATH = 'netscript';
 
 const SERVICE_SCRIPTS_PATH = 'scripts/netscript-services';
@@ -36,10 +38,8 @@ const SERVICE_SCRIPT_NETSCRIPT_PATH_FIELD = 'netscript.path';
 const SERVICE_SCRIPT_FUNCTION_FIELD = 'FUNCTION_NAME';
 const SERVICE_SCRIPT_SHUTDOWN_DELAY = 'SHUTDOWN_DELAY';
 
-const DEFAULT_SHUTDOWN_DELAY = 'await netscript.asleep(250)';
-const SHUTDOWN_DELAY_MAP = new Map<string, string>([
-  ['corporation', 'await netscript.corporation.nextUpdate()'],
-]);
+const DEFAULT_SHUTDOWN_DELAY = 'await netscript.asleep(100)';
+const SHUTDOWN_DELAY_MAP = new Map<string, string>();
 
 const REGISTERED_ENDPOINTS = new Map<string, ServiceFunc>();
 
@@ -76,24 +76,25 @@ class NetscriptProxyHandler<TTarget extends NS>
           const servicesHostname = netscript.serverExists(NETSCRIPT_SERVER_NAME)
             ? NETSCRIPT_SERVER_NAME
             : HOME_SERVER_NAME;
-
-          // Generate the service script
-          const functionCost = netscript.getFunctionRamCost(fullMemberName);
-          const shutdownDelay =
-            SHUTDOWN_DELAY_MAP.get(trimmedMemberPath) ??
-            SHUTDOWN_DELAY_MAP.get(fullMemberName) ??
-            DEFAULT_SHUTDOWN_DELAY;
-          const serviceContents = serviceScriptTemplate
-            .replaceAll(SERVICE_SCRIPT_NETSCRIPT_PATH_FIELD, memberPath)
-            .replaceAll(SERVICE_SCRIPT_FUNCTION_FIELD, memberNameStr)
-            .replaceAll(SERVICE_SCRIPT_SHUTDOWN_DELAY, shutdownDelay);
           const scriptName = `${SERVICE_SCRIPTS_PATH}/${memberNameStr}.js`;
-          netscript.write(scriptName, serviceContents, 'w');
-          if (servicesHostname !== HOME_SERVER_NAME) {
-            const scriptsPackage = NETSCRIPT_SERVICES_PACKAGE.concat([
-              scriptName,
-            ]);
-            netscript.scp(scriptsPackage, servicesHostname);
+
+          if (!netscript.fileExists(scriptName) || DEBUG) {
+            // Generate the service script
+            const shutdownDelay =
+              SHUTDOWN_DELAY_MAP.get(trimmedMemberPath) ??
+              SHUTDOWN_DELAY_MAP.get(fullMemberName) ??
+              DEFAULT_SHUTDOWN_DELAY;
+            const serviceContents = serviceScriptTemplate
+              .replaceAll(SERVICE_SCRIPT_NETSCRIPT_PATH_FIELD, memberPath)
+              .replaceAll(SERVICE_SCRIPT_FUNCTION_FIELD, memberNameStr)
+              .replaceAll(SERVICE_SCRIPT_SHUTDOWN_DELAY, shutdownDelay);
+            netscript.write(scriptName, serviceContents, 'w');
+            if (servicesHostname !== HOME_SERVER_NAME) {
+              const scriptsPackage = NETSCRIPT_SERVICES_PACKAGE.concat([
+                scriptName,
+              ]);
+              netscript.scp(scriptsPackage, servicesHostname);
+            }
           }
 
           // If there is a registered endpoint for the function then use it
@@ -105,6 +106,7 @@ class NetscriptProxyHandler<TTarget extends NS>
           // If the function ram cost is greater than the base script cost then use a service script
           //   NOTE : These calls should use bracket notation to avoid incuring static ram usage in the consuming script
           //     Example : await nsLocator['getContractTypes']()
+          const functionCost = netscript.getFunctionRamCost(fullMemberName);
           if (functionCost > BASE_RAM_COST) {
             const servicePid = netscript.exec(scriptName, servicesHostname, {
               temporary: true,
