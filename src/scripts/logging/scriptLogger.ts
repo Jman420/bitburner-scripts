@@ -1,10 +1,6 @@
 import {NS} from '@ns';
 
-const DEFAULT_NETSCRIPT_ENABLED_LOGGING = [
-  'weaken',
-  'grow',
-  'hack',
-];
+const DEFAULT_NETSCRIPT_ENABLED_LOGGING = ['weaken', 'grow', 'hack'];
 
 class ScriptLogger {
   readonly netscript: NS;

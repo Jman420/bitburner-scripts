@@ -104,7 +104,11 @@ async function tradeStocks(
           nsLocator.stock['sellStock']
         ),
       };
-      logWriter.writeLine(`Sold ${stockDetails.position.longShares} shares of ${stockDetails.symbol} for $${netscript.formatNumber(saleTransaction.profit)} profit`);
+      logWriter.writeLine(
+        `Sold ${stockDetails.position.longShares} shares of ${
+          stockDetails.symbol
+        } for $${netscript.formatNumber(saleTransaction.profit)} profit`
+      );
       totalSaleProfits += saleTransaction.profit;
       soldStocks.push(saleTransaction);
     } else if (
@@ -121,7 +125,11 @@ async function tradeStocks(
           nsLocator.stock['sellShort']
         ),
       };
-      logWriter.writeLine(`Sold ${stockDetails.position.shortShares} shares of ${stockDetails.symbol} for $${netscript.formatNumber(saleTransaction.profit)} profit`);
+      logWriter.writeLine(
+        `Sold ${stockDetails.position.shortShares} shares of ${
+          stockDetails.symbol
+        } for $${netscript.formatNumber(saleTransaction.profit)} profit`
+      );
       totalSaleProfits += saleTransaction.profit || 0;
       soldStocks.push(saleTransaction);
     }
@@ -166,7 +174,11 @@ async function tradeStocks(
       };
 
       if (purchaseTransaction.cost > 0) {
-        logWriter.writeLine(`Purchased ${stockDetails.symbol} for $${netscript.formatNumber(purchaseTransaction.cost)}`);
+        logWriter.writeLine(
+          `Purchased ${stockDetails.symbol} for $${netscript.formatNumber(
+            purchaseTransaction.cost
+          )}`
+        );
         totalPurchaseCosts += purchaseTransaction.cost;
         purchasedStocks.push(purchaseTransaction);
       }
@@ -189,7 +201,11 @@ async function tradeStocks(
       };
 
       if (purchaseTransaction.cost > 0) {
-        logWriter.writeLine(`Purchased ${stockDetails.symbol} for $${netscript.formatNumber(purchaseTransaction.cost)}`);
+        logWriter.writeLine(
+          `Purchased ${stockDetails.symbol} for $${netscript.formatNumber(
+            purchaseTransaction.cost
+          )}`
+        );
         totalPurchaseCosts += purchaseTransaction.cost;
         purchasedStocks.push(purchaseTransaction);
       }

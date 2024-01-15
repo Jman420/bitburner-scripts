@@ -15,7 +15,11 @@ import {initializeScript} from '/scripts/workflows/execution';
 import {scanWideNetwork} from '/scripts/workflows/recon';
 import {SCRIPTS_PATH} from '/scripts/common/shared';
 
-const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_INCLUDE_HOME, false]];
+const CMD_FLAG_INCLUDE_LAMBDA = 'includeLambda';
+const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
+  [CMD_FLAG_INCLUDE_HOME, false],
+  [CMD_FLAG_INCLUDE_LAMBDA, false],
+];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const MODULE_NAME = 'scripts-remove-all';
@@ -31,12 +35,21 @@ export async function main(netscript: NS) {
   logWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
   const includeHome = cmdArgs[CMD_FLAG_INCLUDE_HOME].valueOf() as boolean;
+  const includeLambda = cmdArgs[CMD_FLAG_INCLUDE_LAMBDA].valueOf() as boolean;
 
   logWriter.writeLine(`Include Home : ${includeHome}`);
+  logWriter.writeLine(`Include Lambda : ${includeLambda}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Scanning wide network for all hosts...');
-  const availableHosts = scanWideNetwork(netscript, includeHome);
+  const availableHosts = scanWideNetwork(
+    netscript,
+    includeHome,
+    false,
+    false,
+    false,
+    includeLambda
+  );
   logWriter.writeLine(`Found ${availableHosts.length} available hosts`);
 
   for (const hostname of availableHosts) {

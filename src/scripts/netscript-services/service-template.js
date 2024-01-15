@@ -24,8 +24,7 @@ export async function main(netscript) {
   netscript.atExit(() => {
     removeEndpoint(netscript.path, 'FUNCTION_NAME');
   });
-
-  netscript.path.FUNCTION_NAME;
+  
   registerEndpoint(netscript.path, 'FUNCTION_NAME', handleServiceCall.bind(undefined, netscript));
   netscript.writePort(netscript.pid, 1);
 
