@@ -78,7 +78,7 @@ const TAIL_Y_POS = 979;
 const TAIL_WIDTH = 790;
 const TAIL_HEIGHT = 365;
 
-export const REQUIRED_FUNDS = 27e12;
+export const REQUIRED_FUNDS = 27e12; // $27t
 const MAX_DIVISIONS = 19;
 
 const AGRICULTURE_MATERIALS_SPACE_RATIO = 0.1;

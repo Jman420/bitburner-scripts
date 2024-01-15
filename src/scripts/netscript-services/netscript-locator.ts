@@ -1,10 +1,7 @@
 import {NS} from '@ns';
 
-import {
-  BASE_RAM_COST,
-  HOME_SERVER_NAME,
-  NETSCRIPT_SERVER_NAME,
-} from '/scripts/common/shared';
+import {HOME_SERVER_NAME, NETSCRIPT_SERVER_NAME} from '/scripts/common/shared';
+
 import {NETSCRIPT_SERVICES_PACKAGE} from '/scripts/netscript-services/package';
 
 type Promisify<T> = {
@@ -30,6 +27,8 @@ type ServiceFunc = (...args: any[]) => any;
 
 const DEBUG = false;
 
+const MAX_RETRIES = 5;
+const RETRY_DELAY = 500;
 const DEFAULT_MEMBER_PATH = 'netscript';
 
 const SERVICE_SCRIPTS_PATH = 'scripts/netscript-services';
@@ -103,33 +102,38 @@ class NetscriptProxyHandler<TTarget extends NS>
             return endpoint(...argArray);
           }
 
-          // If the function ram cost is greater than the base script cost then use a service script
+          // All function calls through the Proxy will be offloaded to service scripts
           //   NOTE : These calls should use bracket notation to avoid incuring static ram usage in the consuming script
           //     Example : await nsLocator['getContractTypes']()
           const functionCost = netscript.getFunctionRamCost(fullMemberName);
-          if (functionCost > BASE_RAM_COST) {
-            const servicePid = netscript.exec(scriptName, servicesHostname, {
+          let servicePid = netscript.exec(scriptName, servicesHostname, {
+            temporary: true,
+          });
+          for (
+            let retryCount = 0;
+            retryCount < MAX_RETRIES && servicePid < 1;
+            retryCount++
+          ) {
+            await netscript.asleep(RETRY_DELAY);
+            servicePid = netscript.exec(scriptName, servicesHostname, {
               temporary: true,
             });
-            if (servicePid < 1) {
-              return undefined;
-            }
-
-            const servicePort = netscript.getPortHandle(servicePid);
-            await servicePort.nextWrite();
-            endpoint = REGISTERED_ENDPOINTS.get(memberNameStr);
-            return endpoint ? endpoint(...argArray) : undefined;
+          }
+          if (servicePid < 1) {
+            throw new Error(
+              `Unable to offload netscript function ${memberNameStr} - Insufficient RAM : ${functionCost}`
+            );
           }
 
-          // Otherwise call the function on the local script's netscript instance
-          //   NOTE : These calls should be made through dot notation to align static & dynamic ram usage in the consuming script
-          //     Example : await nsLocator.getContractTypes()
-          /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-          let netscriptTarget: any = netscript;
-          for (const element of fullMemberName.split('.')) {
-            netscriptTarget = netscriptTarget[element];
+          const servicePort = netscript.getPortHandle(servicePid);
+          await servicePort.nextWrite();
+          endpoint = REGISTERED_ENDPOINTS.get(memberNameStr);
+          if (!endpoint) {
+            throw new Error(
+              `Unable to offload netscript function ${memberNameStr} - Endpoint function not found`
+            );
           }
-          return netscriptTarget(...argArray);
+          return endpoint(...argArray);
         },
       });
     }
