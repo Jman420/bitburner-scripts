@@ -64,15 +64,6 @@ const BUDGET_RATIO_SUPPORT_DIVISION = {
 };
 
 const EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE = new Map<EmployeePosition, number>([
-  [EmployeePosition.OPERATIONS, 0.29],
-  [EmployeePosition.ENGINEER, 0.29],
-  [EmployeePosition.BUSINESS, 1],
-  [EmployeePosition.MANAGEMENT, 0.42],
-]);
-const EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE_TA2 = new Map<
-  EmployeePosition,
-  number
->([
   [EmployeePosition.OPERATIONS, 0.06],
   [EmployeePosition.ENGINEER, 0.3],
   [EmployeePosition.BUSINESS, 0.08],
@@ -697,7 +688,7 @@ async function improveProductMainOffice(
     divisionName,
     ResearchName.MARKET_TA_2
   ))
-    ? EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE_TA2
+    ? EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE
     : EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE;
   const employeeAssignments = calculateAssignmentCounts(
     maxOfficeSize,
@@ -824,7 +815,6 @@ export {
   DEFAULT_PRODUCT_DESIGN_OFFICE,
   DEFAULT_PRODUCT_RESEARCH_OFFICES,
   EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE,
-  EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE_TA2,
   waitForState,
   waitForResearch,
   waitForMoraleAndEnergy,

@@ -51,6 +51,7 @@ import {
   getOptimalIndustryMaterials,
 } from '/scripts/workflows/corporation-optimization';
 import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
+import {REQUIRED_FUNDS as ROUND_3_REQUIRED_FUNDS} from '/scripts/corp-round3';
 
 const CMD_FLAG_FRAUD_DIVISIONS = 'fraudDivisions';
 const CMD_FLAG_AGRICULTURE_RESEARCH = 'agricultureResearch';
@@ -70,7 +71,7 @@ const TAIL_Y_POS = 979;
 const TAIL_WIDTH = 790;
 const TAIL_HEIGHT = 365;
 
-const REQUIRED_FUNDS = 431e9;
+export const REQUIRED_FUNDS = 431e9;
 const AGRICULTURE_OFFICE_SIZE = 6;
 const AGRICULTURE_MATERIAL_RATIO = 0.8;
 const CHEMICAL_MATERIAL_RATIO = 0.95;
@@ -224,7 +225,7 @@ export async function main(netscript: NS) {
     `  Total Cost : $${netscript.formatNumber(optimalUpgrades.cost)}`
   );
 
-  scriptLogWriter.writeLine('Buying optimal storage & factory ugrades...');
+  scriptLogWriter.writeLine('Buying optimal storage & factory upgrades...');
   await buyCorpUpgrade(
     nsLocator,
     UpgradeName.SMART_STORAGE,
@@ -344,6 +345,11 @@ export async function main(netscript: NS) {
   scriptLogWriter.writeLine('Corporation Round 2 setup complete!');
   scriptLogWriter.writeLine(SECTION_DIVIDER);
   scriptLogWriter.writeLine('Wait for an investment offer of at least $27.5t');
+  scriptLogWriter.writeLine(
+    `The next round requires at least $${netscript.formatNumber(
+      ROUND_3_REQUIRED_FUNDS
+    )} funds`
+  );
 }
 
 export function autocomplete(data: AutocompleteData, args: string[]) {

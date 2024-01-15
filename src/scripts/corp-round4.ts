@@ -9,7 +9,6 @@ import {initializeScript, runScript} from '/scripts/workflows/execution';
 import {
   CorpState,
   DivisionNames,
-  ResearchName,
   UpgradeName,
 } from '/scripts/data/corporation-enums';
 import {CorpUpgradesData} from '/scripts/data/corporation-upgrades-data';
@@ -24,7 +23,6 @@ import {
   DEFAULT_PRODUCT_DESIGN_OFFICE,
   DEFAULT_PRODUCT_RESEARCH_OFFICES,
   EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE,
-  EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE_TA2,
   assignEmployees,
   buyCorpUpgrade,
   buyIndustryMaterials,
@@ -348,15 +346,9 @@ export async function main(netscript: NS) {
       DivisionNames.TOBACCO,
       cityName
     );
-    const assignmentRatios = (await corpApi['hasResearched'](
-      DivisionNames.TOBACCO,
-      ResearchName.MARKET_TA_2
-    ))
-      ? EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE_TA2
-      : EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE;
     const employeeAssignments = calculateAssignmentCounts(
       officeInfo.size,
-      assignmentRatios
+      EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE
     );
     const officeAssignments: OfficeAssignments = {
       city: cityName,

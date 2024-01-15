@@ -20,7 +20,6 @@ import {
   DivisionNames,
   IndustryType,
   MaterialName,
-  ResearchName,
   UnlockName,
   UpgradeName,
 } from '/scripts/data/corporation-enums';
@@ -42,7 +41,6 @@ import {
   buyCorpUpgrade,
   waitForState,
   DEFAULT_PRODUCT_RESEARCH_OFFICES,
-  EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE_TA2,
   EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE,
   assignEmployees,
   buyIndustryMaterials,
@@ -80,7 +78,7 @@ const TAIL_Y_POS = 979;
 const TAIL_WIDTH = 790;
 const TAIL_HEIGHT = 365;
 
-const REQUIRED_FUNDS = 27e12;
+export const REQUIRED_FUNDS = 27e12;
 const MAX_DIVISIONS = 19;
 
 const AGRICULTURE_MATERIALS_SPACE_RATIO = 0.1;
@@ -387,15 +385,9 @@ export async function main(netscript: NS) {
       DivisionNames.TOBACCO,
       cityName
     );
-    const assignmentRatios = (await corpApi['hasResearched'](
-      DivisionNames.TOBACCO,
-      ResearchName.MARKET_TA_2
-    ))
-      ? EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE_TA2
-      : EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE;
     const employeeAssignments = calculateAssignmentCounts(
       officeInfo.size,
-      assignmentRatios
+      EMPLOYEE_RATIO_PRODUCT_MAIN_OFFICE
     );
     const officeAssignments: OfficeAssignments = {
       city: cityName,
@@ -413,13 +405,13 @@ export async function main(netscript: NS) {
 
   scriptLogWriter.writeLine('Corporation Round 3 setup complete!');
   scriptLogWriter.writeLine(SECTION_DIVIDER);
-  scriptLogWriter.writeLine('Wait for an investment offer of at least $30q');
   scriptLogWriter.writeLine(
     'Remember the Product Support Offices are setup for production!'
   );
   scriptLogWriter.writeLine(
     'Round 4 & Public scripts will re-setup the Product Support Divisions for research.'
   );
+  scriptLogWriter.writeLine('Wait for an investment offer of at least $30q');
 }
 
 export function autocomplete() {

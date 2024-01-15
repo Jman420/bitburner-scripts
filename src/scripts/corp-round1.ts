@@ -44,6 +44,7 @@ import {
   SMART_SUPPLY_SCRIPT,
 } from '/scripts/workflows/corporation-shared';
 import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
+import {REQUIRED_FUNDS as ROUND_2_REQUIRED_FUNDS} from '/scripts/corp-round2';
 
 const CMD_FLAG_MATERIALS_RATIO = 'materialsRatio';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_MATERIALS_RATIO, 0.87]];
@@ -92,7 +93,7 @@ export async function main(netscript: NS) {
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   scriptLogWriter.writeLine('Creating Agriculture Division...');
-  createDivision(
+  await createDivision(
     nsLocator,
     DivisionNames.AGRICULTURE,
     IndustryType.AGRICULTURE
@@ -101,12 +102,12 @@ export async function main(netscript: NS) {
   scriptLogWriter.writeLine(
     'Calculating optimal storage & factory upgrades...'
   );
-  const corporationInfo = await corpApi['getCorporation']();
+  const corpInfo = await corpApi['getCorporation']();
   const advertLevel = await corpApi['getHireAdVertCount'](
     DivisionNames.AGRICULTURE
   );
   const advertCost = getAdvertCost(advertLevel, TARGET_ADVERT_LEVEL);
-  const upgradesBudget = corporationInfo.funds - advertCost;
+  const upgradesBudget = corpInfo.funds - advertCost;
   const optimalUpgrades = await getOptimalDivisionFactoryAndStorage(
     nsLocator,
     DivisionNames.AGRICULTURE,
@@ -140,7 +141,7 @@ export async function main(netscript: NS) {
     `  Total Cost : $${netscript.formatNumber(optimalUpgrades.cost)}`
   );
 
-  scriptLogWriter.writeLine('Buying optimal storage & factory ugrades...');
+  scriptLogWriter.writeLine('Buying optimal storage & factory upgrades...');
   await buyCorpUpgrade(
     nsLocator,
     UpgradeName.SMART_STORAGE,
@@ -182,10 +183,6 @@ export async function main(netscript: NS) {
   );
   await Promise.allSettled(industryMaterialsTasks);
 
-  scriptLogWriter.writeLine('Running required support scripts...');
-  runScript(netscript, PRICING_SETUP_SCRIPT);
-  runScript(netscript, SMART_SUPPLY_SCRIPT);
-
   scriptLogWriter.writeLine(
     'Assigning employees to positions : 1ops / 1eng / 1bus ...'
   );
@@ -194,15 +191,25 @@ export async function main(netscript: NS) {
     [EmployeePosition.ENGINEER, 1],
     [EmployeePosition.BUSINESS, 1],
   ]);
+  const officeAssignments = generateOfficeAssignments(workerAssigments);
   await assignEmployees(
     nsLocator,
     DivisionNames.AGRICULTURE,
-    generateOfficeAssignments(workerAssigments)
+    officeAssignments
   );
+
+  scriptLogWriter.writeLine('Running required support scripts...');
+  runScript(netscript, PRICING_SETUP_SCRIPT);
+  runScript(netscript, SMART_SUPPLY_SCRIPT);
 
   scriptLogWriter.writeLine('Corporation Round 1 setup complete!');
   scriptLogWriter.writeLine(SECTION_DIVIDER);
   scriptLogWriter.writeLine('Wait for an investment offer of at least $490b');
+  scriptLogWriter.writeLine(
+    `The next round requires at least $${netscript.formatNumber(
+      ROUND_2_REQUIRED_FUNDS
+    )} funds`
+  );
 }
 
 export function autocomplete(data: AutocompleteData, args: string[]) {
