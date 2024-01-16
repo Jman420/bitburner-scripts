@@ -51,6 +51,10 @@ import {WgwhConfigResponse} from '/scripts/comms/responses/wgwh-config-response'
 
 import {CMD_FLAG_DELAY, CMD_FLAG_TARGETS_CSV} from '/scripts/workers/shared';
 import {WORKERS_PACKAGE} from '/scripts/workers/package';
+import {
+  NetscriptPackage,
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 const CMD_FLAG_OPTIMAL_ONLY = 'optimalOnly';
 const CMD_FLAG_HACK_PERCENT = 'hackPercent';
@@ -81,7 +85,7 @@ const BATCH_BUFFER_DELAY = 100;
 let managerConfig: WgwhAttackConfig;
 
 async function attackTargets(
-  netscript: NS,
+  nsPackage: NetscriptPackage,
   logWriter: Logger,
   weightScoreValues: WeightScoreValues = {
     hackTime: 1,
@@ -92,6 +96,9 @@ async function attackTargets(
     expGain: 1,
   }
 ) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   let targetHosts = [...managerConfig.targetHosts];
   if (targetHosts.length < 1) {
     logWriter.writeLine(
@@ -124,7 +131,7 @@ async function attackTargets(
     const targetDetails = targetsAnalysis[targetCounter];
     const hostname = targetDetails.hostname;
     logWriter.writeLine(`Target Host : ${hostname}`);
-    const targetServer = netscript.getServer(hostname);
+    const targetServer = await nsLocator['getServer'](hostname);
     const player = netscript.getPlayer();
 
     // Determine Total Ram needed to fully attack the server (add a constant buffer amount to be safe)
@@ -373,6 +380,8 @@ function handleWgwhConfigRequest(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Weaken-Grow Weaken-Hack Batch Manager');
@@ -424,7 +433,7 @@ export async function main(netscript: NS) {
     scriptLogWriter
   );
 
-  await infiniteLoop(netscript, attackTargets, netscript, scriptLogWriter);
+  await infiniteLoop(netscript, attackTargets, nsPackage, scriptLogWriter);
 }
 
 export function autocomplete(data: AutocompleteData, args: string[]) {
