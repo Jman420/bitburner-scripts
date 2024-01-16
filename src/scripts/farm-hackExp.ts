@@ -1,5 +1,7 @@
 import {AutocompleteData, NS} from '@ns';
 
+import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
+
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
@@ -46,6 +48,9 @@ const SUBSCRIBER_NAME = 'farm-hackExp';
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Hacking Experience Farm - Using Weaken');
@@ -70,13 +75,18 @@ export async function main(netscript: NS) {
     targetHosts = filterHostsCanHack(netscript, targetHosts);
   }
   logWriter.writeLine('Sorting target hosts by optimality...');
-  const targetsAnalysis = targetHosts
-    .map(value => analyzeHost(netscript, value))
-    .map(value => {
-      const extendedValue = value as ServerDetailsExtended;
-      extendedValue.expGain = getHackingExpGain(netscript, value.hostname);
-      return extendedValue;
-    });
+  const targetsAnalysis = await Promise.all(
+    targetHosts
+      .map(value => analyzeHost(netscript, value))
+      .map(async value => {
+        const extendedValue = value as ServerDetailsExtended;
+        extendedValue.expGain = await getHackingExpGain(
+          nsLocator,
+          value.hostname
+        );
+        return extendedValue;
+      })
+  );
   sortOptimalTargetHosts(targetsAnalysis, undefined, scoreHostForExperience);
   logWriter.writeLine(`Sorted ${targetsAnalysis.length} target hosts.`);
 
