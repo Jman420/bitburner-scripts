@@ -27,6 +27,7 @@ import {
 import {
   BENCHMARK_OFFICE,
   PRICING_SETUP_SCRIPT,
+  RAW_MAX_DIVISIONS,
   SMART_SUPPLY_SCRIPT,
   TEA_PARTY_SCRIPT,
 } from '/scripts/workflows/corporation-shared';
@@ -53,11 +54,9 @@ import {
 import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 import {REQUIRED_FUNDS as ROUND_3_REQUIRED_FUNDS} from '/scripts/corp-round3';
 
-const CMD_FLAG_FRAUD_DIVISIONS = 'fraudDivisions';
 const CMD_FLAG_AGRICULTURE_RESEARCH = 'agricultureResearch';
 const CMD_FLAG_CHEMICAL_RESEARCH = 'chemicalResearch';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
-  [CMD_FLAG_FRAUD_DIVISIONS, 17],
   [CMD_FLAG_AGRICULTURE_RESEARCH, 245],
   [CMD_FLAG_CHEMICAL_RESEARCH, 150],
 ];
@@ -88,7 +87,6 @@ export async function main(netscript: NS) {
 
   terminalWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
-  const fraudDivisions = cmdArgs[CMD_FLAG_FRAUD_DIVISIONS].valueOf() as number;
   const agricultureResearch = cmdArgs[
     CMD_FLAG_AGRICULTURE_RESEARCH
   ].valueOf() as number;
@@ -96,7 +94,6 @@ export async function main(netscript: NS) {
     CMD_FLAG_CHEMICAL_RESEARCH
   ].valueOf() as number;
 
-  terminalWriter.writeLine(`Dummy Division Count : ${fraudDivisions}`);
   terminalWriter.writeLine(`Agriculture Research : ${agricultureResearch}`);
   terminalWriter.writeLine(`Chemical Research : ${chemicalResearch}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
@@ -184,6 +181,16 @@ export async function main(netscript: NS) {
       MaterialName.CHEMICALS
     );
   }
+
+  scriptLogWriter.writeLine(
+    'Calculating number of fraudulent divisions to create...'
+  );
+  corpInfo = await corpApi['getCorporation']();
+  const bitnodeMultipliers = await nsLocator['getBitNodeMultipliers']();
+  const fraudDivisions =
+    RAW_MAX_DIVISIONS * bitnodeMultipliers.CorporationDivisions -
+    corpInfo.divisions.length -
+    1;
 
   scriptLogWriter.writeLine(
     `Creating ${fraudDivisions} fraudulent divisions to boost investment offers...`
@@ -354,9 +361,6 @@ export async function main(netscript: NS) {
 
 export function autocomplete(data: AutocompleteData, args: string[]) {
   const lastCmdFlag = getLastCmdFlag(args);
-  if (lastCmdFlag === getCmdFlag(CMD_FLAG_FRAUD_DIVISIONS)) {
-    return [10, 15, 17, 20];
-  }
   if (lastCmdFlag === getCmdFlag(CMD_FLAG_AGRICULTURE_RESEARCH)) {
     return [225, 245, 265, 285];
   }

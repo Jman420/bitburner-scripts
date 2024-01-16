@@ -27,6 +27,7 @@ import {CorpUpgradesData} from '/scripts/data/corporation-upgrades-data';
 import {
   PRICING_SETUP_SCRIPT,
   PRODUCT_LIFECYCLE_SCRIPT,
+  RAW_MAX_DIVISIONS,
   SMART_SUPPLY_SCRIPT,
   TEA_PARTY_SCRIPT,
 } from '/scripts/workflows/corporation-shared';
@@ -79,7 +80,6 @@ const TAIL_WIDTH = 790;
 const TAIL_HEIGHT = 365;
 
 export const REQUIRED_FUNDS = 27e12; // $27t
-const MAX_DIVISIONS = 19;
 
 const AGRICULTURE_MATERIALS_SPACE_RATIO = 0.1;
 const CHEMICAL_MATERIALS_SPACE_RATIO = 0.65;
@@ -126,7 +126,10 @@ export async function main(netscript: NS) {
     );
     return;
   }
-  const fraudDivisions = MAX_DIVISIONS - corpInfo.divisions.length;
+  const bitnodeMultipliers = await nsLocator['getBitNodeMultipliers']();
+  const maxDivisions =
+    RAW_MAX_DIVISIONS * bitnodeMultipliers.CorporationDivisions;
+  const fraudDivisions = maxDivisions - corpInfo.divisions.length - 1;
   if (fraudDivisions < 0) {
     terminalWriter.writeLine(
       `Too many divisions created.  Please sell ${-fraudDivisions} divisions.`
