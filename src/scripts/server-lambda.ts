@@ -64,13 +64,12 @@ export async function main(netscript: NS) {
       return;
     }
 
-    const requiredRam = ramAmount - maxRam;
     purchaseOrder = {
       hostname: NETSCRIPT_SERVER_NAME,
-      ramAmount: nearestPowerOf2(requiredRam),
+      ramAmount: ramAmount,
       cost: netscript.getPurchasedServerUpgradeCost(
         NETSCRIPT_SERVER_NAME,
-        requiredRam
+        ramAmount
       ),
       purchaseFunc: netscript.upgradePurchasedServer,
     };
@@ -93,7 +92,6 @@ export async function main(netscript: NS) {
   scriptLogWriter.writeLine(
     `  Cost : $${netscript.formatNumber(purchaseOrder.cost)}`
   );
-  scriptLogWriter.writeLine(`  Purchase Func : ${purchaseOrder.purchaseFunc}`);
 
   scriptLogWriter.writeLine(
     'Waitings for sufficient funds to make purchase...'

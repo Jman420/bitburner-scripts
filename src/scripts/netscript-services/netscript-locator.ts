@@ -77,7 +77,7 @@ class NetscriptProxyHandler<TTarget extends NS>
             : HOME_SERVER_NAME;
           const scriptName = `${SERVICE_SCRIPTS_PATH}/${memberNameStr}.js`;
 
-          if (!netscript.fileExists(scriptName) || DEBUG) {
+          if (!netscript.fileExists(scriptName, servicesHostname) || DEBUG) {
             // Generate the service script
             const shutdownDelay =
               SHUTDOWN_DELAY_MAP.get(trimmedMemberPath) ??
