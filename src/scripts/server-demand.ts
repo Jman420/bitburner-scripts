@@ -22,6 +22,10 @@ import {
   nearestPowerOf2,
 } from '/scripts/workflows/server-farm';
 import {openTail} from '/scripts/workflows/ui';
+import {
+  NetscriptPackage,
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 const CMD_FLAG_AMOUNT = 'amount';
 const CMD_FLAG_RAM_AMOUNT = 'ramAmount';
@@ -44,14 +48,17 @@ const TAIL_HEIGHT = 380;
 
 const LOOP_DELAY_MILLISEC = 5000;
 
-function getOrders(
-  netscript: NS,
+function getServerOrders(
+  nsPackage: NetscriptPackage,
   logWriter: Logger,
   serverCount: number,
   ramAmount: number,
   serverNamePrefix: string,
   farmHosts: string[]
 ) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   logWriter.writeLine(
     `Determining cheapest purchase path for ${serverCount} servers with ${netscript.formatRam(
       ramAmount
@@ -95,7 +102,7 @@ function getOrders(
       hostname: serverNamePrefix,
       ramAmount: ramAmount,
       cost: newServerCost,
-      purchaseFunc: netscript.purchaseServer,
+      purchaseFunc: nsLocator['purchaseServer'],
     });
   }
   logWriter.writeLine(
@@ -117,7 +124,10 @@ async function manageOrders(
         break;
       }
 
-      serverOrder.purchaseFunc(serverOrder.hostname, serverOrder.ramAmount);
+      await serverOrder.purchaseFunc(
+        serverOrder.hostname,
+        serverOrder.ramAmount
+      );
       logWriter.writeLine(ENTRY_DIVIDER);
       logWriter.writeLine(
         `Purchased server farm order : ${
@@ -135,6 +145,9 @@ async function manageOrders(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Server Farm Manager');
@@ -170,7 +183,7 @@ export async function main(netscript: NS) {
     return;
   }
 
-  const serverFarmHosts = netscript.getPurchasedServers();
+  const serverFarmHosts = await nsLocator['getPurchasedServers']();
   if (!excludeFarm) {
     const farmHostsWithRam = findServersForRam(
       netscript,
@@ -195,8 +208,8 @@ export async function main(netscript: NS) {
   }
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
-  const purchaseOrders = getOrders(
-    netscript,
+  const purchaseOrders = getServerOrders(
+    nsPackage,
     scriptLogWriter,
     serverAmount,
     ramRequired,

@@ -16,6 +16,7 @@ import {openTail} from '/scripts/workflows/ui';
 import {initializeScript} from '/scripts/workflows/execution';
 import {NETSCRIPT_SERVER_NAME} from '/scripts/common/shared';
 import {ServerFarmOrder, nearestPowerOf2} from '/scripts/workflows/server-farm';
+import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
 const DEFAULT_RAM_AMOUNT = 1024;
 const CMD_FLAG_RAM_AMOUNT = 'ramAmount';
@@ -34,6 +35,9 @@ const TAIL_HEIGHT = 380;
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Server Farm - Lambda Server Manager');
@@ -75,7 +79,7 @@ export async function main(netscript: NS) {
       hostname: NETSCRIPT_SERVER_NAME,
       ramAmount: ramAmount,
       cost: netscript.getPurchasedServerCost(ramAmount),
-      purchaseFunc: netscript.purchaseServer,
+      purchaseFunc: nsLocator['purchaseServer'],
     };
   }
 
@@ -99,7 +103,10 @@ export async function main(netscript: NS) {
   }
 
   scriptLogWriter.writeLine('Purchasing order...');
-  purchaseOrder.purchaseFunc(NETSCRIPT_SERVER_NAME, purchaseOrder.ramAmount);
+  await purchaseOrder.purchaseFunc(
+    NETSCRIPT_SERVER_NAME,
+    purchaseOrder.ramAmount
+  );
   scriptLogWriter.writeLine('Lambda server successfully upgraded!');
 }
 

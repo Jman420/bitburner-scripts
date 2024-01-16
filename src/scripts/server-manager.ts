@@ -25,6 +25,10 @@ import {
   getNodeUpgradeOrder,
   nearestPowerOf2,
 } from '/scripts/workflows/server-farm';
+import {
+  NetscriptPackage,
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 const CMD_FLAG_MIN_RAM = 'minimumRam';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
@@ -41,9 +45,12 @@ function sortUpgradeOrders(upgradeOrders: Array<ServerFarmOrder>) {
   upgradeOrders.sort((order1, order2) => order1.cost - order2.cost);
 }
 
-function initializeUpgradeOrders(netscript: NS) {
+async function initializeUpgradeOrders(nsPackage: NetscriptPackage) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   const upgradeOrders = new Array<ServerFarmOrder>();
-  const farmNodes = netscript.getPurchasedServers();
+  const farmNodes = await nsLocator['getPurchasedServers']();
   for (const hostname of farmNodes) {
     upgradeOrders.push(getNodeUpgradeOrder(netscript, hostname));
   }
@@ -51,17 +58,20 @@ function initializeUpgradeOrders(netscript: NS) {
   return upgradeOrders;
 }
 
-function manageOrdersAndPurchases(
-  netscript: NS,
+async function manageOrdersAndPurchases(
+  nsPackage: NetscriptPackage,
   logWriter: Logger,
   upgradeOrders: Array<ServerFarmOrder>,
   namePrefix: string,
   minRamOrder = 2
 ) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   logWriter.writeLine('Checking Server Farm Purchase Node Order...');
   const nodeCost = netscript.getPurchasedServerCost(minRamOrder);
   if (
-    getNodeCount(netscript) < netscript.getPurchasedServerLimit() &&
+    (await getNodeCount(nsLocator)) < netscript.getPurchasedServerLimit() &&
     (!upgradeOrders.length || nodeCost < upgradeOrders[0].cost) &&
     nodeCost <= netscript.getPlayer().money
   ) {
@@ -70,7 +80,7 @@ function manageOrdersAndPurchases(
         nodeCost
       )}...`
     );
-    const hostname = netscript.purchaseServer(namePrefix, minRamOrder);
+    const hostname = await nsLocator['purchaseServer'](namePrefix, minRamOrder);
     logWriter.writeLine(
       `Successfully purchased new Server Farm Node with index : ${hostname}`
     );
@@ -125,6 +135,8 @@ function manageOrdersAndPurchases(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Server Farm Purchase Manager');
@@ -142,7 +154,7 @@ export async function main(netscript: NS) {
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Initializing Server Farm Upgrade Orders...');
-  const upgradeOrders = initializeUpgradeOrders(netscript);
+  const upgradeOrders = await initializeUpgradeOrders(nsPackage);
   logWriter.writeLine(
     `Found ${upgradeOrders.length} available Server Farm Upgrades.`
   );
@@ -154,7 +166,7 @@ export async function main(netscript: NS) {
     netscript,
     LOOP_DELAY_MILLISEC,
     manageOrdersAndPurchases,
-    netscript,
+    nsPackage,
     scriptLogWriter,
     upgradeOrders,
     namePrefix,

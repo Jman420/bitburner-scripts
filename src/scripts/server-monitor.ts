@@ -6,18 +6,22 @@ import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 import {initializeScript} from '/scripts/workflows/execution';
 
 import {getAvailableRam} from '/scripts/workflows/recon';
+import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
 const MODULE_NAME = 'farm-monitor';
 const SUBSCRIBER_NAME = 'farm-monitor';
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Server Farm Monitor');
   logWriter.writeLine(SECTION_DIVIDER);
 
-  const farmHosts = netscript.getPurchasedServers();
+  const farmHosts = await nsLocator['getPurchasedServers']();
   for (const hostname of farmHosts) {
     const availableRam = getAvailableRam(netscript, hostname);
     const maxRam = netscript.getServerMaxRam(hostname);

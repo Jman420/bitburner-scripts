@@ -1,6 +1,10 @@
 import {NS} from '@ns';
+import {NetscriptLocator} from '/scripts/netscript-services/netscript-locator';
 
-type PurchaseFunction = (hostname: string, ram: number) => boolean | string;
+type PurchaseFunction = (
+  hostname: string,
+  ram: number
+) => boolean | string | Promise<boolean | string>;
 
 const CMD_FLAG_NAME_PREFIX = 'namePrefix';
 const DEFAULT_NODE_NAME_PREFIX = 'server-node';
@@ -28,8 +32,8 @@ function nearestPowerOf2(value: number) {
   return Math.pow(2, power + 1);
 }
 
-function getNodeCount(netscript: NS) {
-  return netscript.getPurchasedServers().length;
+async function getNodeCount(nsLocator: NetscriptLocator) {
+  return (await nsLocator['getPurchasedServers']()).length;
 }
 
 function getNodeUpgradeOrder(netscript: NS, hostname: string): ServerFarmOrder {
