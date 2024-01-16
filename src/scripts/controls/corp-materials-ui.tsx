@@ -8,7 +8,7 @@ import {
   getHeaderLabelStyle,
 } from '/scripts/controls/style-sheet';
 import {LabeledInput} from '/scripts/controls/components/labeled-input';
-import {Dropdown} from '/scripts/controls/components/dropdown';
+import {Dropdown, DropdownOption} from '/scripts/controls/components/dropdown';
 import {Button} from '/scripts/controls/components/button';
 
 import {getCmdFlag} from '/scripts/workflows/cmd-args';
@@ -23,6 +23,8 @@ import {
   CMD_FLAG_STORAGE_SIZE,
 } from '/scripts/corp-materials';
 import {FRAUD_DIVISION_NAME_PREFIX} from '/scripts/workflows/corporation-shared';
+import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
+import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
 
 interface InterfaceControls {
   divisionName?: HTMLSelectElement;
@@ -86,14 +88,31 @@ function runManagerScript(netscript: NS) {
   );
 }
 
-function CorpMaterialsUI({netscript}: {netscript: NS}) {
+function CorpMaterialsUI({nsPackage}: {nsPackage: NetscriptPackage}) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   const uiStyle = netscript.ui.getStyles();
   const uiTheme = netscript.ui.getTheme();
 
   const [storageSize, setStorageSize] = useState('');
-
-  const corporationInfo = netscript.corporation.getCorporation();
+  const [divisionOptions, setDivisionOptions] = useState(
+    new Array<DropdownOption>()
+  );
   const cityNames = ['', ...CITY_NAMES];
+
+  useEffectOnce(() => {
+    async function refreshDivisionOptions() {
+      const corpInfo = await nsLocator.corporation['getCorporation']();
+      const options = corpInfo.divisions
+        .filter(value => !value.includes(FRAUD_DIVISION_NAME_PREFIX))
+        .map(divisionName => {
+          return {label: divisionName, value: divisionName};
+        });
+      setDivisionOptions(options);
+    }
+    refreshDivisionOptions();
+  });
 
   return (
     <div style={getDivBorderStyle(uiStyle, uiTheme, 'center')}>
@@ -104,11 +123,7 @@ function CorpMaterialsUI({netscript}: {netscript: NS}) {
         <Dropdown
           id={DIVISION_NAME_ID}
           title="Division"
-          options={corporationInfo.divisions
-            .filter(value => !value.includes(FRAUD_DIVISION_NAME_PREFIX))
-            .map(divisionName => {
-              return {label: divisionName, value: divisionName};
-            })}
+          options={divisionOptions}
           uiStyle={uiStyle}
           uiTheme={uiTheme}
         />

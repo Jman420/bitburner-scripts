@@ -14,7 +14,7 @@ import {
 import {RunScriptButton} from '/scripts/controls/components/run-script-button';
 import {Button} from '/scripts/controls/components/button';
 import {LabeledInput} from '/scripts/controls/components/labeled-input';
-import {Dropdown} from '/scripts/controls/components/dropdown';
+import {Dropdown, DropdownOption} from '/scripts/controls/components/dropdown';
 import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
 
 import {CITY_NAMES} from '/scripts/common/shared';
@@ -42,6 +42,7 @@ import {
   CMD_FLAG_BUDGET_PERCENT,
 } from '/scripts/corp-product';
 import {FRAUD_DIVISION_NAME_PREFIX} from '/scripts/workflows/corporation-shared';
+import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
 
 interface InterfaceControls {
   divisionName?: HTMLSelectElement;
@@ -178,26 +179,44 @@ function sendProductLifecycleConfig() {
 }
 
 function ProductLifecycleUI({
-  netscript,
+  nsPackage,
   eventListener,
 }: {
-  netscript: NS;
+  nsPackage: NetscriptPackage;
   eventListener: EventListener;
 }) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   const uiStyle = netscript.ui.getStyles();
   const uiTheme = netscript.ui.getTheme();
 
   const [productName, setProductName] = useState('');
   const [budgetPercent, setBudgetPercent] = useState('');
-  const targetRunning = Boolean(getPid(netscript, PRODUCT_LIFECYCLE_SCRIPT));
-
-  const corporationInfo = netscript.corporation.getCorporation();
-  const divisionNames = corporationInfo.divisions.filter(
-    value =>
-      netscript.corporation.getDivision(value).makesProducts &&
-      !value.includes(FRAUD_DIVISION_NAME_PREFIX)
+  const [divisionOptions, setDivisionOptions] = useState(
+    new Array<DropdownOption>()
   );
+  const targetRunning = Boolean(getPid(netscript, PRODUCT_LIFECYCLE_SCRIPT));
   const cityNames = ['', ...CITY_NAMES];
+
+  useEffectOnce(() => {
+    async function refreshDivisionOptions() {
+      const corpApi = nsLocator.corporation;
+      const corpInfo = await corpApi['getCorporation']();
+      const options = new Array<DropdownOption>();
+      for (const divisionName of corpInfo.divisions) {
+        const divisionInfo = await corpApi['getDivision'](divisionName);
+        if (
+          divisionInfo.makesProducts &&
+          !divisionName.includes(FRAUD_DIVISION_NAME_PREFIX)
+        ) {
+          options.push({label: divisionName, value: divisionName});
+        }
+      }
+      setDivisionOptions(options);
+    }
+    refreshDivisionOptions();
+  });
 
   useEffectOnce(() => {
     eventListener.addListener(
@@ -235,9 +254,7 @@ function ProductLifecycleUI({
         <Dropdown
           id={DIVISION_NAME_ID}
           title="Division"
-          options={divisionNames.map(divisionName => {
-            return {label: divisionName, value: divisionName};
-          })}
+          options={divisionOptions}
           uiStyle={uiStyle}
           uiTheme={uiTheme}
         />

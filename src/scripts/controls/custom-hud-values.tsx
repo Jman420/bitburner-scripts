@@ -1,4 +1,4 @@
-import {NS, UserInterfaceTheme} from '@ns';
+import {NS} from '@ns';
 
 import {Logger} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER} from '/scripts/logging/logOutput';
@@ -13,13 +13,14 @@ import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
 import {getReactModel, ReactSetStateFunction} from '/scripts/workflows/ui';
 import {scanWideNetwork} from '/scripts/workflows/recon';
 import {TOTAL_STOCKS} from '/scripts/workflows/stocks';
+import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
 
 const React = getReactModel().reactNS;
 const useState = React.useState;
 
-function updateStocksMetrics(
+async function updateStocksMetrics(
   eventData: StocksTickerEvent,
-  netscript: NS,
+  nsPackage: NetscriptPackage,
   logWriter: Logger,
   setStocksValue: ReactSetStateFunction<string>,
   setStocksProfit: ReactSetStateFunction<string>,
@@ -31,6 +32,9 @@ function updateStocksMetrics(
   ) {
     return;
   }
+
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
 
   logWriter.writeLine('Calculating stock portfolio metrics...');
   let totalValue = 0;
@@ -55,7 +59,7 @@ function updateStocksMetrics(
   setStocksProfit(`$${netscript.formatNumber(totalProfit)}`);
 
   logWriter.writeLine('Updating Total Player Value...');
-  const playerInfo = netscript.getPlayer();
+  const playerInfo = await nsLocator['getPlayer']();
   const totalPlayerValue = playerInfo.money + totalValue;
   setPlayerTotalValue(`$${netscript.formatNumber(totalPlayerValue)}`);
   logWriter.writeLine(ENTRY_DIVIDER);
@@ -75,8 +79,8 @@ function updateGangMetrics(
   setGangIncome(`$${netscript.formatNumber(eventData.gangInfo.moneyGainRate)}`);
 }
 
-function updatePolledMetrics(
-  netscript: NS,
+async function updatePolledMetrics(
+  nsPackage: NetscriptPackage,
   logWriter: Logger,
   setCity: ReactSetStateFunction<string>,
   setLocation: ReactSetStateFunction<string>,
@@ -85,14 +89,17 @@ function updatePolledMetrics(
   setCorpIncome: ReactSetStateFunction<string>,
   setKarmaLevel: ReactSetStateFunction<string>
 ) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   logWriter.writeLine('Calculating script metrics...');
   let totalScriptIncome = 0;
   let totalScriptExp = 0;
   const rootedHosts = scanWideNetwork(netscript, true, true, true);
   for (const hostname of rootedHosts) {
-    const procInfos = netscript.ps(hostname);
+    const procInfos = await nsLocator['ps'](hostname);
     for (const scriptProc of procInfos) {
-      const scriptDetails = netscript.getRunningScript(
+      const scriptDetails = await nsLocator['getRunningScript'](
         scriptProc.pid,
         hostname
       );
@@ -107,14 +114,15 @@ function updatePolledMetrics(
   setScriptsExp(netscript.formatNumber(totalScriptExp));
   setScriptsIncome(`$${netscript.formatNumber(totalScriptIncome)}`);
 
-  if (netscript.corporation.hasCorporation()) {
+  const corpApi = nsLocator.corporation;
+  if (await corpApi['hasCorporation']()) {
     logWriter.writeLine('Retrieving corporation metrics...');
-    const corpInfo = netscript.corporation.getCorporation();
+    const corpInfo = await corpApi['getCorporation']();
     setCorpIncome(`$${netscript.formatNumber(corpInfo.dividendEarnings)}`);
   }
 
   logWriter.writeLine('Retrieving location & player metrics...');
-  const playerInfo = netscript.getPlayer();
+  const playerInfo = await nsLocator['getPlayer']();
   /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
   const karmaLevel = (netscript as any).heart.break();
   setCity(playerInfo.city);
@@ -124,8 +132,7 @@ function updatePolledMetrics(
 }
 
 function CustomHudValues({
-  uiTheme,
-  netscript,
+  nsPackage,
   eventListener,
   logWriter,
   updateDelay,
@@ -136,8 +143,7 @@ function CustomHudValues({
   excludeStocksMetrics,
   excludePlayerMetrics,
 }: {
-  uiTheme: UserInterfaceTheme;
-  netscript: NS;
+  nsPackage: NetscriptPackage;
   eventListener: EventListener;
   logWriter: Logger;
   updateDelay: number | undefined;
@@ -148,6 +154,9 @@ function CustomHudValues({
   excludeStocksMetrics: boolean;
   excludePlayerMetrics: boolean;
 }) {
+  const netscript = nsPackage.netscript;
+  const uiTheme = netscript.ui.getTheme();
+
   const [city, setCity] = useState('');
   const [location, setLocation] = useState('');
   const [scriptsExp, setScriptsExp] = useState('');
@@ -161,7 +170,7 @@ function CustomHudValues({
 
   useEffectOnce(() => {
     updatePolledMetrics(
-      netscript,
+      nsPackage,
       logWriter,
       setCity,
       setLocation,
@@ -173,7 +182,7 @@ function CustomHudValues({
   });
   useInterval(() => {
     updatePolledMetrics(
-      netscript,
+      nsPackage,
       logWriter,
       setCity,
       setLocation,
@@ -188,7 +197,7 @@ function CustomHudValues({
     eventListener.addListener(
       StocksTickerEvent,
       updateStocksMetrics,
-      netscript,
+      nsPackage,
       logWriter,
       setStocksPortfolioValue,
       setStocksProfit,

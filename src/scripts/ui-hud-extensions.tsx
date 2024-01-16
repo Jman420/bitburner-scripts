@@ -23,6 +23,7 @@ import {CustomHudValues} from '/scripts/controls/custom-hud-values';
 
 import {EventListener} from '/scripts/comms/event-comms';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
+import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
 const reactModel = getReactModel();
 const React = reactModel.reactNS;
@@ -59,6 +60,8 @@ function handleShutdown(eventData: ExitEvent, hudHooks: HudHooks) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('HUD Extensions Refresh Manager');
@@ -151,11 +154,10 @@ export async function main(netscript: NS) {
   reactModel.reactDOM.render(
     <React.StrictMode>
       <CustomHudValues
-        netscript={netscript}
+        nsPackage={nsPackage}
         eventListener={eventListener}
         logWriter={scriptLogWriter}
         updateDelay={HUD_REFRESH_DELAY}
-        uiTheme={netscript.ui.getTheme()}
         excludeLocationMetrics={excludeLocationMetrics}
         excludeScriptsMetrics={excludeScriptMetrics}
         excludeCorpMetrics={excludeCorpMetrics}

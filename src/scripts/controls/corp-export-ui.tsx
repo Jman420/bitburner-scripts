@@ -7,7 +7,7 @@ import {
   getHeaderDivStyle,
   getHeaderLabelStyle,
 } from '/scripts/controls/style-sheet';
-import {Dropdown} from '/scripts/controls/components/dropdown';
+import {Dropdown, DropdownOption} from '/scripts/controls/components/dropdown';
 import {Button} from '/scripts/controls/components/button';
 
 import {runScript} from '/scripts/workflows/execution';
@@ -16,12 +16,15 @@ import {getCmdFlag} from '/scripts/workflows/cmd-args';
 import {EXPORT_SETUP_SCRIPT} from '/scripts/workflows/corporation-shared';
 import {CMD_FLAG_DIVISION_NAME} from '/scripts/corp-export';
 import {FRAUD_DIVISION_NAME_PREFIX} from '/scripts/workflows/corporation-shared';
+import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
+import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
 
 interface InterfaceControls {
   divisionName?: HTMLSelectElement;
 }
 
 const React = getReactModel().reactNS;
+const useState = React.useState;
 
 const DIVISION_NAME_ID = 'exportSetup-divisionName';
 
@@ -47,11 +50,29 @@ function runManagerScript(netscript: NS) {
   runScript(netscript, EXPORT_SETUP_SCRIPT, undefined, 1, false, ...scriptArgs);
 }
 
-function CorpExportUI({netscript}: {netscript: NS}) {
+function CorpExportUI({nsPackage}: {nsPackage: NetscriptPackage}) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   const uiStyle = netscript.ui.getStyles();
   const uiTheme = netscript.ui.getTheme();
 
-  const corporationInfo = netscript.corporation.getCorporation();
+  const [divisionOptions, setDivisionOptions] = useState(
+    new Array<DropdownOption>()
+  );
+
+  useEffectOnce(() => {
+    async function refreshDivisionOptions() {
+      const corpInfo = await nsLocator.corporation['getCorporation']();
+      const options = corpInfo.divisions
+        .filter(value => !value.includes(FRAUD_DIVISION_NAME_PREFIX))
+        .map(divisionName => {
+          return {label: divisionName, value: divisionName};
+        });
+      setDivisionOptions(options);
+    }
+    refreshDivisionOptions();
+  });
 
   return (
     <div style={getDivBorderStyle(uiStyle, uiTheme, 'center')}>
@@ -62,11 +83,7 @@ function CorpExportUI({netscript}: {netscript: NS}) {
         <Dropdown
           id={DIVISION_NAME_ID}
           title="Division"
-          options={corporationInfo.divisions
-            .filter(value => !value.includes(FRAUD_DIVISION_NAME_PREFIX))
-            .map(divisionName => {
-              return {label: divisionName, value: divisionName};
-            })}
+          options={divisionOptions}
           uiStyle={uiStyle}
           uiTheme={uiTheme}
         />

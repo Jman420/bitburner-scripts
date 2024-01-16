@@ -9,6 +9,7 @@ import {getReactModel, openTail} from '/scripts/workflows/ui';
 
 import {EventListener} from '/scripts/comms/event-comms';
 import {CorporationUI} from '/scripts/controls/corporation-ui';
+import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
 const React = getReactModel().reactNS;
 
@@ -22,6 +23,8 @@ const TAIL_HEIGHT = 710;
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Corporation Automation UI');
@@ -34,7 +37,7 @@ export async function main(netscript: NS) {
   netscript.disableLog('ALL');
   netscript.printRaw(
     <React.StrictMode>
-      <CorporationUI netscript={netscript} eventListener={eventListener} />
+      <CorporationUI nsPackage={nsPackage} eventListener={eventListener} />
     </React.StrictMode>
   );
 
