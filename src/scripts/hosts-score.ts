@@ -28,6 +28,7 @@ import {
   scoreHostForWGWH,
   sortOptimalTargetHosts,
 } from '/scripts/workflows/scoring';
+import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
 const CMD_FLAG_ARG_WGWH_SCORE_FUNCTION = 'wgwh';
 const CMD_FLAG_ARG_EXP_FARM_FUNCTION = 'expFarm';
@@ -51,6 +52,9 @@ const SUBSCRIBER_NAME = 'hosts-score';
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Target Hosts Score Report');
@@ -69,17 +73,22 @@ export async function main(netscript: NS) {
 
   let targetHosts = scanWideNetwork(netscript, false, true, false, true);
   targetHosts = filterHostsCanHack(netscript, targetHosts);
-  const targetsAnalysis = targetHosts.map(hostname =>
+  let targetsAnalysis = targetHosts.map(hostname =>
     analyzeHost(netscript, hostname)
   );
   if (scoreFunc === CMD_FLAG_ARG_WGWH_SCORE_FUNCTION) {
     sortOptimalTargetHosts(targetsAnalysis, undefined, scoreHostForWGWH);
   } else if (scoreFunc === CMD_FLAG_ARG_EXP_FARM_FUNCTION) {
-    targetsAnalysis.map(value => {
-      const extendedValue = value as ServerDetailsExtended;
-      extendedValue.expGain = getHackingExpGain(netscript, value.hostname);
-      return extendedValue;
-    });
+    targetsAnalysis = await Promise.all(
+      targetsAnalysis.map(async value => {
+        const extendedValue = value as ServerDetailsExtended;
+        extendedValue.expGain = await getHackingExpGain(
+          nsLocator,
+          value.hostname
+        );
+        return extendedValue;
+      })
+    );
     sortOptimalTargetHosts(targetsAnalysis, undefined, scoreHostForExperience);
   } else {
     logWriter.writeLine(

@@ -3,7 +3,6 @@ import {
   GangMemberAscension,
   GangMemberInfo,
   GangTaskStats,
-  NS,
 } from '@ns';
 import {
   NetscriptLocator,
@@ -140,16 +139,16 @@ async function getMemberDetails(
   memberName?: string
 ) {
   const nsLocator = nsPackage.locator;
-  const netscript = nsPackage.netscript;
+  const gangApi = nsLocator.gang;
 
-  let memberNames = netscript.gang.getMemberNames();
+  let memberNames = await gangApi['getMemberNames']();
   if (memberName) {
     memberNames = [memberName];
   }
 
   const results = new Array<MemberDetails>();
   for (const name of memberNames) {
-    const memberInfo = await nsLocator.gang['getMemberInformation'](name);
+    const memberInfo = await gangApi['getMemberInformation'](name);
     let ascensionScore = 0;
     for (const ascensionProperty of ASCENSION_SCORE_PROPERTIES) {
       ascensionScore += memberInfo[ascensionProperty] as number;
@@ -242,15 +241,15 @@ async function ascendGangMember(
 
 async function getUpgradeCosts(nsPackage: NetscriptPackage) {
   const nsLocator = nsPackage.locator;
-  const netscript = nsPackage.netscript;
+  const gangApi = nsLocator.gang;
 
-  const equipmentList = netscript.gang.getEquipmentNames();
+  const equipmentList = await gangApi['getEquipmentNames']();
   const equipmentCosts = new Array<EquipmentCost>();
   for (const equipmentName of equipmentList) {
     const costDetails = {
       name: equipmentName,
-      cost: await nsLocator.gang['getEquipmentCost'](equipmentName),
-      type: await nsLocator.gang['getEquipmentType'](equipmentName),
+      cost: await gangApi['getEquipmentCost'](equipmentName),
+      type: await gangApi['getEquipmentType'](equipmentName),
     };
 
     equipmentCosts.push(costDetails);
@@ -322,11 +321,12 @@ function getTrainingStatus(
   return result;
 }
 
-function getVigilanteTaskDetails(netscript: NS) {
-  const taskNames = netscript.gang.getTaskNames();
+async function getVigilanteTaskDetails(nsLocator: NetscriptLocator) {
+  const gangApi = nsLocator.gang;
+  const taskNames = await gangApi['getTaskNames']();
 
   for (const taskName of taskNames) {
-    const taskDetails = netscript.gang.getTaskStats(taskName);
+    const taskDetails = await gangApi['getTaskStats'](taskName);
     if (taskDetails.baseWanted < 0) {
       return taskDetails;
     }
@@ -410,17 +410,22 @@ function getWantedLevelGainIncrease(
   );
 }
 
-function getCriminalTaskDetails(netscript: NS, taskName?: string) {
-  let taskNames = netscript.gang
-    .getTaskNames()
-    .filter(value => !SPECIAL_CASE_TASKS.includes(value));
+async function getCriminalTaskDetails(
+  nsLocator: NetscriptLocator,
+  taskName?: string
+) {
+  const gangApi = nsLocator.gang;
+
+  let taskNames = (await gangApi['getTaskNames']()).filter(
+    value => !SPECIAL_CASE_TASKS.includes(value)
+  );
   if (taskName) {
     taskNames = [taskName];
   }
 
   const result = new Array<GangTaskStats>();
   for (const name of taskNames) {
-    const taskInfo = netscript.gang.getTaskStats(name);
+    const taskInfo = await gangApi['getTaskStats'](name);
 
     if (taskInfo.baseWanted > 0) {
       result.push(taskInfo);

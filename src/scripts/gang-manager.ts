@@ -126,8 +126,8 @@ async function manageGang(
     .sort((valueA, valueB) => valueA.cost - valueB.cost);
 
   logWriter.writeLine('  Determining eligible tasks for members...');
-  const vigilanteTaskDetails = getVigilanteTaskDetails(netscript);
-  const criminalTaskDetails = getCriminalTaskDetails(netscript).sort(
+  const vigilanteTaskDetails = await getVigilanteTaskDetails(nsLocator);
+  const criminalTaskDetails = (await getCriminalTaskDetails(nsLocator)).sort(
     (taskA, taskB) => {
       let scoreA = 0;
       let scoreB = 0;
@@ -182,7 +182,7 @@ async function manageGang(
     while (
       managerConfig.buyAugmentations &&
       remainingAugmentations.length > 0 &&
-      remainingAugmentations[0].cost <= netscript.getPlayer().money
+      remainingAugmentations[0].cost <= (await nsLocator['getPlayer']()).money
     ) {
       const augmentationDetails = remainingAugmentations.shift();
       if (!augmentationDetails) {
@@ -207,7 +207,7 @@ async function manageGang(
     while (
       managerConfig.buyEquipment &&
       remainingEquipment.length > 0 &&
-      remainingEquipment[0].cost <= netscript.getPlayer().money &&
+      remainingEquipment[0].cost <= (await nsLocator['getPlayer']()).money &&
       memberStatsSatisfyLimit(
         memberDetails,
         ASCENSION_SCORE_PROPERTIES,
@@ -456,7 +456,7 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine(`Task Focus : ${taskFocus}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
-  if (!netscript.gang.inGang()) {
+  if (!(await nsLocator.gang['inGang']())) {
     terminalWriter.writeLine(
       'Player not in a gang.  Gang must be created before running this script.'
     );
