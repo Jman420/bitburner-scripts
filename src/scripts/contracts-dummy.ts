@@ -1,5 +1,7 @@
 import {AutocompleteData, NS} from '@ns';
 
+import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
+
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
@@ -24,9 +26,13 @@ let CONTRACT_TYPES: string[];
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  CONTRACT_TYPES = netscript.codingcontract
-    .getContractTypes()
-    .map(value => `'${value}'`);
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
+  const contractApi = nsLocator.codingcontract;
+
+  CONTRACT_TYPES = (await contractApi['getContractTypes']()).map(
+    value => `'${value}'`
+  );
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
@@ -52,7 +58,7 @@ export async function main(netscript: NS) {
 
   for (const type of contractTypes) {
     logWriter.writeLine(`Creating Dummy Contract for : ${type}`);
-    netscript.codingcontract.createDummyContract(type);
+    await contractApi['createDummyContract'](type);
   }
 }
 

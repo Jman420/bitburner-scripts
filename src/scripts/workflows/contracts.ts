@@ -1,4 +1,6 @@
-import {CodingContractData, NS} from '@ns';
+import {CodingContractData} from '@ns';
+
+import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
 
 import {scanWideNetwork} from '/scripts/workflows/recon';
 
@@ -130,11 +132,15 @@ const CONTRACT_SOLUTION_MAP = new Map<string, ContractSolver>([
   ],
 ]);
 
-function findContracts(
-  netscript: NS,
+async function findContracts(
+  nsPackage: NetscriptPackage,
   includeHome = false,
   targetHosts?: string[]
 ) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+  const contractApi = nsLocator.codingcontract;
+
   const availableContracts = new Array<CodingContract>();
   if (!targetHosts || targetHosts.length < 1) {
     targetHosts = scanWideNetwork(netscript, includeHome);
@@ -145,9 +151,9 @@ function findContracts(
       availableContracts.push({
         hostname: hostname,
         filename: challengePath,
-        type: netscript.codingcontract.getContractType(challengePath, hostname),
-        data: netscript.codingcontract.getData(challengePath, hostname),
-        attemptsRemaining: netscript.codingcontract.getNumTriesRemaining(
+        type: await contractApi['getContractType'](challengePath, hostname),
+        data: await contractApi['getData'](challengePath, hostname),
+        attemptsRemaining: await contractApi['getNumTriesRemaining'](
           challengePath,
           hostname
         ),

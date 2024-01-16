@@ -1,5 +1,7 @@
 import {AutocompleteData, NS} from '@ns';
 
+import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
+
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
@@ -32,6 +34,9 @@ const SUBSCRIBER_NAME = 'contracts-solve';
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   logWriter.writeLine('Automatically Solve Known Coding Contracts');
@@ -49,9 +54,11 @@ export async function main(netscript: NS) {
   logWriter.writeLine('Finding coding contracts...');
   let codingContacts: Array<CodingContract>;
   if (onlyHome) {
-    codingContacts = findContracts(netscript, includeHome, [HOME_SERVER_NAME]);
+    codingContacts = await findContracts(nsPackage, includeHome, [
+      HOME_SERVER_NAME,
+    ]);
   } else {
-    codingContacts = findContracts(netscript, includeHome);
+    codingContacts = await findContracts(nsPackage, includeHome);
   }
 
   logWriter.writeLine(`Found ${codingContacts.length} coding contracts.`);
@@ -64,7 +71,7 @@ export async function main(netscript: NS) {
     if (contractSolver) {
       const challengeInput = contractSolver.parseInputFunc(contract.data);
       const solution = contractSolver.solveFunc(...challengeInput);
-      solutionResult = netscript.codingcontract.attempt(
+      solutionResult = await nsLocator.codingcontract['attempt'](
         solution,
         contract.filename,
         contract.hostname
