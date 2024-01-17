@@ -1,6 +1,7 @@
 import {CityName} from '@ns';
 
 const SCRIPTS_PATH = '/scripts';
+
 const HOME_SERVER_NAME = 'home';
 const NETSCRIPT_SERVER_NAME = 'server-lambda';
 const BASE_RAM_COST = 1.6;

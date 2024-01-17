@@ -16,10 +16,8 @@ import {
   AttackManagerRunning,
   WgwhManagerUI,
 } from '/scripts/controls/wgwh-manager-ui';
-import {
-  BATCH_ATTACK_SCRIPT,
-  SERIAL_ATTACK_SCRIPT,
-} from '/scripts/workflows/attacks';
+import {WGWH_SERIAL_ATTACK_SCRIPT} from '/scripts/wgwh-serial';
+import {WGWH_BATCH_ATTACK_SCRIPT} from '/scripts/wgwh-batch';
 
 const React = getReactModel().reactNS;
 
@@ -39,8 +37,8 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine(SECTION_DIVIDER);
 
   netscript.disableLog('ALL');
-  const serialAttackRunning = getPid(netscript, SERIAL_ATTACK_SCRIPT);
-  const batchAttackRunning = getPid(netscript, BATCH_ATTACK_SCRIPT);
+  const serialAttackRunning = getPid(netscript, WGWH_SERIAL_ATTACK_SCRIPT);
+  const batchAttackRunning = getPid(netscript, WGWH_BATCH_ATTACK_SCRIPT);
   let attackManagerRunning = AttackManagerRunning.NONE;
   if (serialAttackRunning && batchAttackRunning) {
     terminalWriter.writeLine(

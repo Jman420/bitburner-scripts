@@ -24,6 +24,7 @@ type NetscriptPackage = {
 };
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 type ServiceFunc = (...args: any[]) => any;
+type NetscriptExtended = NS & {heart: {break(): number}};
 
 const DEBUG = false;
 
@@ -179,6 +180,7 @@ export {
   NetscriptLocator,
   NetscriptPackage,
   ServiceFunc,
+  NetscriptExtended,
   getLocatorPackage,
   registerEndpoint,
   removeEndpoint,

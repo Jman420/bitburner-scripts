@@ -13,7 +13,10 @@ import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
 import {getReactModel, ReactSetStateFunction} from '/scripts/workflows/ui';
 import {scanWideNetwork} from '/scripts/workflows/recon';
 import {TOTAL_STOCKS} from '/scripts/workflows/stocks';
-import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
+import {
+  NetscriptExtended,
+  NetscriptPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 const React = getReactModel().reactNS;
 const useState = React.useState;
@@ -91,6 +94,7 @@ async function updatePolledMetrics(
 ) {
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
+  const netscriptExtended = netscript as NetscriptExtended;
 
   logWriter.writeLine('Calculating script metrics...');
   let totalScriptIncome = 0;
@@ -123,8 +127,7 @@ async function updatePolledMetrics(
 
   logWriter.writeLine('Retrieving location & player metrics...');
   const playerInfo = await nsLocator['getPlayer']();
-  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
-  const karmaLevel = (netscript as any).heart.break();
+  const karmaLevel = netscriptExtended.heart.break();
   setCity(playerInfo.city);
   setLocation(playerInfo.location);
   setKarmaLevel(netscript.formatNumber(karmaLevel));

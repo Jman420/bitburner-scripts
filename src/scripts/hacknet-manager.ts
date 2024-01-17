@@ -32,13 +32,17 @@ import {openTail} from '/scripts/workflows/ui';
 const MODULE_NAME = 'hacknet-manager';
 const SUBSCRIBER_NAME = 'hacknet-manager';
 
-const CMD_FLAG_PURCHASE_NODES = 'purchaseNodes';
-const CMD_FLAG_PURCHASE_UPGRADES = 'purchaseUpgrades';
-const CMD_FLAG_FUNDS_LIMIT_PERCENT = 'fundsLimitPercent';
+export const HACKNET_MANAGER_SCRIPT = 'scripts/hacknet-manager.js';
+const DEFAULT_MAX_NODES = 15;
+export const CMD_FLAG_PURCHASE_NODES = 'purchaseNodes';
+export const CMD_FLAG_PURCHASE_UPGRADES = 'purchaseUpgrades';
+export const CMD_FLAG_FUNDS_LIMIT_PERCENT = 'fundsLimitPercent';
+export const CMD_FLAG_MAX_NODES = 'maxNodes';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_PURCHASE_NODES, false],
   [CMD_FLAG_PURCHASE_UPGRADES, false],
   [CMD_FLAG_FUNDS_LIMIT_PERCENT, 0],
+  [CMD_FLAG_MAX_NODES, DEFAULT_MAX_NODES],
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
@@ -82,7 +86,7 @@ function manageOrdersAndPurchases(
   let orderPurchased = false;
   if (
     managerConfig.purchaseNodes &&
-    hacknetApi.numNodes() < hacknetApi.maxNumNodes() &&
+    hacknetApi.numNodes() < managerConfig.maxNodes &&
     (!managerConfig.purchaseUpgrades ||
       !upgradeOrders.length ||
       nodeCost < upgradeOrders[0].cost) &&
@@ -154,6 +158,9 @@ function handleUpdateConfigEvent(
   if (managerConfig.fundsLimit < 0) {
     managerConfig.fundsLimit = netscript.getPlayer().money * fundsLimitPercent;
   }
+  if (managerConfig.maxNodes < 0) {
+    managerConfig.maxNodes = DEFAULT_MAX_NODES;
+  }
 
   logWriter.writeLine(`  Purchase Nodes : ${managerConfig.purchaseNodes}`);
   logWriter.writeLine(
@@ -189,17 +196,23 @@ export async function main(netscript: NS) {
   ].valueOf() as boolean;
   fundsLimitPercent = cmdArgs[CMD_FLAG_FUNDS_LIMIT_PERCENT].valueOf() as number;
   const fundsLimit = fundsLimitPercent * netscript.getPlayer().money;
+  const maxNodes = Math.min(
+    cmdArgs[CMD_FLAG_MAX_NODES].valueOf() as number,
+    netscript.hacknet.maxNumNodes()
+  );
 
   terminalWriter.writeLine(`Dont Purchase Nodes : ${purchaseNodes}`);
   terminalWriter.writeLine(`Dont Purchase Upgrades : ${purchaseUpgrades}`);
   terminalWriter.writeLine(`Funds Limit Percent : ${fundsLimitPercent}`);
   terminalWriter.writeLine(`Funds Limit : ${fundsLimit}`);
+  terminalWriter.writeLine(`Max Nodes : ${maxNodes}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
   managerConfig = {
     purchaseNodes: purchaseNodes,
     purchaseUpgrades: purchaseUpgrades,
     fundsLimit: fundsLimit,
+    maxNodes: maxNodes,
   };
 
   terminalWriter.writeLine('See script logs for on-going purchase details.');
@@ -240,6 +253,9 @@ export function autocomplete(data: AutocompleteData, args: string[]) {
   const lastCmdFlag = getLastCmdFlag(args);
   if (lastCmdFlag === getCmdFlag(CMD_FLAG_FUNDS_LIMIT_PERCENT)) {
     return PERCENT_AUTOCOMPLETE;
+  }
+  if (lastCmdFlag === getCmdFlag(CMD_FLAG_MAX_NODES)) {
+    return [5, 10, 15, 20];
   }
   return CMD_FLAGS;
 }

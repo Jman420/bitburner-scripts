@@ -4,7 +4,6 @@ import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {
-  CMD_FLAG_INCLUDE_HOME,
   CmdArgsSchema,
   getSchemaFlags,
   parseCmdFlags,
@@ -13,7 +12,10 @@ import {
 import {initializeScript} from '/scripts/workflows/execution';
 
 import {scanWideNetwork} from '/scripts/workflows/recon';
+import {SCRIPTS_PATH} from '/scripts/common/shared';
 
+export const SCRIPTS_KILL_ALL_SCRIPT = `${SCRIPTS_PATH}/scripts-kill-all.js`;
+export const CMD_FLAG_INCLUDE_HOME = 'includeHome';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_INCLUDE_HOME, false]];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 

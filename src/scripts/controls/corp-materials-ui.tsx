@@ -140,7 +140,7 @@ function CorpMaterialsUI({nsPackage}: {nsPackage: NetscriptPackage}) {
           id={STORAGE_SIZE_ID}
           title="Storage Size"
           value={storageSize}
-          setValueFunc={setStorageSize}
+          setValue={setStorageSize}
           uiStyle={uiStyle}
           uiTheme={uiTheme}
         />

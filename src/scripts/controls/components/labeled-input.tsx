@@ -12,7 +12,7 @@ function LabeledInput({
   title,
   placeholder,
   value,
-  setValueFunc,
+  setValue,
   uiStyle,
   uiTheme,
 }: {
@@ -20,7 +20,7 @@ function LabeledInput({
   title?: string;
   placeholder?: string;
   value: string;
-  setValueFunc: ReactSetStateFunction<string>;
+  setValue: ReactSetStateFunction<string>;
   uiStyle: IStyleSettings;
   uiTheme: UserInterfaceTheme;
 }) {
@@ -31,7 +31,7 @@ function LabeledInput({
         id={id}
         placeholder={placeholder}
         value={value}
-        setValue={setValueFunc}
+        setValue={setValue}
         uiStyle={uiStyle}
         uiTheme={uiTheme}
         fontSize="12pt"

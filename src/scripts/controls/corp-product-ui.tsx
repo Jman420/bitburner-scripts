@@ -272,7 +272,7 @@ function ProductLifecycleUI({
           title="Product Name"
           placeholder="Name"
           value={productName}
-          setValueFunc={setProductName}
+          setValue={setProductName}
           uiStyle={uiStyle}
           uiTheme={uiTheme}
         />
@@ -281,7 +281,7 @@ function ProductLifecycleUI({
           title="Budget Percent"
           placeholder="Percent"
           value={budgetPercent}
-          setValueFunc={setBudgetPercent}
+          setValue={setBudgetPercent}
           uiStyle={uiStyle}
           uiTheme={uiTheme}
         />

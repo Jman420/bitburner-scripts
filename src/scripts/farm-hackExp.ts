@@ -17,6 +17,7 @@ import {
   CMD_FLAG_CONTINUOUS_ATTACK,
   CMD_FLAG_TARGETS_CSV,
 } from '/scripts/workers/shared';
+import {SCRIPTS_PATH} from '/scripts/common/shared';
 
 import {
   analyzeHost,
@@ -34,8 +35,9 @@ import {
   sortOptimalTargetHosts,
 } from '/scripts/workflows/scoring';
 
-const CMD_FLAG_INCLUDE_HOME = 'includeHome';
-const CMD_FLAG_OPTIMAL_ONLY = 'optimalOnly';
+export const FARM_HACK_EXP_SCRIPT = `${SCRIPTS_PATH}/farm-hackExp.js`;
+export const CMD_FLAG_INCLUDE_HOME = 'includeHome';
+export const CMD_FLAG_OPTIMAL_ONLY = 'optimalOnly';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_INCLUDE_HOME, false],
   [CMD_FLAG_OPTIMAL_ONLY, 0],

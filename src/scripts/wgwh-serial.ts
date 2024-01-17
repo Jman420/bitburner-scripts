@@ -37,12 +37,14 @@ import {WgwhConfigRequest} from '/scripts/comms/requests/wgwh-config-request';
 import {WgwhConfigResponse} from '/scripts/comms/responses/wgwh-config-response';
 
 import {openTail} from '/scripts/workflows/ui';
+import {SCRIPTS_PATH} from '/scripts/common/shared';
 
-const CMD_FLAG_INCLUDE_HOME = 'includeHome';
-const CMD_FLAG_OPTIMAL_ONLY = 'optimalOnly';
-const CMD_FLAG_HACK_PERCENT = 'hackPercent';
-const CMD_FLAG_FUNDS_LIMIT_PERCENT = 'fundsLimitPercent';
-const CMD_FLAG_ATTACKERS = 'attackers';
+export const WGWH_SERIAL_ATTACK_SCRIPT = `${SCRIPTS_PATH}/wgwh-serial.js`;
+export const CMD_FLAG_INCLUDE_HOME = 'includeHome';
+export const CMD_FLAG_OPTIMAL_ONLY = 'optimalOnly';
+export const CMD_FLAG_HACK_PERCENT = 'hackPercent';
+export const CMD_FLAG_FUNDS_LIMIT_PERCENT = 'fundsLimitPercent';
+export const CMD_FLAG_ATTACKERS = 'attackers';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_OPTIMAL_ONLY, 0],
   [CMD_FLAG_HACK_PERCENT, 0.75],

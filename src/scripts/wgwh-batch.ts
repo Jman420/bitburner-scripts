@@ -55,12 +55,14 @@ import {
   NetscriptPackage,
   getLocatorPackage,
 } from '/scripts/netscript-services/netscript-locator';
+import {SCRIPTS_PATH} from '/scripts/common/shared';
 
-const CMD_FLAG_OPTIMAL_ONLY = 'optimalOnly';
-const CMD_FLAG_HACK_PERCENT = 'hackPercent';
-const CMD_FLAG_FUNDS_LIMIT_PERCENT = 'fundsLimitPercent';
-const CMD_FLAG_INCLUDE_HOME = 'includeHome';
-const CMD_FLAG_ATTACKERS = 'attackers';
+export const WGWH_BATCH_ATTACK_SCRIPT = `${SCRIPTS_PATH}/wgwh-batch.js`;
+export const CMD_FLAG_OPTIMAL_ONLY = 'optimalOnly';
+export const CMD_FLAG_HACK_PERCENT = 'hackPercent';
+export const CMD_FLAG_FUNDS_LIMIT_PERCENT = 'fundsLimitPercent';
+export const CMD_FLAG_INCLUDE_HOME = 'includeHome';
+export const CMD_FLAG_ATTACKERS = 'attackers';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_INCLUDE_HOME, false],
   [CMD_FLAG_OPTIMAL_ONLY, 0],

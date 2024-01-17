@@ -5,10 +5,7 @@ import {
   getDocument,
   getReactModel,
 } from '/scripts/workflows/ui';
-import {
-  HACKNET_MANAGER_SCRIPT,
-  HacknetManagerConfig,
-} from '/scripts/workflows/hacknet';
+import {HacknetManagerConfig} from '/scripts/workflows/hacknet';
 import {getPid, runScript} from '/scripts/workflows/execution';
 
 import {
@@ -32,21 +29,24 @@ import {ToggleButton} from '/scripts/controls/components/toggle-button';
 import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
 import {parseNumber} from '/scripts/workflows/parsing';
 import {Button} from '/scripts/controls/components/button';
-import {Input} from '/scripts/controls/components/input';
+import {LabeledInput} from '/scripts/controls/components/labeled-input';
+import {HACKNET_MANAGER_SCRIPT} from '/scripts/hacknet-manager';
 
 const React = getReactModel().reactNS;
 const useState = React.useState;
 
 interface InterfaceControls {
-  purchaseNodes: HTMLButtonElement | undefined;
-  purchaseUpgrades: HTMLButtonElement | undefined;
-  fundsLimit: HTMLInputElement | undefined;
+  purchaseNodes?: HTMLButtonElement;
+  purchaseUpgrades?: HTMLButtonElement;
+  fundsLimit?: HTMLInputElement;
+  maxNodes?: HTMLInputElement;
 }
 
 const PURCHASE_NODES_BUTTON_ID = 'purchaseNodes';
 const PURCHASE_UPGRADES_BUTTON_ID = 'purchaseUpgrades';
 const FUNDS_LIMIT_INPUT_ID = 'fundsLimit';
-const SET_FUNDS_LIMIT_BUTTON_ID = 'setFundsLimit';
+const MAX_NODES_INPUT_ID = 'maxNodes';
+const SEND_SETTINGS_BUTTON_ID = 'sendSettings';
 
 function getInterfaceControls() {
   const doc = getDocument();
@@ -58,6 +58,9 @@ function getInterfaceControls() {
     fundsLimit: (doc.getElementById(FUNDS_LIMIT_INPUT_ID) ?? undefined) as
       | HTMLInputElement
       | undefined,
+    maxNodes: (doc.getElementById(MAX_NODES_INPUT_ID) ?? undefined) as
+      | HTMLInputElement
+      | undefined,
   };
   return result;
 }
@@ -67,6 +70,7 @@ function handleHacknetConfigResponse(
   netscript: NS,
   eventListener: EventListener,
   setFundsLimit: ReactSetStateFunction<string>,
+  setMaxNodes: ReactSetStateFunction<string>,
   uiTheme: UserInterfaceTheme
 ) {
   if (!responseData.config) {
@@ -112,9 +116,10 @@ function handleHacknetConfigResponse(
     }
   }
   setFundsLimit(netscript.formatNumber(config.fundsLimit));
+  setMaxNodes(netscript.formatNumber(config.maxNodes));
 }
 
-function handleSetFundsLimitClick(
+function handleSendSettingsClick(
   /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   eventData: React.MouseEvent<HTMLButtonElement, MouseEvent>
 ) {
@@ -142,6 +147,7 @@ function getHacknetManagerConfig() {
         TOGGLE_BUTTON_SELECTED_CLASS
       ) ?? false,
     fundsLimit: parseNumber(interfaceControls.fundsLimit?.value ?? '') || -1,
+    maxNodes: parseNumber(interfaceControls.maxNodes?.value ?? '') || -1,
   };
   return config;
 }
@@ -156,6 +162,7 @@ async function handleToggleHacknetManager(
   netscript: NS,
   eventListener: EventListener,
   setFundsLimit: ReactSetStateFunction<string>,
+  setMaxNodes: ReactSetStateFunction<string>,
   uiTheme: UserInterfaceTheme
 ) {
   let scriptPid = getPid(netscript, HACKNET_MANAGER_SCRIPT);
@@ -170,6 +177,7 @@ async function handleToggleHacknetManager(
       netscript,
       eventListener,
       setFundsLimit,
+      setMaxNodes,
       uiTheme
     );
     sendMessage(new HacknetConfigRequest(eventListener.subscriberName));
@@ -192,6 +200,7 @@ function HacknetManagerUI({
   const uiTheme = netscript.ui.getTheme();
 
   const [fundsLimit, setFundsLimit] = useState('');
+  const [maxNodes, setMaxNodes] = useState('');
   const targetRunning = Boolean(getPid(netscript, HACKNET_MANAGER_SCRIPT));
 
   useEffectOnce(() => {
@@ -201,6 +210,7 @@ function HacknetManagerUI({
       netscript,
       eventListener,
       setFundsLimit,
+      setMaxNodes,
       uiTheme
     );
     sendMessage(new HacknetConfigRequest(eventListener.subscriberName));
@@ -217,6 +227,7 @@ function HacknetManagerUI({
             netscript,
             eventListener,
             setFundsLimit,
+            setMaxNodes,
             uiTheme
           )}
           scriptAlreadyRunning={targetRunning}
@@ -244,18 +255,29 @@ function HacknetManagerUI({
         </ToggleButton>
       </div>
       <div style={getDivBorderStyle(uiStyle, uiTheme, 'center')}>
-        <Input
-          id={FUNDS_LIMIT_INPUT_ID}
-          placeholder="Enter funds limit"
-          value={fundsLimit}
-          setValue={setFundsLimit}
-          uiStyle={uiStyle}
-          uiTheme={uiTheme}
-          textAlign="center"
-        />
+        <div style={getHeaderDivStyle(uiStyle, uiTheme)}>
+          <LabeledInput
+            id={FUNDS_LIMIT_INPUT_ID}
+            title="Funds Limit"
+            placeholder="Funds Limit"
+            value={fundsLimit}
+            setValue={setFundsLimit}
+            uiStyle={uiStyle}
+            uiTheme={uiTheme}
+          />
+          <LabeledInput
+            id={MAX_NODES_INPUT_ID}
+            title="Max Nodes"
+            placeholder="Max Nodes"
+            value={maxNodes}
+            setValue={setMaxNodes}
+            uiStyle={uiStyle}
+            uiTheme={uiTheme}
+          />
+        </div>
         <Button
-          id={SET_FUNDS_LIMIT_BUTTON_ID}
-          onClick={handleSetFundsLimitClick}
+          id={SEND_SETTINGS_BUTTON_ID}
+          onClick={handleSendSettingsClick}
           uiStyle={uiStyle}
           uiTheme={uiTheme}
         >

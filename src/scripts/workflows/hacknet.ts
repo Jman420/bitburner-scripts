@@ -14,6 +14,7 @@ interface HacknetManagerConfig {
   purchaseNodes: boolean;
   purchaseUpgrades: boolean;
   fundsLimit: number;
+  maxNodes: number;
 }
 
 interface HacknetOrder {
@@ -28,8 +29,6 @@ interface HacknetPurchaseDetails {
   costFunc: CostFunction;
   purchaseFunc: PurchaseFunction;
 }
-
-const HACKNET_MANAGER_SCRIPT = 'scripts/hacknet-manager.js';
 
 function getNodeUpgradeOrders(
   hacknetApi: Hacknet,
@@ -91,6 +90,5 @@ export {
   HacknetManagerConfig,
   HacknetResources,
   HacknetOrder,
-  HACKNET_MANAGER_SCRIPT,
   getNodeUpgradeOrders,
 };

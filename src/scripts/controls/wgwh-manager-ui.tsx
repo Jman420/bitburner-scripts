@@ -7,10 +7,8 @@ import {
 } from '/scripts/workflows/ui';
 import {getPid, runScript} from '/scripts/workflows/execution';
 import {
-  BATCH_ATTACK_SCRIPT,
   DEFAULT_OPTIMAL_ONLY_COUNT,
   DEFAULT_HACK_FUNDS_PERCENT,
-  SERIAL_ATTACK_SCRIPT,
   WgwhAttackConfig,
   DEFAULT_TARGET_FUNDS_LIMIT_PERCENT,
 } from '/scripts/workflows/attacks';
@@ -36,6 +34,8 @@ import {ToggleButton} from '/scripts/controls/components/toggle-button';
 import {LabeledInput} from '/scripts/controls/components/labeled-input';
 import {Button} from '/scripts/controls/components/button';
 import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
+import {WGWH_SERIAL_ATTACK_SCRIPT} from '/scripts/wgwh-serial';
+import {WGWH_BATCH_ATTACK_SCRIPT} from '/scripts/wgwh-batch';
 
 enum AttackManagerRunning {
   SERIAL,
@@ -139,12 +139,12 @@ function handleAttackSettingsClick(netscript: NS) {
     interfaceControls.serialAttack?.classList.contains(
       TOGGLE_BUTTON_SELECTED_CLASS
     ) ?? false;
-  const serialRunning = getPid(netscript, SERIAL_ATTACK_SCRIPT);
+  const serialRunning = getPid(netscript, WGWH_SERIAL_ATTACK_SCRIPT);
   const batchSelected =
     interfaceControls.batchAttack?.classList.contains(
       TOGGLE_BUTTON_SELECTED_CLASS
     ) ?? false;
-  const batchRunning = getPid(netscript, BATCH_ATTACK_SCRIPT);
+  const batchRunning = getPid(netscript, WGWH_BATCH_ATTACK_SCRIPT);
 
   return (
     (!serialRunning && !batchRunning) ||
@@ -219,11 +219,11 @@ async function handleToggleManager(
   const batchAttack = interfaceControls.batchAttack?.classList.contains(
     TOGGLE_BUTTON_SELECTED_CLASS
   );
-  let attackManagerScript = BATCH_ATTACK_SCRIPT;
+  let attackManagerScript = WGWH_BATCH_ATTACK_SCRIPT;
   if (batchAttack) {
-    attackManagerScript = BATCH_ATTACK_SCRIPT;
+    attackManagerScript = WGWH_BATCH_ATTACK_SCRIPT;
   } else if (serialAttack) {
-    attackManagerScript = SERIAL_ATTACK_SCRIPT;
+    attackManagerScript = WGWH_SERIAL_ATTACK_SCRIPT;
   }
 
   let scriptPid = getPid(netscript, attackManagerScript);
@@ -360,7 +360,7 @@ function WgwhManagerUI({
               id={OPTIMAL_ONLY_COUNT_ID}
               title="Optimal Only #"
               value={optimalOnlyCount}
-              setValueFunc={setOptimalOnlyCount}
+              setValue={setOptimalOnlyCount}
               uiStyle={uiStyle}
               uiTheme={uiTheme}
             />
@@ -368,7 +368,7 @@ function WgwhManagerUI({
               id={HACK_FUNDS_PERCENT_ID}
               title="Hack Funds %"
               value={hackFundsPercent}
-              setValueFunc={setHackFundsPercent}
+              setValue={setHackFundsPercent}
               uiStyle={uiStyle}
               uiTheme={uiTheme}
             />
@@ -376,7 +376,7 @@ function WgwhManagerUI({
               id={FUNDS_LIMIT_PERCENT_ID}
               title="Funds Limit %"
               value={fundsLimitPercent}
-              setValueFunc={setFundsLimitPercent}
+              setValue={setFundsLimitPercent}
               uiStyle={uiStyle}
               uiTheme={uiTheme}
             />
@@ -387,7 +387,7 @@ function WgwhManagerUI({
               title="Target Hosts"
               placeholder="Set target hosts"
               value={targetHosts.join(', ')}
-              setValueFunc={() => {}}
+              setValue={() => {}}
               uiStyle={uiStyle}
               uiTheme={uiTheme}
             />
@@ -396,7 +396,7 @@ function WgwhManagerUI({
               title="Attacker Hosts"
               placeholder="Set attacker hosts"
               value={attackerHosts.join(', ')}
-              setValueFunc={() => {}}
+              setValue={() => {}}
               uiStyle={uiStyle}
               uiTheme={uiTheme}
             />

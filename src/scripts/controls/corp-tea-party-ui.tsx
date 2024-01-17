@@ -194,7 +194,7 @@ function TeaPartyUI({
           id={MORALE_LIMIT_ID}
           title="Morale Limit"
           value={moraleLimit}
-          setValueFunc={setMoraleLimit}
+          setValue={setMoraleLimit}
           uiStyle={uiStyle}
           uiTheme={uiTheme}
         />
@@ -202,7 +202,7 @@ function TeaPartyUI({
           id={ENERGY_LIMIT_ID}
           title="Energy Limit"
           value={energyLimit}
-          setValueFunc={setEnergyLimit}
+          setValue={setEnergyLimit}
           uiStyle={uiStyle}
           uiTheme={uiTheme}
         />
@@ -210,7 +210,7 @@ function TeaPartyUI({
           id={PARTY_FUNDS_ID}
           title="Party Funds"
           value={partyFunds}
-          setValueFunc={setPartyFunds}
+          setValue={setPartyFunds}
           uiStyle={uiStyle}
           uiTheme={uiTheme}
         />
