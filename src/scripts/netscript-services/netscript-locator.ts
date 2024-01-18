@@ -28,7 +28,7 @@ type NetscriptExtended = NS & {heart: {break(): number}};
 
 const DEBUG = false;
 
-const MAX_RETRIES = 5;
+const MAX_RETRIES = 10;
 const RETRY_DELAY = 500;
 const DEFAULT_MEMBER_PATH = 'netscript';
 
@@ -100,7 +100,7 @@ class NetscriptProxyHandler<TTarget extends NS>
           // If there is a registered endpoint for the function then use it
           let endpoint = REGISTERED_ENDPOINTS.get(memberNameStr);
           if (endpoint) {
-            return endpoint(...argArray);
+            return await endpoint(...argArray);
           }
 
           // All function calls through the Proxy will be offloaded to service scripts
@@ -122,7 +122,9 @@ class NetscriptProxyHandler<TTarget extends NS>
           }
           if (servicePid < 1) {
             throw new Error(
-              `Unable to offload netscript function ${memberNameStr} - Insufficient RAM : ${functionCost}`
+              `Unable to offload netscript function '${memberNameStr}' - Insufficient RAM : ${netscript.formatRam(
+                functionCost
+              )}`
             );
           }
 
@@ -134,7 +136,7 @@ class NetscriptProxyHandler<TTarget extends NS>
               `Unable to offload netscript function ${memberNameStr} - Endpoint function not found`
             );
           }
-          return endpoint(...argArray);
+          return await endpoint(...argArray);
         },
       });
     }

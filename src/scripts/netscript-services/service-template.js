@@ -1,20 +1,22 @@
 import { registerEndpoint, removeEndpoint } from "/scripts/netscript-services/netscript-locator";
 
 let serviceCalled = false;
+let functionResolved = true;
 
-function handleServiceCall(netscript, ...args) {
+async function handleServiceCall(netscript, ...args) {
   serviceCalled = true;
-  return netscript.path.FUNCTION_NAME(...args);
+  functionResolved = false;
+  const result = await netscript.path.FUNCTION_NAME(...args);
+  functionResolved = true;
+  return result;
 }
 
 async function handleShutdown(netscript) {
   SHUTDOWN_DELAY;
 
-  if (!serviceCalled) {
-    netscript.exit();
-    return;
-  }
+  const result = !serviceCalled && functionResolved;
   serviceCalled = false;
+  return result;
 }
 
 /** @param {NS} ns */
@@ -28,7 +30,5 @@ export async function main(netscript) {
   registerEndpoint(netscript.path, 'FUNCTION_NAME', handleServiceCall.bind(undefined, netscript));
   netscript.writePort(netscript.pid, 1);
 
-  while (true) {
-    await handleShutdown(netscript);
-  }
+  while (!await handleShutdown(netscript)) {}
 }
