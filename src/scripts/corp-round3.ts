@@ -203,17 +203,13 @@ export async function main(netscript: NS) {
   );
 
   scriptLogWriter.writeLine('Starting Product Lifecycle Management script...');
-  runScript(
-    netscript,
-    PRODUCT_LIFECYCLE_SCRIPT,
-    undefined,
-    1,
-    false,
+  const scriptArgs = [
     getCmdFlag(CMD_FLAG_DIVISION_NAME),
     DivisionNames.TOBACCO,
     getCmdFlag(CMD_FLAG_DESIGN_CITY_NAME),
-    DEFAULT_PRODUCT_DESIGN_OFFICE
-  );
+    DEFAULT_PRODUCT_DESIGN_OFFICE,
+  ];
+  runScript(netscript, PRODUCT_LIFECYCLE_SCRIPT, {args: scriptArgs});
 
   scriptLogWriter.writeLine('Improving Agriculture & Chemical Divisions...');
   await improveSupportDivision(

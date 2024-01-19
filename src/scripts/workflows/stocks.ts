@@ -68,17 +68,9 @@ function runStockTicker(netscript: NS) {
     !netscript.isRunning(STOCKS_TICKER_4SIGMA_SCRIPT)
   ) {
     if (netscript.stock.has4SDataTIXAPI()) {
-      stockForecastPid = runScript(
-        netscript,
-        STOCKS_TICKER_4SIGMA_SCRIPT,
-        netscript.getHostname()
-      );
+      stockForecastPid = runScript(netscript, STOCKS_TICKER_4SIGMA_SCRIPT);
     } else {
-      stockForecastPid = runScript(
-        netscript,
-        STOCKS_TICKER_HISTORY_SCRIPT,
-        netscript.getHostname()
-      );
+      stockForecastPid = runScript(netscript, STOCKS_TICKER_HISTORY_SCRIPT);
     }
   }
   return stockForecastPid !== 0;

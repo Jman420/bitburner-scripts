@@ -21,6 +21,14 @@ type GrowWeakenHackFunction = (
   opts?: BasicHGWOptions
 ) => Promise<number>;
 
+interface RunScriptOptions {
+  hostname?: string;
+  threadCount?: number;
+  useMaxThreads?: boolean;
+  tempScript?: boolean;
+  args?: (string | number | boolean)[];
+}
+
 const MIN_LOOP_DELAY_MILLISEC = 1;
 const MAX_LOOP_DELAY_MILLISEC = 100;
 const EVENT_LOOP_DELAY = 1000;
@@ -34,15 +42,14 @@ function getRequiredRam(netscript: NS, scriptPath: string, threadCount = 1) {
 function runScript(
   netscript: NS,
   scriptName: string,
-  hostname?: string,
-  threadCount = 1,
-  useMaxThreads = false,
-  ...args: (string | number | boolean)[]
+  runScriptOptions?: RunScriptOptions
 ) {
+  let hostname = runScriptOptions?.hostname;
   if (!hostname) {
     hostname = netscript.getHostname();
   }
 
+  const args = runScriptOptions?.args ?? [];
   if (netscript.isRunning(scriptName, hostname, ...args)) {
     return -1;
   }
@@ -51,10 +58,15 @@ function runScript(
     return 0;
   }
 
-  threadCount = useMaxThreads
+  const threadCount = runScriptOptions?.useMaxThreads
     ? maxScriptThreads(netscript, hostname, scriptName, false)
-    : threadCount;
-  return netscript.exec(scriptName, hostname, threadCount, ...args);
+    : runScriptOptions?.threadCount ?? 1;
+  return netscript.exec(
+    scriptName,
+    hostname,
+    {threads: threadCount, temporary: runScriptOptions?.tempScript},
+    ...args
+  );
 }
 
 function ensureRunning(
@@ -65,7 +77,10 @@ function ensureRunning(
 ) {
   let scriptPid = -1;
   if (!netscript.isRunning(scriptPath, hostname)) {
-    scriptPid = runScript(netscript, scriptPath, hostname, 1, false, ...args);
+    scriptPid = runScript(netscript, scriptPath, {
+      hostname: hostname,
+      args: args,
+    });
   }
   return scriptPid !== 0;
 }
@@ -122,14 +137,13 @@ function runWorkerScript(
       hostThreads = requiredThreads;
     }
     copyFiles(netscript, workerPackage, hostname);
-    const scriptPid = runScript(
-      netscript,
-      scriptPath,
-      hostname,
-      hostThreads,
-      useMaxThreads,
-      ...scriptArgs
-    );
+    const scriptPid = runScript(netscript, scriptPath, {
+      hostname: hostname,
+      threadCount: hostThreads,
+      useMaxThreads: useMaxThreads,
+      tempScript: true,
+      args: scriptArgs,
+    });
     if (scriptPid) {
       scriptPids.push(scriptPid);
       requiredThreads -= hostThreads;
@@ -217,6 +231,7 @@ async function eventLoop(netscript: NS, eventListener: EventListener) {
 export {
   GrowWeakenHackFunction,
   LoopableFunction,
+  RunScriptOptions,
   MIN_LOOP_DELAY_MILLISEC,
   MAX_LOOP_DELAY_MILLISEC,
   getRequiredRam,

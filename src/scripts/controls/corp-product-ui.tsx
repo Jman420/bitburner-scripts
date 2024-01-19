@@ -130,14 +130,9 @@ async function handleToggleProductLifecycleManager(
       scriptArgs.push(getCmdFlag(CMD_FLAG_BUDGET_PERCENT));
       scriptArgs.push(netscript.formatNumber(config.budgetPercent));
     }
-    scriptPid = runScript(
-      netscript,
-      PRODUCT_LIFECYCLE_SCRIPT,
-      undefined,
-      1,
-      false,
-      ...scriptArgs
-    );
+    scriptPid = runScript(netscript, PRODUCT_LIFECYCLE_SCRIPT, {
+      args: scriptArgs,
+    });
 
     eventListener.addListener(
       ProductLifecycleConfigResponse,

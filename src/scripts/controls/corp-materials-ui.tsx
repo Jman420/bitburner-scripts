@@ -78,14 +78,7 @@ function runManagerScript(netscript: NS) {
     scriptArgs.push(cityName);
   }
 
-  runScript(
-    netscript,
-    INDUSTRY_MATERIALS_SCRIPT,
-    undefined,
-    1,
-    false,
-    ...scriptArgs
-  );
+  runScript(netscript, INDUSTRY_MATERIALS_SCRIPT, {args: scriptArgs});
 }
 
 function CorpMaterialsUI({nsPackage}: {nsPackage: NetscriptPackage}) {

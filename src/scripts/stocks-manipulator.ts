@@ -203,7 +203,7 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine(`Attack Hosts : ${attackHosts}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
-  if (!runScript(netscript, STOCKS_TRADER_SCRIPT, netscript.getHostname())) {
+  if (!runScript(netscript, STOCKS_TRADER_SCRIPT)) {
     terminalWriter.writeLine(
       'Failed to find or execute a the stocks trader script!'
     );

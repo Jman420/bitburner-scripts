@@ -79,19 +79,15 @@ async function handleHackingActivity(
   logWriter.writeLine(
     `${logPrefix} Rooting & expanding hack exp farm on new hosts...`
   );
-  runScript(netscript, ROOT_HOSTS_SCRIPT);
-  runScript(
-    netscript,
-    FARM_HACK_EXP_SCRIPT,
-    undefined,
-    1,
-    false,
-    getCmdFlag(CMD_FLAG_OPTIMAL_ONLY),
-    3,
-    netscript.serverExists(NETSCRIPT_SERVER_NAME)
-      ? getCmdFlag(CMD_FLAG_INCLUDE_HOME)
-      : ''
-  );
+  runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
+  const expFarmArgs = [getCmdFlag(CMD_FLAG_OPTIMAL_ONLY), 3];
+  if (netscript.serverExists(NETSCRIPT_SERVER_NAME)) {
+    expFarmArgs.push(getCmdFlag(CMD_FLAG_INCLUDE_HOME));
+  }
+  runScript(netscript, FARM_HACK_EXP_SCRIPT, {
+    args: expFarmArgs,
+    tempScript: true,
+  });
 
   logWriter.writeLine(
     `${logPrefix} Waiting for ${ATTACK_TARGETS_NEED} attack targets...`
@@ -109,20 +105,17 @@ async function handleHackingActivity(
   }
 
   logWriter.writeLine(`${logPrefix} Killing hack exp farm scripts...`);
-  runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT);
+  runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
 
   logWriter.writeLine(`${logPrefix} Running WGWH serial attack script...`);
-  runScript(netscript, ROOT_HOSTS_SCRIPT);
-  runScript(
-    netscript,
-    WGWH_SERIAL_ATTACK_SCRIPT,
-    undefined,
-    1,
-    false,
-    netscript.serverExists(NETSCRIPT_SERVER_NAME)
-      ? getCmdFlag(CMD_FLAG_INCLUDE_HOME)
-      : ''
-  );
+  runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
+  const wgwhSerialArgs = netscript.serverExists(NETSCRIPT_SERVER_NAME)
+    ? [getCmdFlag(CMD_FLAG_INCLUDE_HOME)]
+    : [];
+  runScript(netscript, WGWH_SERIAL_ATTACK_SCRIPT, {
+    args: wgwhSerialArgs,
+    tempScript: true,
+  });
 
   logWriter.writeLine(
     `${logPrefix} Waiting for sufficient available RAM for WGWH batch attacks...`
@@ -133,21 +126,18 @@ async function handleHackingActivity(
   }
 
   logWriter.writeLine(`${logPrefix} Killing WGWH serial attack scripts...`);
-  runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT);
+  runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
   await nsLocator['scriptKill'](WGWH_SERIAL_ATTACK_SCRIPT, HOME_SERVER_NAME);
 
   logWriter.writeLine(`${logPrefix} Running WGWH batch attack script...`);
-  runScript(netscript, ROOT_HOSTS_SCRIPT);
-  runScript(
-    netscript,
-    WGWH_BATCH_ATTACK_SCRIPT,
-    undefined,
-    1,
-    false,
-    netscript.serverExists(NETSCRIPT_SERVER_NAME)
-      ? getCmdFlag(CMD_FLAG_INCLUDE_HOME)
-      : ''
-  );
+  runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
+  const wgwhBatchArgs = netscript.serverExists(NETSCRIPT_SERVER_NAME)
+    ? [getCmdFlag(CMD_FLAG_INCLUDE_HOME)]
+    : [];
+  runScript(netscript, WGWH_BATCH_ATTACK_SCRIPT, {
+    args: wgwhBatchArgs,
+    tempScript: true,
+  });
 
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
@@ -258,7 +248,7 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
         logWriter.writeLine(
           `${logPrefix} Rooting all newly available hosts...`
         );
-        runScript(netscript, ROOT_HOSTS_SCRIPT);
+        runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
       }
     }
 
@@ -321,32 +311,29 @@ async function handleLambdaServerPurchased(netscript: NS, logWriter: Logger) {
     logWriter.writeLine(
       `${logPrefix} Including home server in hack exp farm...`
     );
-    runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT);
-    runScript(
-      netscript,
-      FARM_HACK_EXP_SCRIPT,
-      undefined,
-      1,
-      false,
+    runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
+
+    const expFarmArgs = [
       getCmdFlag(CMD_FLAG_OPTIMAL_ONLY),
       3,
-      getCmdFlag(CMD_FLAG_INCLUDE_HOME)
-    );
+      getCmdFlag(CMD_FLAG_INCLUDE_HOME),
+    ];
+    runScript(netscript, FARM_HACK_EXP_SCRIPT, {
+      args: expFarmArgs,
+      tempScript: true,
+    });
   } else {
     logWriter.writeLine(
       `${logPrefix} Including home server in wgwh serial attack...`
     );
-    runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT);
+    runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
     netscript.scriptKill(WGWH_SERIAL_ATTACK_SCRIPT, HOME_SERVER_NAME);
 
-    runScript(
-      netscript,
-      WGWH_SERIAL_ATTACK_SCRIPT,
-      undefined,
-      1,
-      false,
-      getCmdFlag(CMD_FLAG_INCLUDE_HOME)
-    );
+    const wgwhSerialArgs = [getCmdFlag(CMD_FLAG_INCLUDE_HOME)];
+    runScript(netscript, WGWH_SERIAL_ATTACK_SCRIPT, {
+      args: wgwhSerialArgs,
+      tempScript: true,
+    });
   }
 
   logWriter.writeLine(`${logPrefix} Complete!`);
@@ -381,7 +368,7 @@ async function handlePurchasePrograms(
           `${logPrefix} Purchased program from DarkWeb : ${programName}`
         );
         logWriter.writeLine(`${logPrefix} Rooting newly available servers...`);
-        runScript(netscript, ROOT_HOSTS_SCRIPT);
+        runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
       }
     }
 
@@ -451,22 +438,23 @@ export async function main(netscript: NS) {
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
+  // TODO (JMG) : Run script to handle solving available contracts continuously
+
   scriptLogWriter.writeLine('Running hacknet manager script...');
-  runScript(
-    netscript,
-    HACKNET_MANAGER_SCRIPT,
-    undefined,
-    1,
-    false,
+  const hacknetManagerArgs = [
     getCmdFlag(CMD_FLAG_PURCHASE_NODES),
-    getCmdFlag(CMD_FLAG_PURCHASE_UPGRADES)
-  );
+    getCmdFlag(CMD_FLAG_PURCHASE_UPGRADES),
+  ];
+  runScript(netscript, HACKNET_MANAGER_SCRIPT, {
+    args: hacknetManagerArgs,
+    tempScript: true,
+  });
 
   scriptLogWriter.writeLine('Running lambda server manager script...');
-  runScript(netscript, SERVER_LAMBDA_SCRIPT);
+  runScript(netscript, SERVER_LAMBDA_SCRIPT, {tempScript: true});
 
   scriptLogWriter.writeLine('Rooting all available hosts...');
-  runScript(netscript, ROOT_HOSTS_SCRIPT);
+  runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
 
   scriptLogWriter.writeLine(
     'Training hacking exp via free university class...'
@@ -490,6 +478,9 @@ export async function main(netscript: NS) {
   concurrentTasks.push(handleLambdaServerPurchased(netscript, scriptLogWriter));
   concurrentTasks.push(handlePurchasePrograms(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleHomeUpgrades(nsPackage, scriptLogWriter));
+  // TODO (JMG) : Add task to handle Stock Market (wait for hacknet script to finish)
+  // TODO (JMG) : Add task to handle Gang (wait for sufficient funds ; coordinate w/ Stock Market task)
+  // TODO (JMG) : Add task to handle Corp
   await Promise.all(concurrentTasks);
 
   scriptLogWriter.writeLine('Singularity quick start completed!');

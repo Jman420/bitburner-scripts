@@ -113,17 +113,17 @@ export async function main(netscript: NS) {
     copyFiles(netscript, WORKERS_PACKAGE, hostname);
 
     logWriter.writeLine(`    Running ${WEAKEN_WORKER_SCRIPT}...`);
+    const scriptArgs = [
+      getCmdFlag(CMD_FLAG_TARGETS_CSV),
+      targetHosts.join(','),
+      getCmdFlag(CMD_FLAG_CONTINUOUS_ATTACK),
+    ];
     if (
-      runScript(
-        netscript,
-        WEAKEN_WORKER_SCRIPT,
-        hostname,
-        0,
-        true,
-        getCmdFlag(CMD_FLAG_TARGETS_CSV),
-        targetHosts.join(','),
-        getCmdFlag(CMD_FLAG_CONTINUOUS_ATTACK)
-      )
+      runScript(netscript, WEAKEN_WORKER_SCRIPT, {
+        hostname: hostname,
+        useMaxThreads: true,
+        args: scriptArgs,
+      })
     ) {
       logWriter.writeLine(`    Successfully running ${WEAKEN_WORKER_SCRIPT}.`);
     } else {

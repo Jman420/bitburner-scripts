@@ -63,7 +63,12 @@ export async function main(netscript: NS) {
     copyFiles(netscript, WORKERS_PACKAGE, hostname);
 
     logWriter.writeLine(`    Running ${SHARE_RAM_WORKER_SCRIPT}...`);
-    if (runScript(netscript, SHARE_RAM_WORKER_SCRIPT, hostname, 0, true)) {
+    if (
+      runScript(netscript, SHARE_RAM_WORKER_SCRIPT, {
+        hostname: hostname,
+        useMaxThreads: true,
+      })
+    ) {
       logWriter.writeLine(
         `    Successfully running ${SHARE_RAM_WORKER_SCRIPT}.`
       );

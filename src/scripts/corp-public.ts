@@ -317,17 +317,13 @@ export async function main(netscript: NS) {
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
 
   scriptLogWriter.writeLine('Running required support scripts...');
-  runScript(
-    netscript,
-    PRODUCT_LIFECYCLE_SCRIPT,
-    undefined,
-    1,
-    false,
+  const scriptArgs = [
     getCmdFlag(CMD_FLAG_DIVISION_NAME),
     DivisionNames.TOBACCO,
     getCmdFlag(CMD_FLAG_DESIGN_CITY_NAME),
-    DEFAULT_PRODUCT_DESIGN_OFFICE
-  );
+    DEFAULT_PRODUCT_DESIGN_OFFICE,
+  ];
+  runScript(netscript, PRODUCT_LIFECYCLE_SCRIPT, {args: scriptArgs});
   runScript(netscript, PRICING_SETUP_SCRIPT);
   runScript(netscript, SMART_SUPPLY_SCRIPT);
   runScript(netscript, TEA_PARTY_SCRIPT);

@@ -47,7 +47,7 @@ function runManagerScript(netscript: NS) {
 
   const divisionName = interfaceControls.divisionName.value;
   const scriptArgs = [getCmdFlag(CMD_FLAG_DIVISION_NAME), divisionName];
-  runScript(netscript, EXPORT_SETUP_SCRIPT, undefined, 1, false, ...scriptArgs);
+  runScript(netscript, EXPORT_SETUP_SCRIPT, {args: scriptArgs});
 }
 
 function CorpExportUI({nsPackage}: {nsPackage: NetscriptPackage}) {
