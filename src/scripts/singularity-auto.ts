@@ -228,7 +228,7 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
   );
   let remainingPrograms = getRemainingPrograms(netscript);
   let currentKarma = netscriptExtended.heart.break();
-  while (currentKarma > karmaLimit && remainingPrograms.length > 0) {
+  while (currentKarma > karmaLimit || remainingPrograms.length > 0) {
     for (const programKey of remainingPrograms) {
       const programData = ProgramData[programKey];
       if (
