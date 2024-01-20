@@ -30,6 +30,7 @@ import {
   createDivision,
   improveWarehouse,
   waitForMoraleAndEnergy,
+  takeBestInvestmentOffer,
 } from '/scripts/workflows/corporation-actions';
 import {
   generateOfficeAssignments,
@@ -40,14 +41,18 @@ import {
   getOptimalIndustryMaterials,
 } from '/scripts/workflows/corporation-optimization';
 import {
+  CMD_FLAG_AUTO_INVESTMENT,
   PRICING_SETUP_SCRIPT,
   SMART_SUPPLY_SCRIPT,
 } from '/scripts/workflows/corporation-shared';
 import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 import {REQUIRED_FUNDS as ROUND_2_REQUIRED_FUNDS} from '/scripts/corp-round2';
 
-const CMD_FLAG_MATERIALS_RATIO = 'materialsRatio';
-const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_MATERIALS_RATIO, 0.87]];
+export const CMD_FLAG_MATERIALS_RATIO = 'materialsRatio';
+const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
+  [CMD_FLAG_MATERIALS_RATIO, 0.87],
+  [CMD_FLAG_AUTO_INVESTMENT, false],
+];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const MODULE_NAME = 'corp-round1';
@@ -73,8 +78,10 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
   const materialsRatio = cmdArgs[CMD_FLAG_MATERIALS_RATIO].valueOf() as number;
+  const autoInvestment = cmdArgs[CMD_FLAG_AUTO_INVESTMENT].valueOf() as boolean;
 
   terminalWriter.writeLine(`Materials Ratio : ${materialsRatio}`);
+  terminalWriter.writeLine(`Auto Investment : ${autoInvestment}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
   const corpApi = nsLocator.corporation;
@@ -204,7 +211,25 @@ export async function main(netscript: NS) {
 
   scriptLogWriter.writeLine('Corporation Round 1 setup complete!');
   scriptLogWriter.writeLine(SECTION_DIVIDER);
-  scriptLogWriter.writeLine('Wait for an investment offer of at least $490b');
+  if (autoInvestment) {
+    scriptLogWriter.writeLine(
+      'Automatically accepting best investment offer...'
+    );
+    const investmentInfo = await takeBestInvestmentOffer(nsPackage);
+    if (!investmentInfo) {
+      scriptLogWriter.writeLine(
+        'Failed to accept investement offer!  Make sure to manually accept offer ASAP!'
+      );
+    } else {
+      scriptLogWriter.writeLine(
+        `Accepted investment offer for $${netscript.formatNumber(
+          investmentInfo.funds
+        )}`
+      );
+    }
+  } else {
+    scriptLogWriter.writeLine('Wait for an investment offer of at least $490b');
+  }
   scriptLogWriter.writeLine(
     `The next round requires at least $${netscript.formatNumber(
       ROUND_2_REQUIRED_FUNDS

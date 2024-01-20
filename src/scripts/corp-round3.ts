@@ -25,6 +25,7 @@ import {
 } from '/scripts/data/corporation-enums';
 import {CorpUpgradesData} from '/scripts/data/corporation-upgrades-data';
 import {
+  CMD_FLAG_AUTO_INVESTMENT,
   PRICING_SETUP_SCRIPT,
   PRODUCT_LIFECYCLE_SCRIPT,
   RAW_MAX_DIVISIONS,
@@ -47,6 +48,7 @@ import {
   buyIndustryMaterials,
   buyMaxAdvert,
   removeAllExports,
+  takeBestInvestmentOffer,
 } from '/scripts/workflows/corporation-actions';
 import {
   OfficeAssignments,
@@ -61,13 +63,14 @@ import {
 } from '/scripts/corp-product';
 import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
-const CMD_FLAG_AGRICULTURE_BUDGET = 'agricultureBudget';
-const CMD_FLAG_CHEMICAL_BUDGET = 'chemicalBudget';
-const CMD_FLAG_MATERIALS = 'materialsBudget';
+export const CMD_FLAG_AGRICULTURE_BUDGET = 'agricultureBudget';
+export const CMD_FLAG_CHEMICAL_BUDGET = 'chemicalBudget';
+export const CMD_FLAG_MATERIALS = 'materialsBudget';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_AGRICULTURE_BUDGET, 500e9],
   [CMD_FLAG_CHEMICAL_BUDGET, 110e9],
   [CMD_FLAG_MATERIALS, 900e9],
+  [CMD_FLAG_AUTO_INVESTMENT, false],
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
@@ -102,10 +105,12 @@ export async function main(netscript: NS) {
   ].valueOf() as number;
   const chemicalBudget = cmdArgs[CMD_FLAG_CHEMICAL_BUDGET].valueOf() as number;
   const materialsBudget = cmdArgs[CMD_FLAG_MATERIALS].valueOf() as number;
+  const autoInvestment = cmdArgs[CMD_FLAG_AUTO_INVESTMENT].valueOf() as boolean;
 
   terminalWriter.writeLine(`Agriculture Budget : ${agricultureBudget}`);
   terminalWriter.writeLine(`Chemical Budget : ${chemicalBudget}`);
   terminalWriter.writeLine(`Materials Budget : ${materialsBudget}`);
+  terminalWriter.writeLine(`Auto Investment : ${autoInvestment}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
   const corpApi = nsLocator.corporation;
@@ -397,20 +402,34 @@ export async function main(netscript: NS) {
     ]);
   }
 
-  scriptLogWriter.writeLine('Waiting for investment offer to stabalize...');
-  for (let cycleCounter = 0; cycleCounter < 15; cycleCounter++) {
-    await waitForState(netscript, CorpState.START);
-  }
-
   scriptLogWriter.writeLine('Corporation Round 3 setup complete!');
   scriptLogWriter.writeLine(SECTION_DIVIDER);
+
+  if (autoInvestment) {
+    scriptLogWriter.writeLine(
+      'Automatically accepting best investment offer...'
+    );
+    const investmentInfo = await takeBestInvestmentOffer(nsPackage);
+    if (!investmentInfo) {
+      scriptLogWriter.writeLine(
+        'Failed to accept investement offer!  Make sure to manually accept offer ASAP!'
+      );
+    } else {
+      scriptLogWriter.writeLine(
+        `Accepted investment offer for $${netscript.formatNumber(
+          investmentInfo.funds
+        )}`
+      );
+    }
+  } else {
+    scriptLogWriter.writeLine('Wait for an investment offer of at least $30q');
+  }
   scriptLogWriter.writeLine(
     'Remember the Product Support Offices are setup for production!'
   );
   scriptLogWriter.writeLine(
     'Round 4 & Public scripts will re-setup the Product Support Divisions for research.'
   );
-  scriptLogWriter.writeLine('Wait for an investment offer of at least $30q');
 }
 
 export function autocomplete() {

@@ -23,7 +23,6 @@ import {
 } from '/scripts/workflows/execution';
 
 import {
-  STOCKS_TRADER_SCRIPT,
   StockTransaction,
   TransactionPosition,
   getHostnamesFromSymbol,
@@ -41,6 +40,7 @@ import {
   NetscriptPackage,
   getLocatorPackage,
 } from '/scripts/netscript-services/netscript-locator';
+import {STOCKS_TRADER_SCRIPT} from '/scripts/stocks-trader';
 
 const CMD_FLAG_ATTACK_HOSTS = 'attackHosts';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [

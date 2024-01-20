@@ -3,10 +3,12 @@ import {
   CorpIndustryName,
   CorpMaterialName,
   CorpStateName,
+  InvestmentOffer,
   NS,
 } from '@ns';
 
 import {
+  CorpState,
   DivisionNames,
   EmployeePosition,
   IndustryType,
@@ -811,6 +813,33 @@ async function buyResearchUpgrades(
   }
 }
 
+async function takeBestInvestmentOffer(
+  nsPackage: NetscriptPackage,
+  decreasesBeforeAccept = 2
+) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+  const corpApi = nsLocator.corporation;
+
+  let currentOfferInfo: InvestmentOffer | undefined;
+  let previousOfferFunds = 0;
+  let decreaseCount = 0;
+  while (decreaseCount < decreasesBeforeAccept) {
+    await waitForState(netscript, CorpState.START);
+    currentOfferInfo = await corpApi['getInvestmentOffer']();
+
+    if (previousOfferFunds <= currentOfferInfo.funds) {
+      decreaseCount++;
+    } else {
+      decreaseCount = 0;
+    }
+    previousOfferFunds = currentOfferInfo.funds;
+  }
+
+  await corpApi['acceptInvestmentOffer']();
+  return currentOfferInfo;
+}
+
 export {
   DEFAULT_PRODUCT_DESIGN_OFFICE,
   DEFAULT_PRODUCT_RESEARCH_OFFICES,
@@ -835,4 +864,5 @@ export {
   improveProductDivision,
   improveSupportDivision,
   buyResearchUpgrades,
+  takeBestInvestmentOffer,
 };

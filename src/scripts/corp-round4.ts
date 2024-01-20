@@ -14,6 +14,7 @@ import {
 import {CorpUpgradesData} from '/scripts/data/corporation-upgrades-data';
 import {
   BENCHMARK_OFFICE,
+  CMD_FLAG_AUTO_INVESTMENT,
   PRICING_SETUP_SCRIPT,
   PRODUCT_LIFECYCLE_SCRIPT,
   SMART_SUPPLY_SCRIPT,
@@ -30,6 +31,7 @@ import {
   buyResearchUpgrades,
   improveProductDivision,
   improveSupportDivision,
+  takeBestInvestmentOffer,
   waitForState,
 } from '/scripts/workflows/corporation-actions';
 import {
@@ -38,7 +40,12 @@ import {
   getAffordableResearchUpgrades,
   getMaxAffordableUpgradeLevel,
 } from '/scripts/workflows/corporation-formulas';
-import {getCmdFlag} from '/scripts/workflows/cmd-args';
+import {
+  CmdArgsSchema,
+  getCmdFlag,
+  getSchemaFlags,
+  parseCmdFlags,
+} from '/scripts/workflows/cmd-args';
 import {
   CMD_FLAG_DESIGN_CITY_NAME,
   CMD_FLAG_DIVISION_NAME,
@@ -47,6 +54,9 @@ import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
 const MODULE_NAME = 'corp-round4';
 const SUBSCRIBER_NAME = 'corp-round4';
+
+const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_AUTO_INVESTMENT, false]];
+const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const TAIL_X_POS = 615;
 const TAIL_Y_POS = 979;
@@ -65,6 +75,13 @@ export async function main(netscript: NS) {
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Corporation Automation - Investor Round 4');
+  terminalWriter.writeLine(SECTION_DIVIDER);
+
+  terminalWriter.writeLine('Parsing command line arguments...');
+  const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
+  const autoInvestment = cmdArgs[CMD_FLAG_AUTO_INVESTMENT].valueOf() as boolean;
+
+  terminalWriter.writeLine(`Auto Investment : ${autoInvestment}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
   const corpApi = nsLocator.corporation;
@@ -362,7 +379,26 @@ export async function main(netscript: NS) {
 
   scriptLogWriter.writeLine('Corporation Round 4 setup complete!');
   scriptLogWriter.writeLine(SECTION_DIVIDER);
-  scriptLogWriter.writeLine('Wait for an investment offer of at least $500Q');
+
+  if (autoInvestment) {
+    scriptLogWriter.writeLine(
+      'Automatically accepting best investment offer...'
+    );
+    const investmentInfo = await takeBestInvestmentOffer(nsPackage);
+    if (!investmentInfo) {
+      scriptLogWriter.writeLine(
+        'Failed to accept investement offer!  Make sure to manually accept offer ASAP!'
+      );
+    } else {
+      scriptLogWriter.writeLine(
+        `Accepted investment offer for $${netscript.formatNumber(
+          investmentInfo.funds
+        )}`
+      );
+    }
+  } else {
+    scriptLogWriter.writeLine('Wait for an investment offer of at least $500Q');
+  }
   scriptLogWriter.writeLine('Remeber to sell off the fraudulent divisions!');
   scriptLogWriter.writeLine(
     'Remember the Product Support Offices are setup for production!'
@@ -370,4 +406,8 @@ export async function main(netscript: NS) {
   scriptLogWriter.writeLine(
     'Public script will re-setup the Product Support Divisions for research.'
   );
+}
+
+export function autocomplete() {
+  return CMD_FLAGS;
 }

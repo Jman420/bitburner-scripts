@@ -5,7 +5,11 @@ import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {getCmdFlag} from '/scripts/workflows/cmd-args';
 
-import {initializeScript, runScript} from '/scripts/workflows/execution';
+import {
+  initializeScript,
+  runScript,
+  waitForScripts,
+} from '/scripts/workflows/execution';
 import {openTail} from '/scripts/workflows/ui';
 
 import {
@@ -47,6 +51,17 @@ import {
 } from '/scripts/workflows/singularity';
 import {WGWH_BATCH_ATTACK_SCRIPT} from '/scripts/wgwh-batch';
 import {CONTRACTS_AUTO_SCRIPT} from '/scripts/contracts-auto';
+import {STOCKS_TRADER_SCRIPT} from '/scripts/stocks-trader';
+import {STOCKS_TICKER_HISTORY_SCRIPT} from '/scripts/workflows/stocks';
+import {
+  CMD_FLAG_AUTO_INVESTMENT,
+  CORP_ROUND1_SCRIPT,
+  CORP_ROUND2_SCRIPT,
+  CORP_ROUND3_SCRIPT,
+  CORP_ROUND4_SCRIPT,
+} from '/scripts/workflows/corporation-shared';
+import {REQUIRED_FUNDS as CORP_ROUND2_REQUIRED_FUNDS} from '/scripts/corp-round2';
+import {REQUIRED_FUNDS as CORP_ROUND3_REQUIRED_FUNDS} from '/scripts/corp-round3';
 
 const MODULE_NAME = 'singularity-starter';
 const SUBSCRIBER_NAME = 'singularity-starter';
@@ -62,6 +77,9 @@ const ATTACK_TARGETS_NEED = 10;
 const HOME_TARGET_RAM = 10000; // 10TB
 const HOME_TARGET_CORES = 4;
 const BATCH_ATTACH_RAM_NEEDED = 8000; //8TB
+const GANG_KARMA_REQ = -54000;
+const CORP_FUNDS_REQ = 150e9; // 150b
+const CORP_DIVIDENDS_RATE = 0.1; // 10%
 
 async function handleHackingActivity(
   nsPackage: NetscriptPackage,
@@ -217,7 +235,6 @@ async function handleFactionMembership(
 
 async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
   const logPrefix = 'Work -';
-  const karmaLimit = -54000;
 
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
@@ -225,11 +242,11 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
   const netscriptExtended = netscript as NetscriptExtended;
 
   logWriter.writeLine(
-    `${logPrefix} Waiting for karma to reach ${karmaLimit} and all hacking programs created...`
+    `${logPrefix} Waiting for karma to reach ${GANG_KARMA_REQ} and all hacking programs created...`
   );
   let remainingPrograms = getRemainingPrograms(netscript);
   let currentKarma = netscriptExtended.heart.break();
-  while (currentKarma > karmaLimit || remainingPrograms.length > 0) {
+  while (currentKarma > GANG_KARMA_REQ || remainingPrograms.length > 0) {
     for (const programKey of remainingPrograms) {
       const programData = ProgramData[programKey];
       if (
@@ -253,7 +270,7 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
       }
     }
 
-    if (currentKarma > karmaLimit) {
+    if (currentKarma > GANG_KARMA_REQ) {
       const currentWork = (await singularityApi['getCurrentWork']()) as
         | CrimeTask
         | undefined;
@@ -344,11 +361,11 @@ async function handlePurchasePrograms(
   nsPackage: NetscriptPackage,
   logWriter: Logger
 ) {
+  const logPrefix = 'Tor -';
+
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const singularityApi = nsLocator.singularity;
-
-  const logPrefix = 'Tor -';
 
   logWriter.writeLine(`${logPrefix} Waiting to purchase Tor Router...`);
   while (
@@ -364,7 +381,7 @@ async function handlePurchasePrograms(
   while (remainingPrograms.length > 0) {
     for (const programName of remainingPrograms) {
       const programData = ProgramData[programName];
-      if (await singularityApi.purchaseProgram(programData.name)) {
+      if (await singularityApi['purchaseProgram'](programData.name)) {
         logWriter.writeLine(
           `${logPrefix} Purchased program from DarkWeb : ${programName}`
         );
@@ -384,11 +401,11 @@ async function handleHomeUpgrades(
   nsPackage: NetscriptPackage,
   logWriter: Logger
 ) {
+  const logPrefix = 'Home -';
+
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const singularityApi = nsLocator.singularity;
-
-  const logPrefix = 'Home -';
 
   logWriter.writeLine(
     `${logPrefix} Waiting to purchase home server upgrades...`
@@ -421,6 +438,202 @@ async function handleHomeUpgrades(
 
     await netscript.asleep(WAIT_DELAY);
     homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
+  }
+
+  logWriter.writeLine(`${logPrefix} Complete!`);
+}
+
+async function handleStockMarket(
+  nsPackage: NetscriptPackage,
+  logWriter: Logger
+) {
+  const logPrefix = 'Stocks -';
+
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+  const stocksApi = nsLocator.stock;
+  const accessUpgrades = [
+    {
+      name: 'Stock Exchange Account',
+      purchaseFunc: stocksApi['purchaseWseAccount'],
+    },
+    {
+      name: 'TIX API Access',
+      purchaseFunc: stocksApi['purchaseTixApi'],
+      scriptHandler: () => {
+        logWriter.writeLine(
+          `${logPrefix} Starting stocks trader script w/ historical ticker...`
+        );
+        runScript(netscript, STOCKS_TRADER_SCRIPT);
+      },
+    },
+    {
+      name: '4Sigma Market Data',
+      purchaseFunc: stocksApi['purchase4SMarketData'],
+    },
+    {
+      name: '4Sigma API Access',
+      purchaseFunc: stocksApi['purchase4SMarketDataTixApi'],
+      scriptHandler: () => {
+        logWriter.writeLine(
+          `${logPrefix} Killing stocks trader & historical ticker scripts...`
+        );
+        netscript.scriptKill(STOCKS_TRADER_SCRIPT, HOME_SERVER_NAME);
+        netscript.scriptKill(STOCKS_TICKER_HISTORY_SCRIPT, HOME_SERVER_NAME);
+
+        logWriter.writeLine(
+          `${logPrefix} Restarting stocks trader script w/ 4Sigma ticker...`
+        );
+        runScript(netscript, STOCKS_TRADER_SCRIPT);
+      },
+    },
+  ];
+
+  logWriter.writeLine(
+    `${logPrefix} Waiting to purchase stock market access upgrades...`
+  );
+  while (accessUpgrades.length > 0) {
+    while (
+      accessUpgrades.length > 0 &&
+      (await accessUpgrades[0].purchaseFunc())
+    ) {
+      const purchasedUpgrade = accessUpgrades.shift();
+      if (!purchasedUpgrade) {
+        continue;
+      }
+
+      logWriter.writeLine(
+        `${logPrefix} Purchased stock market access : ${purchasedUpgrade.name}`
+      );
+      if (purchasedUpgrade.scriptHandler) {
+        purchasedUpgrade.scriptHandler();
+      }
+    }
+
+    await netscript.asleep(WAIT_DELAY);
+  }
+
+  logWriter.writeLine(`${logPrefix} Complete!`);
+}
+
+async function handleGang(nsPackage: NetscriptPackage, logWriter: Logger) {
+  const logPrefix = 'Gang -';
+
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+  const netscriptExtended = netscript as NetscriptExtended;
+  const gangApi = nsLocator.gang;
+
+  logWriter.writeLine(
+    `${logPrefix} Waiting for karma to reach ${GANG_KARMA_REQ}...`
+  );
+  while (netscriptExtended.heart.break() > GANG_KARMA_REQ) {
+    await netscript.asleep(WAIT_DELAY);
+  }
+  logWriter.writeLine(`${logPrefix} Karma requirement met.`);
+
+  logWriter.writeLine(
+    `${logPrefix} Waiting for gang eligible faction membership...`
+  );
+  const gangCreated = await gangApi['inGang']();
+  while (!gangCreated) {
+    const playerInfo = await nsLocator['getPlayer']();
+    const joinedFactions = Object.values(FactionName)
+      .map(value => value.toString())
+      .filter(value => playerInfo.factions.includes(value))
+      .map(value => FactionData[value]);
+    for (const factionData of joinedFactions) {
+      if (factionData.gangEligible) {
+        logWriter.writeLine(
+          `${logPrefix} Creating gang with faction ${factionData.name}`
+        );
+        gangApi['createGang'](factionData.name);
+      }
+    }
+  }
+
+  logWriter.writeLine(`${logPrefix} Complete!`);
+}
+
+async function handleCorporation(
+  nsPackage: NetscriptPackage,
+  logWriter: Logger
+) {
+  const logPrefix = 'Corp -';
+
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+  const corpApi = nsLocator.corporation;
+
+  if (!(await corpApi['hasCorporation']())) {
+    logWriter.writeLine(
+      `${logPrefix} Waiting for sufficient funds to create corporation : ${CORP_FUNDS_REQ}`
+    );
+    const playerInfo = await nsLocator['getPlayer']();
+    while (playerInfo.money < CORP_FUNDS_REQ) {
+      await netscript.asleep(WAIT_DELAY);
+    }
+
+    logWriter.writeLine(`${logPrefix} Creating corporation...`);
+    await corpApi['createCorporation']('Corp', true);
+  }
+
+  const corpRoundScriptArgs = [getCmdFlag(CMD_FLAG_AUTO_INVESTMENT)];
+  const autoInvestmentRounds = [
+    {
+      round: 1,
+      scriptPath: CORP_ROUND1_SCRIPT,
+      nextRoundFunds: CORP_ROUND2_REQUIRED_FUNDS,
+    },
+    {
+      round: 2,
+      scriptPath: CORP_ROUND2_SCRIPT,
+      nextRoundFunds: CORP_ROUND3_REQUIRED_FUNDS,
+    },
+    {round: 3, scriptPath: CORP_ROUND3_SCRIPT},
+    {round: 4, scriptPath: CORP_ROUND4_SCRIPT},
+  ];
+  let corpInfo = await corpApi['getCorporation']();
+  for (const autoRoundInfo of autoInvestmentRounds) {
+    const investmentInfo = await corpApi['getInvestmentOffer']();
+    if (investmentInfo.round !== autoRoundInfo.round) {
+      continue;
+    }
+
+    logWriter.writeLine(
+      `${logPrefix} Running round ${autoRoundInfo.round} investment automation...`
+    );
+    const autoRoundScriptPid = runScript(netscript, autoRoundInfo.scriptPath, {
+      args: corpRoundScriptArgs,
+    });
+    await waitForScripts(netscript, [autoRoundScriptPid]);
+
+    if (autoRoundInfo.nextRoundFunds) {
+      logWriter.writeLine(
+        `${logPrefix} Waiting for sufficient funds for round ${
+          autoRoundInfo.round
+        } investment automation : $${netscript.formatNumber(
+          autoRoundInfo.nextRoundFunds
+        )}`
+      );
+      while (corpInfo.funds < autoRoundInfo.nextRoundFunds) {
+        await netscript.asleep(WAIT_DELAY);
+        corpInfo = await corpApi['getCorporation']();
+      }
+    }
+  }
+  logWriter.writeLine(`${logPrefix} Investment rounds complete!`);
+
+  if (!corpInfo.public) {
+    logWriter.writeLine(`${logPrefix} Taking corporation public...`);
+    await corpApi['goPublic'](0);
+  }
+
+  if (corpInfo.dividendRate !== CORP_DIVIDENDS_RATE) {
+    logWriter.writeLine(
+      `${logPrefix} Setting corporation dividends rate to ${CORP_DIVIDENDS_RATE}`
+    );
+    await corpApi['issueDividends'](CORP_DIVIDENDS_RATE);
   }
 
   logWriter.writeLine(`${logPrefix} Complete!`);
@@ -480,9 +693,9 @@ export async function main(netscript: NS) {
   concurrentTasks.push(handleLambdaServerPurchased(netscript, scriptLogWriter));
   concurrentTasks.push(handlePurchasePrograms(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleHomeUpgrades(nsPackage, scriptLogWriter));
-  // TODO (JMG) : Add task to handle Stock Market (wait for hacknet script to finish ; coordinate w/ Home Upgrades)
-  // TODO (JMG) : Add task to handle Gang (wait for sufficient funds ; coordinate w/ Stock Market task)
-  // TODO (JMG) : Add task to handle Corp (coordinate w/ Stock Market task)
+  concurrentTasks.push(handleStockMarket(nsPackage, scriptLogWriter));
+  concurrentTasks.push(handleGang(nsPackage, scriptLogWriter));
+  concurrentTasks.push(handleCorporation(nsPackage, scriptLogWriter));
   await Promise.all(concurrentTasks);
 
   scriptLogWriter.writeLine('Singularity quick start completed!');

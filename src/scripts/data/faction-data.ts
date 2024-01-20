@@ -2,6 +2,7 @@ export const FactionData: {
   [FactionName: string]: {
     name: string;
     server?: string;
+    gangEligible?: boolean;
   };
 } = {
   // Hacking
@@ -25,9 +26,11 @@ export const FactionData: {
   // Crime
   'Slum Snakes': {
     name: 'Slum Snakes',
+    gangEligible: true,
   },
   Tetrads: {
     name: 'Tetrads',
+    gangEligible: true,
   },
 
   // End Game

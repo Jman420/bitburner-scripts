@@ -32,6 +32,8 @@ const CORP_ROUND3_SCRIPT = 'scripts/corp-round3.js';
 const CORP_ROUND4_SCRIPT = 'scripts/corp-round4.js';
 const CORP_PUBLIC_SCRIPT = 'scripts/corp-public.js';
 
+const CMD_FLAG_AUTO_INVESTMENT = 'autoInvestment';
+
 const EXPORT_FORMULA = '-(IPROD+IINV/10)';
 
 const BENCHMARK_OFFICE = 'Sector-12' as CityName;
@@ -61,6 +63,7 @@ export {
   CORP_ROUND3_SCRIPT,
   CORP_ROUND4_SCRIPT,
   CORP_PUBLIC_SCRIPT,
+  CMD_FLAG_AUTO_INVESTMENT,
   EXPORT_FORMULA,
   BENCHMARK_OFFICE,
   INDUSTRY_MULTIPLIER_MATERIALS,

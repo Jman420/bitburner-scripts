@@ -5,10 +5,7 @@ import {
   getDocument,
   getReactModel,
 } from '/scripts/workflows/ui';
-import {
-  STOCKS_TRADER_SCRIPT,
-  StocksTraderConfig,
-} from '/scripts/workflows/stocks';
+import {StocksTraderConfig} from '/scripts/workflows/stocks';
 import {getPid, runScript} from '/scripts/workflows/execution';
 
 import {
@@ -34,6 +31,7 @@ import {Input} from '/scripts/controls/components/input';
 import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
 
 import {parseNumber} from '/scripts/workflows/parsing';
+import {STOCKS_TRADER_SCRIPT} from '/scripts/stocks-trader';
 
 interface InterfaceControls {
   shortSales: HTMLButtonElement | undefined;
