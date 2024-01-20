@@ -129,7 +129,7 @@ async function getHostnamesFromSymbol(
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
-  const results = new Array<string>();
+  const results = [];
   const symbolChars = symbol.split('');
   const allHosts = scanWideNetwork(netscript, false);
   for (const hostname of allHosts) {

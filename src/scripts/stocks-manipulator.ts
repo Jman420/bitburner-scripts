@@ -97,7 +97,7 @@ function handleStocksPurchasedEvent(
   logWriter: Logger,
   targetTransactions: Map<string, StockTransaction>
 ) {
-  const addedTransactions = new Array<StockTransaction>();
+  const addedTransactions = [];
   for (const transactionDetails of eventData.transactions ?? []) {
     if (!targetTransactions.has(transactionDetails.symbol)) {
       addedTransactions.push(transactionDetails);
@@ -121,7 +121,7 @@ function handleStocksSoldEvent(
   logWriter: Logger,
   targetTransactions: Map<string, StockTransaction>
 ) {
-  const removedTransactions = new Array<StockTransaction>();
+  const removedTransactions = [];
   for (const transactionDetails of eventData.transactions ?? []) {
     removedTransactions.push(transactionDetails);
     targetTransactions.delete(transactionDetails.symbol);

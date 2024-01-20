@@ -123,7 +123,7 @@ function findServersForRam(
   }
 
   let satisfiedRam = 0;
-  const serversWithRam = new Array<string>();
+  const serversWithRam = [];
   for (
     let serverCounter = 0;
     serverCounter < targetHosts.length && satisfiedRam < requiredTotalRam;

@@ -229,7 +229,7 @@ export async function main(netscript: NS) {
   );
 
   scriptLogWriter.writeLine('Buying optimal industry materials...');
-  const industryMaterialTasks = new Array<Promise<void>>();
+  const industryMaterialTasks = [];
   industryMaterialTasks.push(
     buyIndustryMaterials(
       nsPackage,

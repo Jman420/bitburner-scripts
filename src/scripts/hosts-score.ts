@@ -53,7 +53,6 @@ const SUBSCRIBER_NAME = 'hosts-score';
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
   const nsPackage = getLocatorPackage(netscript);
-  const nsLocator = nsPackage.locator;
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
@@ -83,7 +82,7 @@ export async function main(netscript: NS) {
       targetsAnalysis.map(async value => {
         const extendedValue = value as ServerDetailsExtended;
         extendedValue.expGain = await getHackingExpGain(
-          nsLocator,
+          nsPackage,
           value.hostname
         );
         return extendedValue;

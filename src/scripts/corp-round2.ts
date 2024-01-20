@@ -276,7 +276,7 @@ export async function main(netscript: NS) {
   scriptLogWriter.writeLine(
     `  ${DivisionNames.CHEMICAL} : ${chemicalResearch}`
   );
-  const researchPromises = new Array<Promise<void>>();
+  const researchPromises = [];
   researchPromises.push(
     waitForResearch(nsPackage, DivisionNames.AGRICULTURE, agricultureResearch)
   );
@@ -335,7 +335,7 @@ export async function main(netscript: NS) {
   );
 
   scriptLogWriter.writeLine('Buying optimal industry materials...');
-  const materialsPromises = new Array<Promise<void>>();
+  const materialsPromises = [];
   materialsPromises.push(
     ...(await manageIndustryMaterials(
       nsPackage,

@@ -113,7 +113,7 @@ async function handleToggleProductLifecycleManager(
   let scriptPid = getPid(netscript, PRODUCT_LIFECYCLE_SCRIPT);
   if (!scriptPid) {
     const config = getProductLifecycleConfig();
-    const scriptArgs = new Array<string>();
+    const scriptArgs = [];
     if (config.divisionName) {
       scriptArgs.push(getCmdFlag(CMD_FLAG_DIVISION_NAME));
       scriptArgs.push(config.divisionName);
@@ -189,7 +189,7 @@ function ProductLifecycleUI({
   const [productName, setProductName] = useState('');
   const [budgetPercent, setBudgetPercent] = useState('');
   const [divisionOptions, setDivisionOptions] = useState(
-    new Array<DropdownOption>()
+    [] as DropdownOption[]
   );
   const targetRunning = Boolean(getPid(netscript, PRODUCT_LIFECYCLE_SCRIPT));
   const cityNames = ['', ...CITY_NAMES];
@@ -198,7 +198,7 @@ function ProductLifecycleUI({
     async function refreshDivisionOptions() {
       const corpApi = nsLocator.corporation;
       const corpInfo = await corpApi['getCorporation']();
-      const options = new Array<DropdownOption>();
+      const options = [];
       for (const divisionName of corpInfo.divisions) {
         const divisionInfo = await corpApi['getDivision'](divisionName);
         if (

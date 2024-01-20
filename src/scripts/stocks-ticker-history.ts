@@ -69,7 +69,7 @@ async function updateStockListings(
 
   const stockApi = nsLocator.stock;
   const allSymbols = await stockApi['getSymbols']();
-  const updatedListings = new Array<StockListing>();
+  const updatedListings = [];
   for (const symbol of allSymbols) {
     const askPrice = await stockApi['getAskPrice'](symbol);
     const bidPrice = await stockApi['getBidPrice'](symbol);
@@ -138,7 +138,7 @@ async function updateStockListings(
 }
 
 function sendListings(eventData: StockListingsRequest) {
-  const result = new Array<StockListing>();
+  const result = [];
   for (const symbol of eventData.symbols ?? STOCK_LISTINGS_MAP.keys()) {
     const stockListing = STOCK_LISTINGS_MAP.get(symbol);
     if (stockListing) {

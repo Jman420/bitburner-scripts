@@ -267,8 +267,8 @@ function WgwhManagerUI({
   const [optimalOnlyCount, setOptimalOnlyCount] = useState('');
   const [hackFundsPercent, setHackFundsPercent] = useState('');
   const [fundsLimitPercent, setFundsLimitPercent] = useState('');
-  const [targetHosts, setTargetHosts] = useState(new Array<string>());
-  const [attackerHosts, setAttackerHosts] = useState(new Array<string>());
+  const [targetHosts, setTargetHosts] = useState([] as string[]);
+  const [attackerHosts, setAttackerHosts] = useState([] as string[]);
 
   useEffectOnce(() => {
     eventListener.addListener(

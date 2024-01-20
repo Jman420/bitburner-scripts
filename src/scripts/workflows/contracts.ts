@@ -141,7 +141,7 @@ async function findContracts(
   const netscript = nsPackage.netscript;
   const contractApi = nsLocator.codingcontract;
 
-  const availableContracts = new Array<CodingContract>();
+  const availableContracts = [];
   if (!targetHosts || targetHosts.length < 1) {
     targetHosts = scanWideNetwork(netscript, includeHome);
   }

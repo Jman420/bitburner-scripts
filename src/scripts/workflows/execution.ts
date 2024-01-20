@@ -128,7 +128,7 @@ function runWorkerScript(
     );
   }
 
-  const scriptPids = new Array<number>();
+  const scriptPids = [];
   for (const hostname of attackHosts) {
     let hostThreads = Math.floor(
       getAvailableRam(netscript, hostname) / netscript.getScriptRam(scriptPath)

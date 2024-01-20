@@ -66,7 +66,7 @@ function calculateOptimalIndustryMaterials(
     0
   );
 
-  const results = new Array<number>();
+  const results = [];
   for (
     let entryCounter = 0;
     entryCounter < materialSizes.length;

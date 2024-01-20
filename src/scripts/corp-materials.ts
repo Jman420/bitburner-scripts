@@ -80,7 +80,7 @@ async function purchaseMaterials(
   logWriter.writeLine(`Included cities : ${cityNames.join(', ')}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
-  const transactionPromises = new Array<Promise<void>>();
+  const transactionPromises = [];
   for (const cityName of cityNames) {
     const warehouseInfo = await corpApi['getWarehouse'](divisionName, cityName);
     logWriter.writeLine(

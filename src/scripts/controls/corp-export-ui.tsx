@@ -58,7 +58,7 @@ function CorpExportUI({nsPackage}: {nsPackage: NetscriptPackage}) {
   const uiTheme = netscript.ui.getTheme();
 
   const [divisionOptions, setDivisionOptions] = useState(
-    new Array<DropdownOption>()
+    [] as DropdownOption[]
   );
 
   useEffectOnce(() => {

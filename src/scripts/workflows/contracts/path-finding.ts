@@ -42,7 +42,7 @@ function minPathTriangle(triangel: number[][]) {
   let pathValues = [triangel[0][0]];
   for (let rowCount = 1; rowCount < triangel.length; rowCount++) {
     const rowLength = triangel[rowCount].length;
-    const rowSums = new Array<number>();
+    const rowSums = [];
 
     // Handle zero column index
     let currentValue = triangel[rowCount][0];
@@ -102,7 +102,7 @@ function arrayJumpGame(array: number[]) {
 }
 
 function spiralizeMatrix(matrix: number[][]) {
-  const result = new Array<number>();
+  const result = [];
 
   let topRowIndex = 0;
   let rightColumnIndex = matrix[0].length - 1;

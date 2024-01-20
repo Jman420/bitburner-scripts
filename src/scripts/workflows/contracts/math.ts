@@ -12,7 +12,7 @@ function largestPrimeFactor(target: number) {
 function mergeOverlappingItervals(intervals: number[][]) {
   intervals.sort((val1, val2) => val1[0] - val2[0]);
 
-  const result = new Array<number[]>();
+  const result = [];
   let start = intervals[0][0];
   let end = intervals[0][1];
   for (

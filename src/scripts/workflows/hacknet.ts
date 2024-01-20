@@ -73,7 +73,7 @@ function getNodeUpgradeOrders(
     );
   }
 
-  const upgradeOrders = new Array<HacknetOrder>();
+  const upgradeOrders = [];
   for (const resourceDetails of includedResourceDetails.values()) {
     const upgradeCost = resourceDetails.costFunc(nodeIndex);
     if (upgradeCost > 0 && upgradeCost < Infinity) {

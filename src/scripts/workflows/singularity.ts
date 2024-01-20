@@ -22,7 +22,7 @@ async function attendCourse(
   const netscript = nsPackage.netscript;
 
   const singularityApi = nsLocator.singularity;
-  const playerInfo = await nsLocator['getPlayer']();
+  const playerInfo = netscript.getPlayer();
   const universityData = UniversityData[universityName];
   while (
     playerInfo.city !== universityData.city &&

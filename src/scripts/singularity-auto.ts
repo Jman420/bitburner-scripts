@@ -72,6 +72,7 @@ const TAIL_WIDTH = 1090;
 const TAIL_HEIGHT = 490;
 
 const WAIT_DELAY = 500;
+
 const MIN_HACK_LEVEL = 10;
 const ATTACK_TARGETS_NEED = 10;
 const HOME_TARGET_RAM = 10000; // 10TB
@@ -172,7 +173,7 @@ async function handleFactionMembership(
   const singularityApi = nsLocator.singularity;
 
   logWriter.writeLine(`${logPrefix} Waiting on membership eligibility...`);
-  let playerInfo = await nsLocator['getPlayer']();
+  let playerInfo = netscript.getPlayer();
   let unjoinedFactions = Object.values(FactionName)
     .map(value => value.toString())
     .filter(value => !playerInfo.factions.includes(value));
@@ -187,7 +188,7 @@ async function handleFactionMembership(
       }
     }
 
-    playerInfo = await nsLocator['getPlayer']();
+    playerInfo = netscript.getPlayer();
     unjoinedFactions = unjoinedFactions.filter(
       value => !playerInfo.factions.includes(value)
     );
@@ -224,7 +225,7 @@ async function handleFactionMembership(
     }
 
     await netscript.asleep(WAIT_DELAY);
-    playerInfo = await nsLocator['getPlayer']();
+    playerInfo = netscript.getPlayer();
     unjoinedFactions = unjoinedFactions.filter(
       value => !playerInfo.factions.includes(value)
     );
@@ -537,7 +538,7 @@ async function handleGang(nsPackage: NetscriptPackage, logWriter: Logger) {
   );
   const gangCreated = await gangApi['inGang']();
   while (!gangCreated) {
-    const playerInfo = await nsLocator['getPlayer']();
+    const playerInfo = netscript.getPlayer();
     const joinedFactions = Object.values(FactionName)
       .map(value => value.toString())
       .filter(value => playerInfo.factions.includes(value))
@@ -569,7 +570,7 @@ async function handleCorporation(
     logWriter.writeLine(
       `${logPrefix} Waiting for sufficient funds to create corporation : ${CORP_FUNDS_REQ}`
     );
-    const playerInfo = await nsLocator['getPlayer']();
+    const playerInfo = netscript.getPlayer();
     while (playerInfo.money < CORP_FUNDS_REQ) {
       await netscript.asleep(WAIT_DELAY);
     }
@@ -665,8 +666,10 @@ export async function main(netscript: NS) {
     tempScript: true,
   });
 
-  scriptLogWriter.writeLine('Running lambda server manager script...');
-  runScript(netscript, SERVER_LAMBDA_SCRIPT, {tempScript: true});
+  if (!netscript.serverExists(NETSCRIPT_SERVER_NAME)) {
+    scriptLogWriter.writeLine('Running lambda server manager script...');
+    runScript(netscript, SERVER_LAMBDA_SCRIPT, {tempScript: true});
+  }
 
   scriptLogWriter.writeLine('Rooting all available hosts...');
   runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
@@ -686,7 +689,7 @@ export async function main(netscript: NS) {
   }
 
   scriptLogWriter.writeLine('Running concurrent tasks...');
-  const concurrentTasks = new Array<Promise<void>>();
+  const concurrentTasks = [];
   concurrentTasks.push(handleHackingActivity(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleWorkTasks(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleFactionMembership(nsPackage, scriptLogWriter));

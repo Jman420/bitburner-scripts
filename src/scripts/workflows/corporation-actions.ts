@@ -206,7 +206,7 @@ async function manageIndustryMaterials(
   const reservedSpaceRatio = industryInfo.makesMaterials
     ? MATERIAL_DIVISION_RESERVED_SPACE_RATIO
     : PRODUCT_DIVISION_RESERVED_SPACE_RATIO;
-  const result = new Array<Promise<void>>();
+  const result = [];
   for (const cityName of cities) {
     const warehouseInfo = await corpApi['getWarehouse'](divisionName, cityName);
     const availableSpace = warehouseInfo.size - warehouseInfo.sizeUsed;

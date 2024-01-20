@@ -23,7 +23,6 @@ import {GangEnemiesChangedEvent} from '/scripts/comms/events/gang-enemies-change
 import {GangManagerConfigEvent} from '/scripts/comms/events/gang-manager-config-event';
 
 import {
-  MemberDetails,
   CHARISMA_TRAINING_TASK,
   COMBAT_TRAINING_TASK,
   HACKING_TRAINING_TASK,
@@ -182,7 +181,7 @@ async function manageGang(
     while (
       managerConfig.buyAugmentations &&
       remainingAugmentations.length > 0 &&
-      remainingAugmentations[0].cost <= (await nsLocator['getPlayer']()).money
+      remainingAugmentations[0].cost <= netscript.getPlayer().money
     ) {
       const augmentationDetails = remainingAugmentations.shift();
       if (!augmentationDetails) {
@@ -207,7 +206,7 @@ async function manageGang(
     while (
       managerConfig.buyEquipment &&
       remainingEquipment.length > 0 &&
-      remainingEquipment[0].cost <= (await nsLocator['getPlayer']()).money &&
+      remainingEquipment[0].cost <= netscript.getPlayer().money &&
       memberStatsSatisfyLimit(
         memberDetails,
         ASCENSION_SCORE_PROPERTIES,
@@ -244,11 +243,11 @@ async function manageGang(
     )}`
   );
 
-  const trainingTeam = new Array<MemberDetails>();
-  const warParty = new Array<MemberDetails>();
-  const vigilanteGroup = new Array<MemberDetails>();
-  const criminalCrew = new Array<MemberDetails>();
-  const unassignedMembers = new Array<MemberDetails>();
+  const trainingTeam = [];
+  const warParty = [];
+  const vigilanteGroup = [];
+  const criminalCrew = [];
+  const unassignedMembers = [];
   gangMembers.sort(
     (memberA, memberB) => memberB.skillScore - memberA.skillScore
   );

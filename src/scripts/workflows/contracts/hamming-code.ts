@@ -74,7 +74,7 @@ function hammingBinaryToDecimal(hammingCode: string) {
   }
 
   // Extract and parse data bits
-  const dataArray = new Array<Number>();
+  const dataArray = [] as number[];
   hammingArray.forEach((value, index) =>
     index !== 0 && !isPowerOf2(index) ? dataArray.push(value) : false
   );

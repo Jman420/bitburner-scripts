@@ -23,7 +23,7 @@ const useState = React.useState;
 
 async function updateStocksMetrics(
   eventData: StocksTickerEvent,
-  nsPackage: NetscriptPackage,
+  netscript: NS,
   logWriter: Logger,
   setStocksValue: ReactSetStateFunction<string>,
   setStocksProfit: ReactSetStateFunction<string>,
@@ -35,9 +35,6 @@ async function updateStocksMetrics(
   ) {
     return;
   }
-
-  const nsLocator = nsPackage.locator;
-  const netscript = nsPackage.netscript;
 
   logWriter.writeLine('Calculating stock portfolio metrics...');
   let totalValue = 0;
@@ -62,7 +59,7 @@ async function updateStocksMetrics(
   setStocksProfit(`$${netscript.formatNumber(totalProfit)}`);
 
   logWriter.writeLine('Updating Total Player Value...');
-  const playerInfo = await nsLocator['getPlayer']();
+  const playerInfo = netscript.getPlayer();
   const totalPlayerValue = playerInfo.money + totalValue;
   setPlayerTotalValue(`$${netscript.formatNumber(totalPlayerValue)}`);
   logWriter.writeLine(ENTRY_DIVIDER);
@@ -126,7 +123,7 @@ async function updatePolledMetrics(
   }
 
   logWriter.writeLine('Retrieving location & player metrics...');
-  const playerInfo = await nsLocator['getPlayer']();
+  const playerInfo = netscript.getPlayer();
   const karmaLevel = netscriptExtended.heart.break();
   setCity(playerInfo.city);
   setLocation(playerInfo.location);
@@ -200,7 +197,7 @@ function CustomHudValues({
     eventListener.addListener(
       StocksTickerEvent,
       updateStocksMetrics,
-      nsPackage,
+      netscript,
       logWriter,
       setStocksPortfolioValue,
       setStocksProfit,

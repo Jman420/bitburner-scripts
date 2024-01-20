@@ -87,8 +87,7 @@ export async function main(netscript: NS) {
         scriptLogWriter.writeLine(
           `  Adding division ${importDivisionName} for material ${importMaterialName}`
         );
-        const importDivisions =
-          importMap.get(importMaterialName) ?? new Array<string>();
+        const importDivisions = importMap.get(importMaterialName) ?? [];
         importDivisions.push(importDivisionName);
         importMap.set(importMaterialName, importDivisions);
       }

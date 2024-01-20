@@ -353,7 +353,7 @@ function generateOfficeAssignments(
     cities = CITY_NAMES;
   }
 
-  const result = Array<OfficeAssignments>();
+  const result = [];
   for (const cityName of cities) {
     result.push({city: cityName, assignments: employeeAssignments});
   }
@@ -457,7 +457,7 @@ async function getAffordableResearchUpgrades(
   const researchPriorities = divisionInfo.makesProducts
     ? RESEARCH_PRIORITIES_PRODUCT_DIVISION
     : RESEARCH_PRIORITIES_SUPPORT_DIVISION;
-  const result = new Array<ResearchName>();
+  const result = [];
   let availableResearchPoints = divisionInfo.researchPoints;
   for (const researchUpgrade of researchPriorities) {
     const upgradeCost = await corpApi['getResearchCost'](

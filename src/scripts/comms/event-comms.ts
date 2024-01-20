@@ -100,9 +100,7 @@ class EventListener {
 
   private getSubscriptions<TData extends MessageBase>(dummyMsg: TData) {
     const subscriberMap = this.getSubscriberMap(dummyMsg);
-    const listeners =
-      subscriberMap.get(this.subscriberName) ??
-      new Array<SubscriberDetails<MessageBase, CallbackFunc<MessageBase>>>();
+    const listeners = subscriberMap.get(this.subscriberName) ?? [];
     return listeners;
   }
 

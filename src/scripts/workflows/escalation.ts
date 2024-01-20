@@ -14,7 +14,7 @@ function getRootTools(netscript: NS) {
     ['SQLInject.exe', netscript.sqlinject],
   ]);
 
-  const availableTools = new Array<ToolFunction>();
+  const availableTools = [];
   for (const [toolexe, tool] of ESCALATION_TOOLS) {
     if (netscript.fileExists(toolexe, HOME_SERVER_NAME)) {
       availableTools.push(tool);

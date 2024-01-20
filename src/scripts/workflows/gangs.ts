@@ -118,7 +118,7 @@ async function recruitAvailableMembers(
 ) {
   const nsLocator = nsPackage.locator;
 
-  const membersRecruited = new Array<MemberDetails>();
+  const membersRecruited = [];
   let counter = 0;
   let memberRecruited = true;
   while (counter < memberCount + 1 || memberRecruited) {
@@ -146,7 +146,7 @@ async function getMemberDetails(
     memberNames = [memberName];
   }
 
-  const results = new Array<MemberDetails>();
+  const results = [];
   for (const name of memberNames) {
     const memberInfo = await gangApi['getMemberInformation'](name);
     let ascensionScore = 0;
@@ -244,7 +244,7 @@ async function getUpgradeCosts(nsPackage: NetscriptPackage) {
   const gangApi = nsLocator.gang;
 
   const equipmentList = await gangApi['getEquipmentNames']();
-  const equipmentCosts = new Array<EquipmentCost>();
+  const equipmentCosts = [];
   for (const equipmentName of equipmentList) {
     const costDetails = {
       name: equipmentName,
@@ -423,7 +423,7 @@ async function getCriminalTaskDetails(
     taskNames = [taskName];
   }
 
-  const result = new Array<GangTaskStats>();
+  const result = [];
   for (const name of taskNames) {
     const taskInfo = await gangApi['getTaskStats'](name);
 

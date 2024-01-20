@@ -58,7 +58,7 @@ function sortUpgradeOrders(upgradeOrders: Array<HacknetOrder>) {
 }
 
 function initializeUpgradeOrders(hacknetApi: Hacknet) {
-  const upgradeOrders = new Array<HacknetOrder>();
+  const upgradeOrders = [];
   for (
     let nodeCounter = 0;
     nodeCounter < hacknetApi.numNodes();

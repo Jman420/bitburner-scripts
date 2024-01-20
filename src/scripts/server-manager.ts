@@ -49,7 +49,7 @@ async function initializeUpgradeOrders(nsPackage: NetscriptPackage) {
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
-  const upgradeOrders = new Array<ServerFarmOrder>();
+  const upgradeOrders = [];
   const farmNodes = await nsLocator['getPurchasedServers']();
   for (const hostname of farmNodes) {
     upgradeOrders.push(getNodeUpgradeOrder(netscript, hostname));

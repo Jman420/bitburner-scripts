@@ -67,7 +67,7 @@ function getServerOrders(
   const newServerCost = netscript.getPurchasedServerCost(ramAmount);
 
   logWriter.writeLine('  Checking server farm for upgrade paths...');
-  const purchaseOrders = new Array<ServerFarmOrder>();
+  const purchaseOrders = [];
   for (const hostname of farmHosts) {
     const maxRam = netscript.getServerMaxRam(hostname);
     const availableRam = getAvailableRam(netscript, hostname);

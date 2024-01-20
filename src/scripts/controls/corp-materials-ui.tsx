@@ -90,7 +90,7 @@ function CorpMaterialsUI({nsPackage}: {nsPackage: NetscriptPackage}) {
 
   const [storageSize, setStorageSize] = useState('');
   const [divisionOptions, setDivisionOptions] = useState(
-    new Array<DropdownOption>()
+    [] as DropdownOption[]
   );
   const cityNames = ['', ...CITY_NAMES];
 

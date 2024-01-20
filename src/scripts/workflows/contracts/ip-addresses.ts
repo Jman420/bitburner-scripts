@@ -1,5 +1,5 @@
 function generateIpAddresses(digits: string) {
-  const result = new Array<string>();
+  const result = [];
 
   for (let index1 = 1; index1 <= 3; index1++) {
     for (let index2 = 1; index2 <= 3; index2++) {

@@ -124,7 +124,7 @@ async function attackTargets(
   logWriter.writeLine(`Attacking ${targetsAnalysis.length} targets...`);
   logWriter.writeLine(SECTION_DIVIDER);
   let longestBatchTime = 0;
-  const workerPids = new Array<number>();
+  const workerPids = [];
   for (
     let targetCounter = 0;
     targetCounter < targetsAnalysis.length;

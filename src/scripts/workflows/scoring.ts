@@ -1,4 +1,4 @@
-import {NetscriptLocator} from '/scripts/netscript-services/netscript-locator';
+import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
 
 import {ServerDetails} from '/scripts/workflows/recon';
 
@@ -246,15 +246,18 @@ function sortOptimalTargetHosts(
 }
 
 async function getHackingExpGain(
-  nsLocator: NetscriptLocator,
+  nsPackage: NetscriptPackage,
   hostname: string
 ) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
   const serverDetails = await nsLocator['getServer'](hostname);
   if (!serverDetails.baseDifficulty) {
     return 0;
   }
 
-  const playerDetails = await nsLocator['getPlayer']();
+  const playerDetails = netscript.getPlayer();
   const baseExpGain = 3;
   const diffFactor = 0.3;
   const expGain =

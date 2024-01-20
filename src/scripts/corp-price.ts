@@ -171,7 +171,7 @@ export async function main(netscript: NS) {
 
   productMarkupCache = new Map<string, number>();
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
-  const taskPromises = new Array<Promise<void>>();
+  const taskPromises = [];
   taskPromises.push(
     delayedInfiniteLoop(
       netscript,

@@ -62,7 +62,6 @@ async function attackTargets(
   optimalOnlyCount: number,
   logWriter: Logger
 ) {
-  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
   logWriter.writeLine('Identifying available targets...');
@@ -76,7 +75,7 @@ async function attackTargets(
       .map(async value => {
         const extendedValue = value as ServerDetailsExtended;
         extendedValue.expGain = await getHackingExpGain(
-          nsLocator,
+          nsPackage,
           value.hostname
         );
         return extendedValue;
@@ -107,7 +106,7 @@ async function attackTargets(
     `Weakening ${targetHosts.length} hosts for hacking experience : ${targetHosts}`
   );
   const scriptArgs = [getCmdFlag(CMD_FLAG_TARGETS_CSV), targetHosts.join(',')];
-  const workerPids = new Array<number>();
+  const workerPids = [];
   for (const hostname of rootedHosts) {
     netscript.scp(WORKERS_PACKAGE, hostname);
     workerPids.push(

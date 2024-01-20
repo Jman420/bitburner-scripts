@@ -89,7 +89,7 @@ async function tradeStocks(
 
   // Handle Sales Transactions
   let totalSaleProfits = 0;
-  const soldStocks = new Array<SaleTransaction>();
+  const soldStocks = [];
   for (const stockDetails of stockListings) {
     if (
       stockDetails.position.longShares > 0 &&
@@ -147,7 +147,7 @@ async function tradeStocks(
   // Handle Purchase Transactions
   let playerMoney = netscript.getServerMoneyAvailable(HOME_SERVER_NAME);
   let totalPurchaseCosts = 0;
-  const purchasedStocks = new Array<PurchaseTransaction>();
+  const purchasedStocks = [];
   for (
     let stockCounter = 0;
     managerConfig.purchaseStocks &&

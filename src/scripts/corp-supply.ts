@@ -357,7 +357,7 @@ export async function main(netscript: NS) {
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
-  const taskPromises = new Array<Promise<void>>();
+  const taskPromises = [];
 
   officeProductionMap = new Map<string, number>();
   taskPromises.push(
