@@ -12,10 +12,7 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
-import {
-  delayedInfiniteLoop,
-  initializeScript,
-} from '/scripts/workflows/execution';
+import {initializeScript} from '/scripts/workflows/execution';
 import {
   HacknetManagerConfig,
   HacknetOrder,
@@ -51,7 +48,7 @@ const TAIL_Y_POS = 52;
 const TAIL_WIDTH = 670;
 const TAIL_HEIGHT = 515;
 
-const LOOP_DELAY_MILLISEC = 5000;
+const UPDATE_DELAY = 5000;
 
 let fundsLimitPercent: number;
 let managerConfig: HacknetManagerConfig;
@@ -75,72 +72,79 @@ function initializeUpgradeOrders(hacknetApi: Hacknet) {
   return upgradeOrders;
 }
 
-function manageOrdersAndPurchases(
+async function manageOrdersAndPurchases(
   netscript: NS,
   upgradeOrders: Array<HacknetOrder>,
   logWriter: Logger
 ) {
   const hacknetApi = netscript.hacknet;
-  const nodeCost = hacknetApi.getPurchaseNodeCost();
-  let availableFunds = netscript.getPlayer().money - managerConfig.fundsLimit;
-  let orderPurchased = false;
-  if (
-    managerConfig.purchaseNodes &&
-    hacknetApi.numNodes() < managerConfig.maxNodes &&
-    (!managerConfig.purchaseUpgrades ||
-      !upgradeOrders.length ||
-      nodeCost < upgradeOrders[0].cost) &&
-    nodeCost <= availableFunds
-  ) {
-    logWriter.writeLine(
-      `Purchasing new Hacknet Node for $${netscript.formatNumber(nodeCost)}...`
-    );
-    const newNodeIndex = hacknetApi.purchaseNode();
 
-    logWriter.writeLine(
-      `Adding new Hacknet Node ${newNodeIndex} Upgrade Orders...`
-    );
-    const nodeUpgradeOrders = getNodeUpgradeOrders(hacknetApi, newNodeIndex);
-    sortUpgradeOrders(nodeUpgradeOrders);
-    upgradeOrders.unshift(...nodeUpgradeOrders);
-    orderPurchased = true;
-  }
-
-  availableFunds = netscript.getPlayer().money - managerConfig.fundsLimit;
   while (
-    managerConfig.purchaseUpgrades &&
-    upgradeOrders.length > 0 &&
-    upgradeOrders[0].cost <= availableFunds
+    hacknetApi.numNodes() < managerConfig.maxNodes ||
+    upgradeOrders.length > 0
   ) {
-    const orderDetails = upgradeOrders.shift();
-    if (!orderDetails) {
-      break;
+    const nodeCost = hacknetApi.getPurchaseNodeCost();
+    let availableFunds = netscript.getPlayer().money - managerConfig.fundsLimit;
+    let orderPurchased = false;
+    if (
+      managerConfig.purchaseNodes &&
+      hacknetApi.numNodes() < managerConfig.maxNodes &&
+      nodeCost <= availableFunds
+    ) {
+      logWriter.writeLine(
+        `Purchasing new Hacknet Node for $${netscript.formatNumber(
+          nodeCost
+        )}...`
+      );
+      const newNodeIndex = hacknetApi.purchaseNode();
+
+      logWriter.writeLine(
+        `Adding new Hacknet Node ${newNodeIndex} Upgrade Orders...`
+      );
+      const nodeUpgradeOrders = getNodeUpgradeOrders(hacknetApi, newNodeIndex);
+      sortUpgradeOrders(nodeUpgradeOrders);
+      upgradeOrders.unshift(...nodeUpgradeOrders);
+      orderPurchased = true;
     }
 
-    logWriter.writeLine(
-      `Purchasing ${orderDetails.resource} upgrade for node ${
-        orderDetails.nodeIndex
-      } for $${netscript.formatNumber(orderDetails.cost)}...`
-    );
-    orderDetails.purchaseFunc(orderDetails.nodeIndex);
     availableFunds = netscript.getPlayer().money - managerConfig.fundsLimit;
+    while (
+      managerConfig.purchaseUpgrades &&
+      upgradeOrders.length > 0 &&
+      upgradeOrders[0].cost <= availableFunds
+    ) {
+      const orderDetails = upgradeOrders.shift();
+      if (!orderDetails) {
+        break;
+      }
 
-    logWriter.writeLine(
-      `Updating upgrade cost for ${orderDetails.resource} on node ${orderDetails.nodeIndex}...`
-    );
-    upgradeOrders.push(
-      ...getNodeUpgradeOrders(
-        hacknetApi,
-        orderDetails.nodeIndex,
-        orderDetails.resource
-      )
-    );
-    sortUpgradeOrders(upgradeOrders);
-    orderPurchased = true;
-  }
+      logWriter.writeLine(
+        `Purchasing ${orderDetails.resource} upgrade for node ${
+          orderDetails.nodeIndex
+        } for $${netscript.formatNumber(orderDetails.cost)}...`
+      );
+      orderDetails.purchaseFunc(orderDetails.nodeIndex);
+      availableFunds = netscript.getPlayer().money - managerConfig.fundsLimit;
 
-  if (orderPurchased) {
-    logWriter.writeLine(ENTRY_DIVIDER);
+      logWriter.writeLine(
+        `Updating upgrade cost for ${orderDetails.resource} on node ${orderDetails.nodeIndex}...`
+      );
+      upgradeOrders.push(
+        ...getNodeUpgradeOrders(
+          hacknetApi,
+          orderDetails.nodeIndex,
+          orderDetails.resource
+        )
+      );
+      sortUpgradeOrders(upgradeOrders);
+      orderPurchased = true;
+    }
+
+    if (orderPurchased) {
+      logWriter.writeLine(ENTRY_DIVIDER);
+    }
+
+    await netscript.asleep(UPDATE_DELAY);
   }
 }
 
@@ -239,14 +243,7 @@ export async function main(netscript: NS) {
   );
   scriptLogWriter.writeLine(SECTION_DIVIDER);
 
-  await delayedInfiniteLoop(
-    netscript,
-    LOOP_DELAY_MILLISEC,
-    manageOrdersAndPurchases,
-    netscript,
-    upgradeOrders,
-    scriptLogWriter
-  );
+  await manageOrdersAndPurchases(netscript, upgradeOrders, scriptLogWriter);
 }
 
 export function autocomplete(data: AutocompleteData, args: string[]) {
