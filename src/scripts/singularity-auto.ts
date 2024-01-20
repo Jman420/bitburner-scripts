@@ -46,6 +46,7 @@ import {
   getRemainingPrograms,
 } from '/scripts/workflows/singularity';
 import {WGWH_BATCH_ATTACK_SCRIPT} from '/scripts/wgwh-batch';
+import {CONTRACTS_AUTO_SCRIPT} from '/scripts/contracts-auto';
 
 const MODULE_NAME = 'singularity-starter';
 const SUBSCRIBER_NAME = 'singularity-starter';
@@ -438,7 +439,8 @@ export async function main(netscript: NS) {
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
-  // TODO (JMG) : Run script to handle solving available contracts continuously
+  scriptLogWriter.writeLine('Running coding contract auto solver script...');
+  runScript(netscript, CONTRACTS_AUTO_SCRIPT, {tempScript: true});
 
   scriptLogWriter.writeLine('Running hacknet manager script...');
   const hacknetManagerArgs = [

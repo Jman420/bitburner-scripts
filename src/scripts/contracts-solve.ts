@@ -39,7 +39,7 @@ export async function main(netscript: NS) {
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
-  logWriter.writeLine('Automatically Solve Known Coding Contracts');
+  logWriter.writeLine('Solve Known Coding Contracts');
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Parsing command line arguments...');
