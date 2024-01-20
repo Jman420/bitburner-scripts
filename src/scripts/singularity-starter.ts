@@ -480,9 +480,9 @@ export async function main(netscript: NS) {
   concurrentTasks.push(handleLambdaServerPurchased(netscript, scriptLogWriter));
   concurrentTasks.push(handlePurchasePrograms(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleHomeUpgrades(nsPackage, scriptLogWriter));
-  // TODO (JMG) : Add task to handle Stock Market (wait for hacknet script to finish)
+  // TODO (JMG) : Add task to handle Stock Market (wait for hacknet script to finish ; coordinate w/ Home Upgrades)
   // TODO (JMG) : Add task to handle Gang (wait for sufficient funds ; coordinate w/ Stock Market task)
-  // TODO (JMG) : Add task to handle Corp
+  // TODO (JMG) : Add task to handle Corp (coordinate w/ Stock Market task)
   await Promise.all(concurrentTasks);
 
   scriptLogWriter.writeLine('Singularity quick start completed!');
