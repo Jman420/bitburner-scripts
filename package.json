@@ -5,6 +5,8 @@
     "node": ">=20.9.0"
   },
   "scripts": {
+    "packages:outdated": "ncu",
+    "packages:update": "ncu --upgrade",
     "watch:transpile": "tsc -w --preserveWatchOutput",
     "watch:local": "node sync/watch.js",
     "watch:remote": "bitburner-filesync",
@@ -18,19 +20,20 @@
     "debug": "ts-node src/scripts/debug.ts"
   },
   "devDependencies": {
-    "@types/node": "20.8.2",
-    "@types/react": "^18.2.18",
-    "@types/react-dom": "^18.2.7",
-    "@typescript-eslint/eslint-plugin": "^5.35.1",
-    "@typescript-eslint/parser": "^5.35.1",
+    "@types/node": "20.11.5",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "@typescript-eslint/eslint-plugin": "^6.19.0",
+    "@typescript-eslint/parser": "^6.19.0",
     "bitburner-filesync": "^1.1.5",
     "chokidar": "^3.5.3",
-    "concurrently": "^7.4.0",
-    "eslint": "^8.22.0",
-    "fast-glob": "^3.2.12",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.56.0",
+    "fast-glob": "^3.3.2",
     "gts": "^5.2.0",
-    "sync-directory": "^5.1.7",
-    "ts-node": "^10.9.1",
-    "typescript": "~5.2.0"
+    "npm-check-updates": "^16.14.12",
+    "sync-directory": "^6.0.5",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.3.3"
   }
 }
