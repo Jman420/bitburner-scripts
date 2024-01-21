@@ -54,12 +54,12 @@ import {
   getLocatorPackage,
 } from '/scripts/netscript-services/netscript-locator';
 
-const CMD_FLAG_MEMBER_NAME_PREFIX = 'memberNamePrefix';
-const CMD_FLAG_PURCHASE_AUGMENTATIONS = 'purchaseAugmentations';
-const CMD_FLAG_PURCHASE_EQUIPMENT = 'purchaseEquipment';
-const CMD_FLAG_TASK_FOCUS = 'taskFocus';
-const TASK_FOCUS_RESPECT = 'respect';
-const TASK_FOCUS_MONEY = 'money';
+export const CMD_FLAG_MEMBER_NAME_PREFIX = 'memberNamePrefix';
+export const CMD_FLAG_PURCHASE_AUGMENTATIONS = 'purchaseAugmentations';
+export const CMD_FLAG_PURCHASE_EQUIPMENT = 'purchaseEquipment';
+export const CMD_FLAG_TASK_FOCUS = 'taskFocus';
+export const TASK_FOCUS_RESPECT = 'respect';
+export const TASK_FOCUS_MONEY = 'money';
 const TASK_FOCUS_OPTIONS = [TASK_FOCUS_RESPECT, TASK_FOCUS_MONEY];
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_MEMBER_NAME_PREFIX, 'henchman-'],
@@ -404,7 +404,12 @@ function handleUpdateConfigEvent(
   }
 
   logWriter.writeLine('Update settings event received...');
-  managerConfig = eventData.config;
+  const newConfig = eventData.config;
+  managerConfig.buyAugmentations =
+    newConfig.buyAugmentations ?? managerConfig.buyAugmentations;
+  managerConfig.buyEquipment =
+    newConfig.buyEquipment ?? managerConfig.buyEquipment;
+  managerConfig.taskFocus = newConfig.taskFocus ?? managerConfig.taskFocus;
 
   logWriter.writeLine(
     `  Purchase Augmentations : ${managerConfig.buyAugmentations}`
@@ -413,7 +418,7 @@ function handleUpdateConfigEvent(
   logWriter.writeLine(`  Task Focus : ${managerConfig.taskFocus}`);
 }
 
-function handleGangConfigRequest(
+function handleConfigRequest(
   requestData: GangConfigRequest,
   logWriter: Logger
 ) {
@@ -502,7 +507,7 @@ export async function main(netscript: NS) {
   );
   eventListener.addListener(
     GangConfigRequest,
-    handleGangConfigRequest,
+    handleConfigRequest,
     scriptLogWriter
   );
 

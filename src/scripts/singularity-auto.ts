@@ -7,6 +7,7 @@ import {getCmdFlag} from '/scripts/workflows/cmd-args';
 
 import {
   initializeScript,
+  killWorkerScripts,
   runScript,
   waitForScripts,
 } from '/scripts/workflows/execution';
@@ -55,6 +56,7 @@ import {STOCKS_TRADER_SCRIPT} from '/scripts/stocks-trader';
 import {STOCKS_TICKER_HISTORY_SCRIPT} from '/scripts/workflows/stocks';
 import {
   CMD_FLAG_AUTO_INVESTMENT,
+  CORP_PUBLIC_SCRIPT,
   CORP_ROUND1_SCRIPT,
   CORP_ROUND2_SCRIPT,
   CORP_ROUND3_SCRIPT,
@@ -62,6 +64,15 @@ import {
 } from '/scripts/workflows/corporation-shared';
 import {REQUIRED_FUNDS as CORP_ROUND2_REQUIRED_FUNDS} from '/scripts/corp-round2';
 import {REQUIRED_FUNDS as CORP_ROUND3_REQUIRED_FUNDS} from '/scripts/corp-round3';
+import {sendMessage} from '/scripts/comms/event-comms';
+import {WgwhManagerConfigEvent} from '/scripts/comms/events/wgwh-manager-config-event';
+import {FarmHackExpConfigEvent} from '/scripts/comms/events/farm-hackExp-config-event';
+import {GANG_MANAGER_SCRIPT} from '/scripts/workflows/gangs';
+import {
+  CMD_FLAG_PURCHASE_AUGMENTATIONS,
+  CMD_FLAG_TASK_FOCUS,
+  TASK_FOCUS_RESPECT,
+} from '/scripts/gang-manager';
 
 const MODULE_NAME = 'singularity-starter';
 const SUBSCRIBER_NAME = 'singularity-starter';
@@ -77,77 +88,72 @@ const MIN_HACK_LEVEL = 10;
 const ATTACK_TARGETS_NEED = 10;
 const HOME_TARGET_RAM = 10000; // 10TB
 const HOME_TARGET_CORES = 4;
-const BATCH_ATTACH_RAM_NEEDED = 8000; //8TB
+const BATCH_ATTACK_RAM_NEEDED = 8000; //8TB
 const GANG_KARMA_REQ = -54000;
 const CORP_FUNDS_REQ = 150e9; // 150b
 const CORP_DIVIDENDS_RATE = 0.1; // 10%
 
-async function handleHackingActivity(
-  nsPackage: NetscriptPackage,
-  logWriter: Logger
-) {
+async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
   const logPrefix = 'Hacking -';
 
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
-  logWriter.writeLine(
-    `${logPrefix} Killing hack exp farm script on home server...`
-  );
-  await nsLocator['scriptKill'](FARM_HACK_EXP_SCRIPT, HOME_SERVER_NAME);
-
-  logWriter.writeLine(
-    `${logPrefix} Rooting & expanding hack exp farm on new hosts...`
-  );
-  runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
-  const expFarmArgs = [getCmdFlag(CMD_FLAG_OPTIMAL_ONLY), 3];
-  if (netscript.serverExists(NETSCRIPT_SERVER_NAME)) {
-    expFarmArgs.push(getCmdFlag(CMD_FLAG_INCLUDE_HOME));
-  }
-  runScript(netscript, FARM_HACK_EXP_SCRIPT, {
-    args: expFarmArgs,
-    tempScript: true,
-  });
-
-  logWriter.writeLine(
-    `${logPrefix} Waiting for ${ATTACK_TARGETS_NEED} attack targets...`
-  );
   let attackTargets = filterHostsCanHack(
     netscript,
     scanWideNetwork(netscript, false, true, false, true)
   );
-  while (attackTargets.length < ATTACK_TARGETS_NEED) {
-    await netscript.asleep(WAIT_DELAY);
-    attackTargets = filterHostsCanHack(
-      netscript,
-      scanWideNetwork(netscript, false, true, false, true)
+  if (attackTargets.length < ATTACK_TARGETS_NEED) {
+    logWriter.writeLine(`${logPrefix} Running hack exp farm script...`);
+    const expFarmArgs = [getCmdFlag(CMD_FLAG_OPTIMAL_ONLY), 3];
+    if (netscript.serverExists(NETSCRIPT_SERVER_NAME)) {
+      expFarmArgs.push(getCmdFlag(CMD_FLAG_INCLUDE_HOME));
+    }
+    runScript(netscript, FARM_HACK_EXP_SCRIPT, {
+      args: expFarmArgs,
+      tempScript: true,
+    });
+
+    logWriter.writeLine(
+      `${logPrefix} Waiting for ${ATTACK_TARGETS_NEED} attack targets...`
     );
+    while (attackTargets.length < ATTACK_TARGETS_NEED) {
+      await netscript.asleep(WAIT_DELAY);
+      attackTargets = filterHostsCanHack(
+        netscript,
+        scanWideNetwork(netscript, false, true, false, true)
+      );
+    }
+
+    logWriter.writeLine(`${logPrefix} Killing hack exp farm...`);
+    await nsLocator['scriptKill'](FARM_HACK_EXP_SCRIPT, HOME_SERVER_NAME);
+    runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
   }
 
-  logWriter.writeLine(`${logPrefix} Killing hack exp farm scripts...`);
-  runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
+  let homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
+  if (homeServerInfo.maxRam < BATCH_ATTACK_RAM_NEEDED) {
+    logWriter.writeLine(`${logPrefix} Running WGWH serial attack script...`);
+    runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
+    const wgwhSerialArgs = netscript.serverExists(NETSCRIPT_SERVER_NAME)
+      ? [getCmdFlag(CMD_FLAG_INCLUDE_HOME)]
+      : [];
+    runScript(netscript, WGWH_SERIAL_ATTACK_SCRIPT, {
+      args: wgwhSerialArgs,
+      tempScript: true,
+    });
 
-  logWriter.writeLine(`${logPrefix} Running WGWH serial attack script...`);
-  runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
-  const wgwhSerialArgs = netscript.serverExists(NETSCRIPT_SERVER_NAME)
-    ? [getCmdFlag(CMD_FLAG_INCLUDE_HOME)]
-    : [];
-  runScript(netscript, WGWH_SERIAL_ATTACK_SCRIPT, {
-    args: wgwhSerialArgs,
-    tempScript: true,
-  });
+    logWriter.writeLine(
+      `${logPrefix} Waiting for sufficient available RAM for WGWH batch attacks...`
+    );
+    while (homeServerInfo.maxRam < BATCH_ATTACK_RAM_NEEDED) {
+      await netscript.asleep(WAIT_DELAY);
+      homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
+    }
 
-  logWriter.writeLine(
-    `${logPrefix} Waiting for sufficient available RAM for WGWH batch attacks...`
-  );
-  const homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
-  while (homeServerInfo.maxRam < BATCH_ATTACH_RAM_NEEDED) {
-    await netscript.asleep(WAIT_DELAY);
+    logWriter.writeLine(`${logPrefix} Killing WGWH serial attack scripts...`);
+    await nsLocator['scriptKill'](WGWH_SERIAL_ATTACK_SCRIPT, HOME_SERVER_NAME);
+    runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
   }
-
-  logWriter.writeLine(`${logPrefix} Killing WGWH serial attack scripts...`);
-  runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
-  await nsLocator['scriptKill'](WGWH_SERIAL_ATTACK_SCRIPT, HOME_SERVER_NAME);
 
   logWriter.writeLine(`${logPrefix} Running WGWH batch attack script...`);
   runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
@@ -162,10 +168,7 @@ async function handleHackingActivity(
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
-async function handleFactionMembership(
-  nsPackage: NetscriptPackage,
-  logWriter: Logger
-) {
+async function handleFactions(nsPackage: NetscriptPackage, logWriter: Logger) {
   const logPrefix = 'Faction -';
 
   const nsLocator = nsPackage.locator;
@@ -312,14 +315,19 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
-async function handleLambdaServerPurchased(netscript: NS, logWriter: Logger) {
+async function handleLambdaServer(netscript: NS, logWriter: Logger) {
   const logPrefix = 'Lambda -';
 
-  logWriter.writeLine(
-    `${logPrefix} Waiting for Lambda Server to be purchased...`
-  );
-  while (!netscript.serverExists(NETSCRIPT_SERVER_NAME)) {
-    await netscript.asleep(WAIT_DELAY);
+  if (!netscript.serverExists(NETSCRIPT_SERVER_NAME)) {
+    logWriter.writeLine(`${logPrefix} Running lambda server manager script...`);
+    runScript(netscript, SERVER_LAMBDA_SCRIPT, {tempScript: true});
+
+    logWriter.writeLine(
+      `${logPrefix} Waiting for Lambda Server to be purchased...`
+    );
+    while (!netscript.serverExists(NETSCRIPT_SERVER_NAME)) {
+      await netscript.asleep(WAIT_DELAY);
+    }
   }
 
   const attackTargets = filterHostsCanHack(
@@ -330,35 +338,16 @@ async function handleLambdaServerPurchased(netscript: NS, logWriter: Logger) {
     logWriter.writeLine(
       `${logPrefix} Including home server in hack exp farm...`
     );
-    runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
-
-    const expFarmArgs = [
-      getCmdFlag(CMD_FLAG_OPTIMAL_ONLY),
-      3,
-      getCmdFlag(CMD_FLAG_INCLUDE_HOME),
-    ];
-    runScript(netscript, FARM_HACK_EXP_SCRIPT, {
-      args: expFarmArgs,
-      tempScript: true,
-    });
+    sendMessage(new FarmHackExpConfigEvent({includeHomeAttacker: true}));
   } else {
-    logWriter.writeLine(
-      `${logPrefix} Including home server in wgwh serial attack...`
-    );
-    runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
-    netscript.scriptKill(WGWH_SERIAL_ATTACK_SCRIPT, HOME_SERVER_NAME);
-
-    const wgwhSerialArgs = [getCmdFlag(CMD_FLAG_INCLUDE_HOME)];
-    runScript(netscript, WGWH_SERIAL_ATTACK_SCRIPT, {
-      args: wgwhSerialArgs,
-      tempScript: true,
-    });
+    logWriter.writeLine(`${logPrefix} Including home server in wgwh attack...`);
+    sendMessage(new WgwhManagerConfigEvent({includeHomeAttacker: true}));
   }
 
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
-async function handlePurchasePrograms(
+async function handleTorPurchases(
   nsPackage: NetscriptPackage,
   logWriter: Logger
 ) {
@@ -461,10 +450,11 @@ async function handleStockMarket(
     {
       name: 'TIX API Access',
       purchaseFunc: stocksApi['purchaseTixApi'],
-      scriptHandler: () => {
+      scriptHandler: async () => {
         logWriter.writeLine(
           `${logPrefix} Starting stocks trader script w/ historical ticker...`
         );
+        await killWorkerScripts(nsPackage, HOME_SERVER_NAME);
         runScript(netscript, STOCKS_TRADER_SCRIPT);
       },
     },
@@ -475,12 +465,16 @@ async function handleStockMarket(
     {
       name: '4Sigma API Access',
       purchaseFunc: stocksApi['purchase4SMarketDataTixApi'],
-      scriptHandler: () => {
+      scriptHandler: async () => {
         logWriter.writeLine(
           `${logPrefix} Killing stocks trader & historical ticker scripts...`
         );
-        netscript.scriptKill(STOCKS_TRADER_SCRIPT, HOME_SERVER_NAME);
-        netscript.scriptKill(STOCKS_TICKER_HISTORY_SCRIPT, HOME_SERVER_NAME);
+        await nsLocator['scriptKill'](STOCKS_TRADER_SCRIPT, HOME_SERVER_NAME);
+        await nsLocator['scriptKill'](
+          STOCKS_TICKER_HISTORY_SCRIPT,
+          HOME_SERVER_NAME
+        );
+        await killWorkerScripts(nsPackage, HOME_SERVER_NAME);
 
         logWriter.writeLine(
           `${logPrefix} Restarting stocks trader script w/ 4Sigma ticker...`
@@ -507,7 +501,7 @@ async function handleStockMarket(
         `${logPrefix} Purchased stock market access : ${purchasedUpgrade.name}`
       );
       if (purchasedUpgrade.scriptHandler) {
-        purchasedUpgrade.scriptHandler();
+        await purchasedUpgrade.scriptHandler();
       }
     }
 
@@ -553,6 +547,15 @@ async function handleGang(nsPackage: NetscriptPackage, logWriter: Logger) {
     }
   }
 
+  logWriter.writeLine(`${logPrefix} Running gang manager script...`);
+  killWorkerScripts(nsPackage, HOME_SERVER_NAME);
+  const gangManagerArgs = [
+    getCmdFlag(CMD_FLAG_PURCHASE_AUGMENTATIONS),
+    getCmdFlag(CMD_FLAG_TASK_FOCUS),
+    TASK_FOCUS_RESPECT,
+  ];
+  runScript(netscript, GANG_MANAGER_SCRIPT, {args: gangManagerArgs});
+
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
@@ -594,16 +597,16 @@ async function handleCorporation(
     {round: 3, scriptPath: CORP_ROUND3_SCRIPT},
     {round: 4, scriptPath: CORP_ROUND4_SCRIPT},
   ];
+
   let corpInfo = await corpApi['getCorporation']();
-  for (const autoRoundInfo of autoInvestmentRounds) {
-    const investmentInfo = await corpApi['getInvestmentOffer']();
-    if (investmentInfo.round !== autoRoundInfo.round) {
-      continue;
-    }
+  const investmentInfo = await corpApi['getInvestmentOffer']();
+  while (investmentInfo.round < autoInvestmentRounds.length + 1) {
+    const autoRoundInfo = autoInvestmentRounds[investmentInfo.round - 1];
 
     logWriter.writeLine(
       `${logPrefix} Running round ${autoRoundInfo.round} investment automation...`
     );
+    killWorkerScripts(nsPackage, HOME_SERVER_NAME);
     const autoRoundScriptPid = runScript(netscript, autoRoundInfo.scriptPath, {
       args: corpRoundScriptArgs,
     });
@@ -617,6 +620,7 @@ async function handleCorporation(
           autoRoundInfo.nextRoundFunds
         )}`
       );
+      corpInfo = await corpApi['getCorporation']();
       while (corpInfo.funds < autoRoundInfo.nextRoundFunds) {
         await netscript.asleep(WAIT_DELAY);
         corpInfo = await corpApi['getCorporation']();
@@ -629,6 +633,12 @@ async function handleCorporation(
     logWriter.writeLine(`${logPrefix} Taking corporation public...`);
     await corpApi['goPublic'](0);
   }
+
+  logWriter.writeLine(
+    `${logPrefix} Running public corporation management script...`
+  );
+  killWorkerScripts(nsPackage, HOME_SERVER_NAME);
+  runScript(netscript, CORP_PUBLIC_SCRIPT);
 
   if (corpInfo.dividendRate !== CORP_DIVIDENDS_RATE) {
     logWriter.writeLine(
@@ -666,35 +676,33 @@ export async function main(netscript: NS) {
     tempScript: true,
   });
 
-  if (!netscript.serverExists(NETSCRIPT_SERVER_NAME)) {
-    scriptLogWriter.writeLine('Running lambda server manager script...');
-    runScript(netscript, SERVER_LAMBDA_SCRIPT, {tempScript: true});
-  }
-
   scriptLogWriter.writeLine('Rooting all available hosts...');
   runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
 
-  scriptLogWriter.writeLine(
-    'Training hacking exp via free university class...'
-  );
-  await attendCourse(
-    nsPackage,
-    UniversityName.Rothman,
-    netscript.enums.UniversityClassType.computerScience
-  );
+  const playerInfo = netscript.getPlayer();
+  if (playerInfo.skills.hacking < 10) {
+    scriptLogWriter.writeLine(
+      'Training hacking exp via free university class...'
+    );
+    await attendCourse(
+      nsPackage,
+      UniversityName.Rothman,
+      netscript.enums.UniversityClassType.computerScience
+    );
 
-  scriptLogWriter.writeLine(`Waiting for hacking level ${MIN_HACK_LEVEL}...`);
-  while (netscript.getHackingLevel() < MIN_HACK_LEVEL) {
-    await netscript.asleep(WAIT_DELAY);
+    scriptLogWriter.writeLine(`Waiting for hacking level ${MIN_HACK_LEVEL}...`);
+    while (netscript.getHackingLevel() < MIN_HACK_LEVEL) {
+      await netscript.asleep(WAIT_DELAY);
+    }
   }
 
   scriptLogWriter.writeLine('Running concurrent tasks...');
   const concurrentTasks = [];
-  concurrentTasks.push(handleHackingActivity(nsPackage, scriptLogWriter));
+  concurrentTasks.push(handleHacking(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleWorkTasks(nsPackage, scriptLogWriter));
-  concurrentTasks.push(handleFactionMembership(nsPackage, scriptLogWriter));
-  concurrentTasks.push(handleLambdaServerPurchased(netscript, scriptLogWriter));
-  concurrentTasks.push(handlePurchasePrograms(nsPackage, scriptLogWriter));
+  concurrentTasks.push(handleFactions(nsPackage, scriptLogWriter));
+  concurrentTasks.push(handleLambdaServer(netscript, scriptLogWriter));
+  concurrentTasks.push(handleTorPurchases(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleHomeUpgrades(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleStockMarket(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleGang(nsPackage, scriptLogWriter));

@@ -38,6 +38,11 @@ import {
   sortOptimalTargetHosts,
 } from '/scripts/workflows/scoring';
 import {openTail} from '/scripts/workflows/ui';
+import {HackExperienceFarmConfig} from '/scripts/workflows/farms';
+import {FarmHackExpConfigEvent} from '/scripts/comms/events/farm-hackExp-config-event';
+import {FarmHackExpConfigRequest} from '/scripts/comms/requests/farm-hackExp-config-request';
+import {EventListener, sendMessage} from '/scripts/comms/event-comms';
+import {FarmHackExpConfigResponse} from '/scripts/comms/responses/farm-hackExp-config-response';
 
 export const FARM_HACK_EXP_SCRIPT = `${SCRIPTS_PATH}/farm-hackExp.js`;
 export const CMD_FLAG_INCLUDE_HOME = 'includeHome';
@@ -56,12 +61,9 @@ const TAIL_Y_POS = 154;
 const TAIL_WIDTH = 1275;
 const TAIL_HEIGHT = 510;
 
-async function attackTargets(
-  nsPackage: NetscriptPackage,
-  includeHomeAttacker: boolean,
-  optimalOnlyCount: number,
-  logWriter: Logger
-) {
+let managerConfig: HackExperienceFarmConfig;
+
+async function attackTargets(nsPackage: NetscriptPackage, logWriter: Logger) {
   const netscript = nsPackage.netscript;
 
   logWriter.writeLine('Identifying available targets...');
@@ -84,19 +86,19 @@ async function attackTargets(
   sortOptimalTargetHosts(targetsAnalysis, undefined, scoreHostForExperience);
   logWriter.writeLine(`Sorted ${targetsAnalysis.length} target hosts.`);
 
-  if (optimalOnlyCount > 0) {
+  if (managerConfig.optimalOnlyCount > 0) {
     logWriter.writeLine(
-      `Isolating top ${optimalOnlyCount} most optimal targets...`
+      `Isolating top ${managerConfig.optimalOnlyCount} most optimal targets...`
     );
     targetHosts = targetsAnalysis
-      .slice(0, optimalOnlyCount)
+      .slice(0, managerConfig.optimalOnlyCount)
       .map(hostDetails => hostDetails.hostname);
   }
 
   logWriter.writeLine('Getting all rooted hosts...');
   const rootedHosts = scanWideNetwork(
     netscript,
-    includeHomeAttacker,
+    managerConfig.includeHomeAttacker,
     true,
     true
   );
@@ -124,6 +126,35 @@ async function attackTargets(
   logWriter.writeLine(SECTION_DIVIDER);
 }
 
+function handleUpdateConfigEvent(
+  eventData: FarmHackExpConfigEvent,
+  logWriter: Logger
+) {
+  if (!eventData.config) {
+    return;
+  }
+
+  logWriter.writeLine('Update settings event received...');
+  const newConfig = eventData.config;
+  managerConfig.includeHomeAttacker =
+    newConfig.includeHomeAttacker ?? managerConfig.includeHomeAttacker;
+  managerConfig.optimalOnlyCount =
+    newConfig.optimalOnlyCount ?? managerConfig.optimalOnlyCount;
+
+  logWriter.writeLine(`  Include Home : ${managerConfig.includeHomeAttacker}`);
+  logWriter.writeLine(`  Optimal Only : ${managerConfig.optimalOnlyCount}`);
+}
+
+function handleConfigRequest(
+  requestData: FarmHackExpConfigRequest,
+  logWriter: Logger
+) {
+  logWriter.writeLine(
+    `Sending farm hack experience manager config response to ${requestData.sender}`
+  );
+  sendMessage(new FarmHackExpConfigResponse(managerConfig), requestData.sender);
+}
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
   const nsPackage = getLocatorPackage(netscript);
@@ -135,25 +166,37 @@ export async function main(netscript: NS) {
 
   terminalWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
-  const includeHome = cmdArgs[CMD_FLAG_INCLUDE_HOME].valueOf() as boolean;
+  const includeHomeAttacker = cmdArgs[
+    CMD_FLAG_INCLUDE_HOME
+  ].valueOf() as boolean;
   const optimalOnlyCount = cmdArgs[CMD_FLAG_OPTIMAL_ONLY].valueOf() as number;
 
-  terminalWriter.writeLine(`Include Home : ${includeHome}`);
+  terminalWriter.writeLine(`Include Home : ${includeHomeAttacker}`);
   terminalWriter.writeLine(`Optimal Only : ${optimalOnlyCount}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
+
+  managerConfig = {
+    includeHomeAttacker: includeHomeAttacker,
+    optimalOnlyCount: optimalOnlyCount,
+  };
 
   terminalWriter.writeLine('See script logs for on-going farming details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
-  await infiniteLoop(
-    netscript,
-    attackTargets,
-    nsPackage,
-    includeHome,
-    optimalOnlyCount,
+  const eventListener = new EventListener(SUBSCRIBER_NAME);
+  eventListener.addListener(
+    FarmHackExpConfigEvent,
+    handleUpdateConfigEvent,
     scriptLogWriter
   );
+  eventListener.addListener(
+    FarmHackExpConfigRequest,
+    handleConfigRequest,
+    scriptLogWriter
+  );
+
+  await infiniteLoop(netscript, attackTargets, nsPackage, scriptLogWriter);
 }
 
 export function autocomplete(data: AutocompleteData, args: string[]) {

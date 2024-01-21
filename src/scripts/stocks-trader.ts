@@ -313,10 +313,14 @@ function handleUpdateConfigEvent(
   }
 
   logWriter.writeLine('Update settings event received...');
-  managerConfig = eventData.config;
+  const newConfig = eventData.config;
+  managerConfig.fundsLimit = newConfig.fundsLimit ?? managerConfig.fundsLimit;
   if (managerConfig.fundsLimit < 0) {
     managerConfig.fundsLimit = netscript.getPlayer().money * fundsLimitPercent;
   }
+  managerConfig.purchaseStocks =
+    newConfig.purchaseStocks ?? managerConfig.purchaseStocks;
+  managerConfig.shortSales = newConfig.shortSales ?? managerConfig.shortSales;
 
   logWriter.writeLine(`  Short Sales Enabled : ${managerConfig.shortSales}`);
   logWriter.writeLine(`  Purchase Stocks : ${managerConfig.purchaseStocks}`);
@@ -325,7 +329,7 @@ function handleUpdateConfigEvent(
   );
 }
 
-function handleStocksTraderConfigRequest(
+function handleConfigRequest(
   requestData: StocksTraderConfigRequest,
   logWriter: Logger
 ) {
@@ -384,7 +388,7 @@ export async function main(netscript: NS) {
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   eventListener.addListener(
     StocksTraderConfigRequest,
-    handleStocksTraderConfigRequest,
+    handleConfigRequest,
     scriptLogWriter
   );
   eventListener.addListener(

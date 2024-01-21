@@ -356,7 +356,19 @@ function handleUpdateConfigEvent(
   }
 
   logWriter.writeLine('Update settings event received...');
-  managerConfig = eventData.config;
+  const newConfig = eventData.config;
+  managerConfig.attackerHosts =
+    newConfig.attackerHosts ?? managerConfig.attackerHosts;
+  managerConfig.hackFundsPercent =
+    newConfig.hackFundsPercent ?? managerConfig.hackFundsPercent;
+  managerConfig.includeHomeAttacker =
+    newConfig.includeHomeAttacker ?? managerConfig.includeHomeAttacker;
+  managerConfig.optimalOnlyCount =
+    newConfig.optimalOnlyCount ?? managerConfig.optimalOnlyCount;
+  managerConfig.targetFundsLimitPercent =
+    newConfig.targetFundsLimitPercent ?? managerConfig.targetFundsLimitPercent;
+  managerConfig.targetHosts =
+    newConfig.targetHosts ?? managerConfig.targetHosts;
 
   logWriter.writeLine(`  Optimal Only : ${managerConfig.optimalOnlyCount}`);
   logWriter.writeLine(`  Hack Percent : ${managerConfig.hackFundsPercent}`);
@@ -370,7 +382,7 @@ function handleUpdateConfigEvent(
   logWriter.writeLine(`  Attacker Hosts : ${managerConfig.attackerHosts}`);
 }
 
-function handleWgwhConfigRequest(
+function handleConfigRequest(
   requestData: WgwhConfigRequest,
   logWriter: Logger
 ) {
@@ -431,7 +443,7 @@ export async function main(netscript: NS) {
   );
   eventListener.addListener(
     WgwhConfigRequest,
-    handleWgwhConfigRequest,
+    handleConfigRequest,
     scriptLogWriter
   );
 

@@ -5,9 +5,9 @@ import {GangManagerConfig} from '/scripts/workflows/gangs';
 const MESSAGE_TYPE = 'gangManagerConfigEvent';
 
 class GangManagerConfigEvent extends EventBase {
-  readonly config?: GangManagerConfig;
+  readonly config?: Partial<GangManagerConfig>;
 
-  constructor(config?: GangManagerConfig) {
+  constructor(config?: Partial<GangManagerConfig>) {
     super(MESSAGE_TYPE);
 
     this.config = config;
