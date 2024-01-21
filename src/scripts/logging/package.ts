@@ -1,6 +1,6 @@
-import {SCRIPTS_PATH} from '/scripts/common/shared';
+import {SCRIPTS_DIR} from '/scripts/common/shared';
 
-const PATH = `${SCRIPTS_PATH}/logging`;
+const PATH = `${SCRIPTS_DIR}/logging`;
 const LOGGING_PACKAGE = [
   `${PATH}/package.js`,
   `${PATH}/consoleLogger.js`,

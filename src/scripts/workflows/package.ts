@@ -1,9 +1,9 @@
-import {SCRIPTS_PATH} from '/scripts/common/shared';
+import {SCRIPTS_DIR} from '/scripts/common/shared';
 import {COMMON_PACKAGE} from '/scripts/common/package';
 import {LOGGING_PACKAGE} from '/scripts/logging/package';
 import {COMMS_PACKAGE} from '/scripts/comms/package';
 
-const PATH = `${SCRIPTS_PATH}/workflows`;
+const PATH = `${SCRIPTS_DIR}/workflows`;
 const WORKFLOWS_PACKAGE = COMMON_PACKAGE.concat(
   LOGGING_PACKAGE.concat(
     COMMS_PACKAGE.concat([

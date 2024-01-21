@@ -4,10 +4,13 @@ import {
   GangMemberInfo,
   GangTaskStats,
 } from '@ns';
+
 import {
   NetscriptLocator,
   NetscriptPackage,
 } from '/scripts/netscript-services/netscript-locator';
+
+import {SCRIPTS_DIR} from '/scripts/common/shared';
 
 enum TaskFocus {
   RESPECT = 'respect',
@@ -44,8 +47,8 @@ interface TrainingStatus {
   charismaSkillLimitReached: boolean;
 }
 
-const GANGS_MONITOR_SCRIPT = 'scripts/gang-monitor.js';
-const GANG_MANAGER_SCRIPT = 'scripts/gang-manager.js';
+const GANGS_MONITOR_SCRIPT = `${SCRIPTS_DIR}/gang-monitor.js`;
+const GANG_MANAGER_SCRIPT = `${SCRIPTS_DIR}/gang-manager.js`;
 
 const ASCENSION_COMBAT_PROPERTIES: Array<keyof GangMemberInfo> = [
   'agi_asc_mult',

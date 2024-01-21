@@ -22,9 +22,9 @@ import {
 } from '/scripts/workflows/execution';
 
 import {openTail} from '/scripts/workflows/ui';
-import {SCRIPTS_PATH} from '/scripts/common/shared';
+import {SCRIPTS_DIR} from '/scripts/common/shared';
 
-export const CONTRACTS_AUTO_SCRIPT = `${SCRIPTS_PATH}/contracts-auto.js`;
+export const CONTRACTS_AUTO_SCRIPT = `${SCRIPTS_DIR}/contracts-auto.js`;
 const CMD_FLAG_INCLUDE_HOME = 'includeHome';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_INCLUDE_HOME, false]];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);

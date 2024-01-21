@@ -37,9 +37,9 @@ import {WgwhConfigRequest} from '/scripts/comms/requests/wgwh-config-request';
 import {WgwhConfigResponse} from '/scripts/comms/responses/wgwh-config-response';
 
 import {openTail} from '/scripts/workflows/ui';
-import {SCRIPTS_PATH} from '/scripts/common/shared';
+import {SCRIPTS_DIR} from '/scripts/common/shared';
 
-export const WGWH_SERIAL_ATTACK_SCRIPT = `${SCRIPTS_PATH}/wgwh-serial.js`;
+export const WGWH_SERIAL_ATTACK_SCRIPT = `${SCRIPTS_DIR}/wgwh-serial.js`;
 export const CMD_FLAG_INCLUDE_HOME = 'includeHome';
 export const CMD_FLAG_OPTIMAL_ONLY = 'optimalOnly';
 export const CMD_FLAG_HACK_PERCENT = 'hackPercent';

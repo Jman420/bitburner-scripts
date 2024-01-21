@@ -5,7 +5,7 @@ import {
   NetscriptLocator,
   NetscriptPackage,
 } from '/scripts/netscript-services/netscript-locator';
-import {SCRIPTS_PATH} from '/scripts/common/shared';
+import {SCRIPTS_DIR} from '/scripts/common/shared';
 
 type BuySellStockFunction = (
   symbol: string,
@@ -54,8 +54,8 @@ interface PurchaseTransaction extends StockTransaction {
   cost: number;
 }
 
-const STOCKS_TICKER_HISTORY_SCRIPT = `${SCRIPTS_PATH}/stocks-ticker-history.js`;
-const STOCKS_TICKER_4SIGMA_SCRIPT = `${SCRIPTS_PATH}/stocks-ticker-4sigma.js`;
+const STOCKS_TICKER_HISTORY_SCRIPT = `${SCRIPTS_DIR}/stocks-ticker-history.js`;
+const STOCKS_TICKER_4SIGMA_SCRIPT = `${SCRIPTS_DIR}/stocks-ticker-4sigma.js`;
 
 const FIFTY_PERCENT = 0.5;
 const COMMISSION = 100000;

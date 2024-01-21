@@ -12,7 +12,7 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
-import {HOME_SERVER_NAME, SCRIPTS_PATH} from '/scripts/common/shared';
+import {HOME_SERVER_NAME, SCRIPTS_DIR} from '/scripts/common/shared';
 
 import {eventLoop, initializeScript} from '/scripts/workflows/execution';
 import {
@@ -49,7 +49,7 @@ import {
   getLocatorPackage,
 } from '/scripts/netscript-services/netscript-locator';
 
-export const STOCKS_TRADER_SCRIPT = `${SCRIPTS_PATH}/stocks-trader.js`;
+export const STOCKS_TRADER_SCRIPT = `${SCRIPTS_DIR}/stocks-trader.js`;
 const CMD_FLAG_FUNDS_LIMIT_PERCENT = 'fundsLimitPercent';
 const CMD_FLAG_ENABLE_SHORT_SALES = 'enableShort';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [

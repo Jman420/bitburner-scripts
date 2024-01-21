@@ -1,6 +1,6 @@
 import {CityName} from '@ns';
 
-const SCRIPTS_PATH = '/scripts';
+const SCRIPTS_DIR = 'scripts';
 
 const HOME_SERVER_NAME = 'home';
 const NETSCRIPT_SERVER_NAME = 'server-lambda';
@@ -24,7 +24,7 @@ function isPowerOf2(value: number) {
 }
 
 export {
-  SCRIPTS_PATH,
+  SCRIPTS_DIR,
   HOME_SERVER_NAME,
   NETSCRIPT_SERVER_NAME,
   CITY_NAMES,

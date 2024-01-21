@@ -1,6 +1,6 @@
-import {SCRIPTS_PATH} from '/scripts/common/shared';
+import {SCRIPTS_DIR} from '/scripts/common/shared';
 
-const PATH = `${SCRIPTS_PATH}/comms`;
+const PATH = `${SCRIPTS_DIR}/comms`;
 const COMMS_PACKAGE = [
   `${PATH}/package.js`,
   `${PATH}/event-base.js`,

@@ -13,7 +13,7 @@ import {
 import {initializeScript} from '/scripts/workflows/execution';
 
 import {scanWideNetwork} from '/scripts/workflows/recon';
-import {SCRIPTS_PATH} from '/scripts/common/shared';
+import {SCRIPTS_DIR} from '/scripts/common/shared';
 
 const CMD_FLAG_INCLUDE_LAMBDA = 'includeLambda';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
@@ -54,7 +54,7 @@ export async function main(netscript: NS) {
 
   for (const hostname of availableHosts) {
     logWriter.writeLine(`Removing all scripts on host : ${hostname}`);
-    const scriptPaths = netscript.ls(hostname, `${SCRIPTS_PATH}/`);
+    const scriptPaths = netscript.ls(hostname, `${SCRIPTS_DIR}/`);
     logWriter.writeLine(
       `  Found ${scriptPaths.length} script files for removal...`
     );

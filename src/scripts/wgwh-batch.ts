@@ -55,9 +55,9 @@ import {
   NetscriptPackage,
   getLocatorPackage,
 } from '/scripts/netscript-services/netscript-locator';
-import {SCRIPTS_PATH} from '/scripts/common/shared';
+import {SCRIPTS_DIR} from '/scripts/common/shared';
 
-export const WGWH_BATCH_ATTACK_SCRIPT = `${SCRIPTS_PATH}/wgwh-batch.js`;
+export const WGWH_BATCH_ATTACK_SCRIPT = `${SCRIPTS_DIR}/wgwh-batch.js`;
 export const CMD_FLAG_OPTIMAL_ONLY = 'optimalOnly';
 export const CMD_FLAG_HACK_PERCENT = 'hackPercent';
 export const CMD_FLAG_FUNDS_LIMIT_PERCENT = 'fundsLimitPercent';

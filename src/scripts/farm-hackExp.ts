@@ -16,7 +16,7 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 import {CMD_FLAG_TARGETS_CSV} from '/scripts/workers/shared';
-import {SCRIPTS_PATH} from '/scripts/common/shared';
+import {SCRIPTS_DIR} from '/scripts/common/shared';
 
 import {
   analyzeHost,
@@ -44,7 +44,7 @@ import {FarmHackExpConfigRequest} from '/scripts/comms/requests/farm-hackExp-con
 import {EventListener, sendMessage} from '/scripts/comms/event-comms';
 import {FarmHackExpConfigResponse} from '/scripts/comms/responses/farm-hackExp-config-response';
 
-export const FARM_HACK_EXP_SCRIPT = `${SCRIPTS_PATH}/farm-hackExp.js`;
+export const FARM_HACK_EXP_SCRIPT = `${SCRIPTS_DIR}/farm-hackExp.js`;
 export const CMD_FLAG_INCLUDE_HOME = 'includeHome';
 export const CMD_FLAG_OPTIMAL_ONLY = 'optimalOnly';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [

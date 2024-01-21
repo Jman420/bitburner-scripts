@@ -14,11 +14,11 @@ import {
 import {openTail} from '/scripts/workflows/ui';
 
 import {initializeScript} from '/scripts/workflows/execution';
-import {NETSCRIPT_SERVER_NAME, SCRIPTS_PATH} from '/scripts/common/shared';
+import {NETSCRIPT_SERVER_NAME, SCRIPTS_DIR} from '/scripts/common/shared';
 import {ServerFarmOrder, nearestPowerOf2} from '/scripts/workflows/server-farm';
 import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
-export const SERVER_LAMBDA_SCRIPT = `${SCRIPTS_PATH}/server-lambda.js`;
+export const SERVER_LAMBDA_SCRIPT = `${SCRIPTS_DIR}/server-lambda.js`;
 const DEFAULT_RAM_AMOUNT = 1024;
 export const CMD_FLAG_RAM_AMOUNT = 'ramAmount';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
