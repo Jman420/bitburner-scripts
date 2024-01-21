@@ -47,6 +47,7 @@ import {
   NetscriptPackage,
   getLocatorPackage,
 } from '/scripts/netscript-services/netscript-locator';
+import {killWorkerScripts} from '/scripts/workflows/orchestration';
 
 const MODULE_NAME = 'corp-public';
 const SUBSCRIBER_NAME = 'corp-public';
@@ -323,6 +324,7 @@ export async function main(netscript: NS) {
     getCmdFlag(CMD_FLAG_DESIGN_CITY_NAME),
     DEFAULT_PRODUCT_DESIGN_OFFICE,
   ];
+  await killWorkerScripts(nsPackage);
   runScript(netscript, PRODUCT_LIFECYCLE_SCRIPT, {args: scriptArgs});
   runScript(netscript, PRICING_SETUP_SCRIPT);
   runScript(netscript, SMART_SUPPLY_SCRIPT);

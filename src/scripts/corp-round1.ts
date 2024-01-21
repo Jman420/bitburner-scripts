@@ -47,6 +47,7 @@ import {
 } from '/scripts/workflows/corporation-shared';
 import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 import {REQUIRED_FUNDS as ROUND_2_REQUIRED_FUNDS} from '/scripts/corp-round2';
+import {killWorkerScripts} from '/scripts/workflows/orchestration';
 
 export const CMD_FLAG_MATERIALS_RATIO = 'materialsRatio';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
@@ -206,6 +207,7 @@ export async function main(netscript: NS) {
   );
 
   scriptLogWriter.writeLine('Running required support scripts...');
+  await killWorkerScripts(nsPackage);
   runScript(netscript, PRICING_SETUP_SCRIPT);
   runScript(netscript, SMART_SUPPLY_SCRIPT);
 

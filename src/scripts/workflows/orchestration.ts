@@ -9,6 +9,7 @@ import {
   CMD_FLAG_INFLUENCE_STOCKS,
   CMD_FLAG_TARGETS_CSV,
 } from '/scripts/workers/shared';
+import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
 
 const WEAKEN_WORKER_SCRIPT = '/scripts/workers/weaken.js';
 const GROW_WORKER_SCRIPT = '/scripts/workers/grow.js';
@@ -150,6 +151,22 @@ async function hackHost(
   };
 }
 
+async function killWorkerScripts(
+  nsPackage: NetscriptPackage,
+  hostname?: string
+) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
+  if (!hostname) {
+    hostname = netscript.getHostname();
+  }
+
+  await nsLocator['scriptKill'](WEAKEN_WORKER_SCRIPT, hostname);
+  await nsLocator['scriptKill'](GROW_WORKER_SCRIPT, hostname);
+  await nsLocator['scriptKill'](HACK_WORKER_SCRIPT, hostname);
+}
+
 export {
   WEAKEN_WORKER_SCRIPT,
   GROW_WORKER_SCRIPT,
@@ -161,4 +178,5 @@ export {
   growHost,
   hackThreadsRequired,
   hackHost,
+  killWorkerScripts,
 };

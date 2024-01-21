@@ -43,8 +43,8 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
-const TAIL_X_POS = 1650;
-const TAIL_Y_POS = 52;
+const TAIL_X_POS = 1660;
+const TAIL_Y_POS = 15;
 const TAIL_WIDTH = 670;
 const TAIL_HEIGHT = 515;
 

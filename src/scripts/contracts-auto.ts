@@ -32,10 +32,10 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 const MODULE_NAME = 'contracts-auto';
 const SUBSCRIBER_NAME = 'contracts-auto';
 
-const TAIL_X_POS = 1045;
-const TAIL_Y_POS = 154;
-const TAIL_WIDTH = 1275;
-const TAIL_HEIGHT = 510;
+const TAIL_X_POS = 840;
+const TAIL_Y_POS = 185;
+const TAIL_WIDTH = 1115;
+const TAIL_HEIGHT = 500;
 
 const UPDATE_DELAY = 3.6e6; // 1hr
 

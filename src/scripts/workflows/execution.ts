@@ -13,12 +13,6 @@ import {
 
 import {EventListener, sendMessage} from '/scripts/comms/event-comms';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
-import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
-import {
-  GROW_WORKER_SCRIPT,
-  HACK_WORKER_SCRIPT,
-  WEAKEN_WORKER_SCRIPT,
-} from '/scripts/workflows/orchestration';
 
 /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
 type LoopableFunction = (...args: any[]) => Promise<void> | void;
@@ -190,22 +184,6 @@ async function runGWH(
   }
 }
 
-async function killWorkerScripts(
-  nsPackage: NetscriptPackage,
-  hostname?: string
-) {
-  const nsLocator = nsPackage.locator;
-  const netscript = nsPackage.netscript;
-
-  if (!hostname) {
-    hostname = netscript.getHostname();
-  }
-
-  await nsLocator['scriptKill'](WEAKEN_WORKER_SCRIPT, hostname);
-  await nsLocator['scriptKill'](GROW_WORKER_SCRIPT, hostname);
-  await nsLocator['scriptKill'](HACK_WORKER_SCRIPT, hostname);
-}
-
 function initializeScript(netscript: NS, subscriberName: string) {
   netscript.atExit(
     async () => await sendMessage(new ExitEvent(), subscriberName)
@@ -263,7 +241,6 @@ export {
   runWorkerScript,
   waitForScripts,
   runGWH,
-  killWorkerScripts,
   initializeScript,
   delayedInfiniteLoop,
   infiniteLoop,

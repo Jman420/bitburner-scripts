@@ -7,7 +7,6 @@ import {getCmdFlag} from '/scripts/workflows/cmd-args';
 
 import {
   initializeScript,
-  killWorkerScripts,
   runScript,
   waitForScripts,
 } from '/scripts/workflows/execution';
@@ -33,12 +32,40 @@ import {
 import {SERVER_LAMBDA_SCRIPT} from '/scripts/server-lambda';
 import {SCRIPTS_KILL_ALL_SCRIPT} from '/scripts/scripts-kill-all';
 import {WGWH_SERIAL_ATTACK_SCRIPT} from '/scripts/wgwh-serial';
+import {WGWH_BATCH_ATTACK_SCRIPT} from '/scripts/wgwh-batch';
+import {CONTRACTS_AUTO_SCRIPT} from '/scripts/contracts-auto';
+import {STOCKS_TRADER_SCRIPT} from '/scripts/stocks-trader';
+import {
+  STOCKS_TICKER_4SIGMA_SCRIPT,
+  STOCKS_TICKER_HISTORY_SCRIPT,
+} from '/scripts/workflows/stocks';
+import {
+  CMD_FLAG_AUTO_INVESTMENT,
+  CORP_PUBLIC_SCRIPT,
+  CORP_ROUND1_SCRIPT,
+  CORP_ROUND2_SCRIPT,
+  CORP_ROUND3_SCRIPT,
+  CORP_ROUND4_SCRIPT,
+} from '/scripts/workflows/corporation-shared';
+import {REQUIRED_FUNDS as CORP_ROUND2_REQUIRED_FUNDS} from '/scripts/corp-round2';
+import {REQUIRED_FUNDS as CORP_ROUND3_REQUIRED_FUNDS} from '/scripts/corp-round3';
+import {GANG_MANAGER_SCRIPT, TaskFocus} from '/scripts/workflows/gangs';
+import {
+  CMD_FLAG_PURCHASE_AUGMENTATIONS,
+  CMD_FLAG_TASK_FOCUS,
+  TASK_FOCUS_RESPECT,
+} from '/scripts/gang-manager';
 
 import {FactionName} from '/scripts/data/faction-enums';
 import {FactionData} from '/scripts/data/faction-data';
 import {ProgramData} from '/scripts/data/program-data';
 import {UniversityName} from '/scripts/data/university-enums';
 import {HOME_SERVER_NAME, NETSCRIPT_SERVER_NAME} from '/scripts/common/shared';
+
+import {sendMessage} from '/scripts/comms/event-comms';
+import {WgwhManagerConfigEvent} from '/scripts/comms/events/wgwh-manager-config-event';
+import {FarmHackExpConfigEvent} from '/scripts/comms/events/farm-hackExp-config-event';
+import {GangManagerConfigEvent} from '/scripts/comms/events/gang-manager-config-event';
 
 import {
   filterHostsCanHack,
@@ -50,44 +77,22 @@ import {
   backdoorHost,
   getRemainingPrograms,
 } from '/scripts/workflows/singularity';
-import {WGWH_BATCH_ATTACK_SCRIPT} from '/scripts/wgwh-batch';
-import {CONTRACTS_AUTO_SCRIPT} from '/scripts/contracts-auto';
-import {STOCKS_TRADER_SCRIPT} from '/scripts/stocks-trader';
-import {STOCKS_TICKER_HISTORY_SCRIPT} from '/scripts/workflows/stocks';
-import {
-  CMD_FLAG_AUTO_INVESTMENT,
-  CORP_PUBLIC_SCRIPT,
-  CORP_ROUND1_SCRIPT,
-  CORP_ROUND2_SCRIPT,
-  CORP_ROUND3_SCRIPT,
-  CORP_ROUND4_SCRIPT,
-} from '/scripts/workflows/corporation-shared';
-import {REQUIRED_FUNDS as CORP_ROUND2_REQUIRED_FUNDS} from '/scripts/corp-round2';
-import {REQUIRED_FUNDS as CORP_ROUND3_REQUIRED_FUNDS} from '/scripts/corp-round3';
-import {sendMessage} from '/scripts/comms/event-comms';
-import {WgwhManagerConfigEvent} from '/scripts/comms/events/wgwh-manager-config-event';
-import {FarmHackExpConfigEvent} from '/scripts/comms/events/farm-hackExp-config-event';
-import {GANG_MANAGER_SCRIPT} from '/scripts/workflows/gangs';
-import {
-  CMD_FLAG_PURCHASE_AUGMENTATIONS,
-  CMD_FLAG_TASK_FOCUS,
-  TASK_FOCUS_RESPECT,
-} from '/scripts/gang-manager';
+import {killWorkerScripts} from '/scripts/workflows/orchestration';
 
 const MODULE_NAME = 'singularity-starter';
 const SUBSCRIBER_NAME = 'singularity-starter';
 
-const TAIL_X_POS = 1230;
-const TAIL_Y_POS = 120;
-const TAIL_WIDTH = 1090;
-const TAIL_HEIGHT = 490;
+const TAIL_X_POS = 1180;
+const TAIL_Y_POS = 150;
+const TAIL_WIDTH = 850;
+const TAIL_HEIGHT = 565;
 
 const WAIT_DELAY = 500;
 
 const MIN_HACK_LEVEL = 10;
 const ATTACK_TARGETS_NEED = 10;
-const HOME_TARGET_RAM = 10000; // 10TB
-const HOME_TARGET_CORES = 4;
+const HOME_TARGET_RAM = 1e6; // 1PB
+const HOME_TARGET_CORES = 6;
 const BATCH_ATTACK_RAM_NEEDED = 8000; //8TB
 const GANG_KARMA_REQ = -54000;
 const CORP_FUNDS_REQ = 150e9; // 150b
@@ -126,7 +131,10 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
     }
 
     logWriter.writeLine(`${logPrefix} Killing hack exp farm...`);
-    await nsLocator['scriptKill'](FARM_HACK_EXP_SCRIPT, HOME_SERVER_NAME);
+    await nsLocator['scriptKill'](
+      FARM_HACK_EXP_SCRIPT,
+      netscript.getHostname()
+    );
     runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
   }
 
@@ -151,7 +159,10 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
     }
 
     logWriter.writeLine(`${logPrefix} Killing WGWH serial attack scripts...`);
-    await nsLocator['scriptKill'](WGWH_SERIAL_ATTACK_SCRIPT, HOME_SERVER_NAME);
+    await nsLocator['scriptKill'](
+      WGWH_SERIAL_ATTACK_SCRIPT,
+      netscript.getHostname()
+    );
     runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
   }
 
@@ -338,10 +349,10 @@ async function handleLambdaServer(netscript: NS, logWriter: Logger) {
     logWriter.writeLine(
       `${logPrefix} Including home server in hack exp farm...`
     );
-    sendMessage(new FarmHackExpConfigEvent({includeHomeAttacker: true}));
+    await sendMessage(new FarmHackExpConfigEvent({includeHomeAttacker: true}));
   } else {
     logWriter.writeLine(`${logPrefix} Including home server in wgwh attack...`);
-    sendMessage(new WgwhManagerConfigEvent({includeHomeAttacker: true}));
+    await sendMessage(new WgwhManagerConfigEvent({includeHomeAttacker: true}));
   }
 
   logWriter.writeLine(`${logPrefix} Complete!`);
@@ -445,41 +456,44 @@ async function handleStockMarket(
   const accessUpgrades = [
     {
       name: 'Stock Exchange Account',
+      hasUpgradeFunc: netscript.stock.hasWSEAccount,
       purchaseFunc: stocksApi['purchaseWseAccount'],
     },
     {
       name: 'TIX API Access',
+      hasUpgradeFunc: netscript.stock.hasTIXAPIAccess,
       purchaseFunc: stocksApi['purchaseTixApi'],
       scriptHandler: async () => {
         logWriter.writeLine(
           `${logPrefix} Starting stocks trader script w/ historical ticker...`
         );
-        await killWorkerScripts(nsPackage, HOME_SERVER_NAME);
-        runScript(netscript, STOCKS_TRADER_SCRIPT);
+        await killWorkerScripts(nsPackage);
+        runScript(netscript, STOCKS_TRADER_SCRIPT, {tempScript: true});
       },
     },
     {
       name: '4Sigma Market Data',
+      hasUpgradeFunc: netscript.stock.has4SData,
       purchaseFunc: stocksApi['purchase4SMarketData'],
     },
     {
       name: '4Sigma API Access',
+      hasUpgradeFunc: netscript.stock.has4SDataTIXAPI,
       purchaseFunc: stocksApi['purchase4SMarketDataTixApi'],
       scriptHandler: async () => {
         logWriter.writeLine(
-          `${logPrefix} Killing stocks trader & historical ticker scripts...`
+          `${logPrefix} Killing historical stock ticker script...`
         );
-        await nsLocator['scriptKill'](STOCKS_TRADER_SCRIPT, HOME_SERVER_NAME);
         await nsLocator['scriptKill'](
           STOCKS_TICKER_HISTORY_SCRIPT,
-          HOME_SERVER_NAME
+          netscript.getHostname()
         );
-        await killWorkerScripts(nsPackage, HOME_SERVER_NAME);
+        await killWorkerScripts(nsPackage);
 
         logWriter.writeLine(
-          `${logPrefix} Restarting stocks trader script w/ 4Sigma ticker...`
+          `${logPrefix} Running 4Sigma stock ticker script...`
         );
-        runScript(netscript, STOCKS_TRADER_SCRIPT);
+        runScript(netscript, STOCKS_TICKER_4SIGMA_SCRIPT, {tempScript: true});
       },
     },
   ];
@@ -518,6 +532,7 @@ async function handleGang(nsPackage: NetscriptPackage, logWriter: Logger) {
   const netscript = nsPackage.netscript;
   const netscriptExtended = netscript as NetscriptExtended;
   const gangApi = nsLocator.gang;
+  const singularityApi = nsLocator.singularity;
 
   logWriter.writeLine(
     `${logPrefix} Waiting for karma to reach ${GANG_KARMA_REQ}...`
@@ -530,31 +545,70 @@ async function handleGang(nsPackage: NetscriptPackage, logWriter: Logger) {
   logWriter.writeLine(
     `${logPrefix} Waiting for gang eligible faction membership...`
   );
-  const gangCreated = await gangApi['inGang']();
-  while (!gangCreated) {
+  while (!(await gangApi['inGang']())) {
     const playerInfo = netscript.getPlayer();
     const joinedFactions = Object.values(FactionName)
       .map(value => value.toString())
       .filter(value => playerInfo.factions.includes(value))
       .map(value => FactionData[value]);
-    for (const factionData of joinedFactions) {
+    for (
+      let factionCounter = 0;
+      factionCounter < joinedFactions.length && !(await gangApi['inGang']());
+      factionCounter++
+    ) {
+      const factionData = joinedFactions[factionCounter];
       if (factionData.gangEligible) {
         logWriter.writeLine(
           `${logPrefix} Creating gang with faction ${factionData.name}`
         );
-        gangApi['createGang'](factionData.name);
+        await gangApi['createGang'](factionData.name);
       }
     }
+
+    await netscript.asleep(WAIT_DELAY);
   }
 
   logWriter.writeLine(`${logPrefix} Running gang manager script...`);
-  killWorkerScripts(nsPackage, HOME_SERVER_NAME);
+  await killWorkerScripts(nsPackage);
   const gangManagerArgs = [
     getCmdFlag(CMD_FLAG_PURCHASE_AUGMENTATIONS),
     getCmdFlag(CMD_FLAG_TASK_FOCUS),
     TASK_FOCUS_RESPECT,
   ];
-  runScript(netscript, GANG_MANAGER_SCRIPT, {args: gangManagerArgs});
+  runScript(netscript, GANG_MANAGER_SCRIPT, {
+    args: gangManagerArgs,
+    tempScript: true,
+  });
+
+  const gangInfo = await gangApi['getGangInformation']();
+  const gangAugmentations = await singularityApi['getAugmentationsFromFaction'](
+    gangInfo.faction
+  );
+  const maxRepAugmentation = gangAugmentations
+    .map(value => {
+      return {
+        name: value,
+        reputation: netscript.singularity.getAugmentationRepReq(value),
+      };
+    })
+    .reduce((maxValue, value) =>
+      value.reputation > maxValue.reputation ? value : maxValue
+    );
+  logWriter.writeLine(
+    `${logPrefix} Waiting for ${netscript.formatNumber(
+      maxRepAugmentation.reputation
+    )} gang reputation...`
+  );
+  while (
+    (await singularityApi['getFactionRep'](gangInfo.faction)) <
+    maxRepAugmentation.reputation
+  ) {
+    await netscript.asleep(WAIT_DELAY);
+  }
+  logWriter.writeLine(`${logPrefix} Gang reputation satisfied!`);
+
+  logWriter.writeLine(`${logPrefix} Switching gang focus to money...`);
+  await sendMessage(new GangManagerConfigEvent({taskFocus: TaskFocus.MONEY}));
 
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
@@ -571,7 +625,9 @@ async function handleCorporation(
 
   if (!(await corpApi['hasCorporation']())) {
     logWriter.writeLine(
-      `${logPrefix} Waiting for sufficient funds to create corporation : ${CORP_FUNDS_REQ}`
+      `${logPrefix} Waiting for sufficient funds to create corporation : ${netscript.formatNumber(
+        CORP_FUNDS_REQ
+      )}`
     );
     const playerInfo = netscript.getPlayer();
     while (playerInfo.money < CORP_FUNDS_REQ) {
@@ -606,9 +662,10 @@ async function handleCorporation(
     logWriter.writeLine(
       `${logPrefix} Running round ${autoRoundInfo.round} investment automation...`
     );
-    killWorkerScripts(nsPackage, HOME_SERVER_NAME);
+    await killWorkerScripts(nsPackage);
     const autoRoundScriptPid = runScript(netscript, autoRoundInfo.scriptPath, {
       args: corpRoundScriptArgs,
+      tempScript: true,
     });
     await waitForScripts(netscript, [autoRoundScriptPid]);
 
@@ -637,8 +694,8 @@ async function handleCorporation(
   logWriter.writeLine(
     `${logPrefix} Running public corporation management script...`
   );
-  killWorkerScripts(nsPackage, HOME_SERVER_NAME);
-  runScript(netscript, CORP_PUBLIC_SCRIPT);
+  await killWorkerScripts(nsPackage);
+  runScript(netscript, CORP_PUBLIC_SCRIPT, {tempScript: true});
 
   if (corpInfo.dividendRate !== CORP_DIVIDENDS_RATE) {
     logWriter.writeLine(
@@ -707,6 +764,7 @@ export async function main(netscript: NS) {
   concurrentTasks.push(handleStockMarket(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleGang(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleCorporation(nsPackage, scriptLogWriter));
+  // TODO (JMG) : Add task for buying augmentations
   await Promise.all(concurrentTasks);
 
   scriptLogWriter.writeLine('Singularity quick start completed!');

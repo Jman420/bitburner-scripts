@@ -55,6 +55,7 @@ import {
 } from '/scripts/workflows/corporation-optimization';
 import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 import {REQUIRED_FUNDS as ROUND_3_REQUIRED_FUNDS} from '/scripts/corp-round3';
+import {killWorkerScripts} from '/scripts/workflows/orchestration';
 
 export const CMD_FLAG_AGRICULTURE_RESEARCH = 'agricultureResearch';
 export const CMD_FLAG_CHEMICAL_RESEARCH = 'chemicalResearch';
@@ -129,14 +130,13 @@ export async function main(netscript: NS) {
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   scriptLogWriter.writeLine('Running required support scripts...');
+  await killWorkerScripts(nsPackage);
   runScript(netscript, PRICING_SETUP_SCRIPT);
   runScript(netscript, SMART_SUPPLY_SCRIPT);
+  runScript(netscript, TEA_PARTY_SCRIPT);
 
   scriptLogWriter.writeLine('Buying Export unlock...');
   await corpApi['purchaseUnlock'](UnlockName.EXPORT);
-
-  scriptLogWriter.writeLine('Running Corporate Tea Party script...');
-  runScript(netscript, TEA_PARTY_SCRIPT);
 
   scriptLogWriter.writeLine(
     `Upgrading Agriculture Division to ${AGRICULTURE_OFFICE_SIZE} employees...`

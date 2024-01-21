@@ -116,6 +116,7 @@ async function attackTargets(nsPackage: NetscriptPackage, logWriter: Logger) {
         hostname: hostname,
         useMaxThreads: true,
         args: scriptArgs,
+        tempScript: true,
       })
     );
   }

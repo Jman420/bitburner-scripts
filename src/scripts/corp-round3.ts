@@ -62,6 +62,7 @@ import {
   CMD_FLAG_DIVISION_NAME,
 } from '/scripts/corp-product';
 import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
+import {killWorkerScripts} from '/scripts/workflows/orchestration';
 
 export const CMD_FLAG_AGRICULTURE_BUDGET = 'agricultureBudget';
 export const CMD_FLAG_CHEMICAL_BUDGET = 'chemicalBudget';
@@ -148,9 +149,8 @@ export async function main(netscript: NS) {
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
-  scriptLogWriter.writeLine(
-    'Running Custom Pricing & Smart Supply & Tea Party scripts...'
-  );
+  scriptLogWriter.writeLine('Running required support scripts...');
+  await killWorkerScripts(nsPackage);
   runScript(netscript, PRICING_SETUP_SCRIPT);
   runScript(netscript, SMART_SUPPLY_SCRIPT);
   runScript(netscript, TEA_PARTY_SCRIPT);
@@ -208,6 +208,7 @@ export async function main(netscript: NS) {
   );
 
   scriptLogWriter.writeLine('Starting Product Lifecycle Management script...');
+  await killWorkerScripts(nsPackage);
   const scriptArgs = [
     getCmdFlag(CMD_FLAG_DIVISION_NAME),
     DivisionNames.TOBACCO,

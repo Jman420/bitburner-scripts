@@ -51,6 +51,7 @@ import {
   CMD_FLAG_DIVISION_NAME,
 } from '/scripts/corp-product';
 import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
+import {killWorkerScripts} from '/scripts/workflows/orchestration';
 
 const MODULE_NAME = 'corp-round4';
 const SUBSCRIBER_NAME = 'corp-round4';
@@ -109,6 +110,7 @@ export async function main(netscript: NS) {
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
 
   scriptLogWriter.writeLine('Running required support scripts...');
+  await killWorkerScripts(nsPackage);
   const scriptArgs = [
     getCmdFlag(CMD_FLAG_DIVISION_NAME),
     DivisionNames.TOBACCO,
