@@ -36,8 +36,10 @@ let DIVISION_NAMES: string[];
 export async function main(netscript: NS) {
   const nsPackage = getLocatorPackage(netscript);
   const nsLocator = nsPackage.locator;
+  const corpApi = nsLocator.corporation;
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
 
-  const corpInfo = await nsLocator.corporation['getCorporation']();
+  const corpInfo = await corpApi['getCorporation']();
   DIVISION_NAMES = corpInfo.divisions
     .map(value => `'${value}'`)
     .filter(value => !value.includes(FRAUD_DIVISION_NAME_PREFIX));
@@ -66,9 +68,6 @@ export async function main(netscript: NS) {
 
   terminalWriter.writeLine('See script logs for export setup details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
-
-  const corpApi = nsLocator.corporation;
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
 
   scriptLogWriter.writeLine('Building Import Map...');
   const importMap = new Map<string, string[]>();

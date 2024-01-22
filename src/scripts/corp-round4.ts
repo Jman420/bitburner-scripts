@@ -15,6 +15,7 @@ import {CorpUpgradesData} from '/scripts/data/corporation-upgrades-data';
 import {
   BENCHMARK_OFFICE,
   CMD_FLAG_AUTO_INVESTMENT,
+  CMD_FLAG_BYPASS_FUNDS_REQ,
   PRICING_SETUP_SCRIPT,
   PRODUCT_LIFECYCLE_SCRIPT,
   SMART_SUPPLY_SCRIPT,
@@ -56,7 +57,10 @@ import {killWorkerScripts} from '/scripts/workflows/orchestration';
 const MODULE_NAME = 'corp-round4';
 const SUBSCRIBER_NAME = 'corp-round4';
 
-const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_AUTO_INVESTMENT, false]];
+const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
+  [CMD_FLAG_AUTO_INVESTMENT, false],
+  [CMD_FLAG_BYPASS_FUNDS_REQ, false],
+];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const TAIL_X_POS = 615;
@@ -67,6 +71,8 @@ const TAIL_HEIGHT = 415;
 const AGRICULTURE_MATERIALS_SPACE_RATIO = 0.1;
 const CHEMICAL_MATERIALS_SPACE_RATIO = 0.65;
 const TOBACCO_MATERIALS_SPACE_RATIO = 0.85;
+
+export const REQUIRED_FUNDS = 20e15; // 20q
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
@@ -81,8 +87,12 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('Parsing command line arguments...');
   const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
   const autoInvestment = cmdArgs[CMD_FLAG_AUTO_INVESTMENT].valueOf() as boolean;
+  const bypassFundsReq = cmdArgs[
+    CMD_FLAG_BYPASS_FUNDS_REQ
+  ].valueOf() as boolean;
 
   terminalWriter.writeLine(`Auto Investment : ${autoInvestment}`);
+  terminalWriter.writeLine(`Bypass Funds Requirement : ${bypassFundsReq}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
@@ -100,6 +110,16 @@ export async function main(netscript: NS) {
   if (!latestProductName) {
     terminalWriter.writeLine(
       'Missing Tobacco products.  At least one product must be in production or design.'
+    );
+    return;
+  }
+
+  let corpInfo = await corpApi['getCorporation']();
+  if (!bypassFundsReq && corpInfo.funds < REQUIRED_FUNDS) {
+    terminalWriter.writeLine(
+      `Insufficient funds for round 4.  Required funds : ${netscript.formatNumber(
+        REQUIRED_FUNDS
+      )}`
     );
     return;
   }
@@ -125,7 +145,7 @@ export async function main(netscript: NS) {
   scriptLogWriter.writeLine(
     'Improving Tobacco Division & re-assigning employees...'
   );
-  let corpInfo = await corpApi['getCorporation']();
+  corpInfo = await corpApi['getCorporation']();
   await improveProductDivision(
     nsLocator,
     DivisionNames.TOBACCO,

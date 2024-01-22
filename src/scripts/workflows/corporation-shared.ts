@@ -33,6 +33,7 @@ const CORP_ROUND4_SCRIPT = 'scripts/corp-round4.js';
 const CORP_PUBLIC_SCRIPT = 'scripts/corp-public.js';
 
 const CMD_FLAG_AUTO_INVESTMENT = 'autoInvestment';
+const CMD_FLAG_BYPASS_FUNDS_REQ = 'bypassFundsRequirement';
 
 const EXPORT_FORMULA = '-(IPROD+IINV/10)';
 
@@ -66,6 +67,7 @@ export {
   CORP_ROUND4_SCRIPT,
   CORP_PUBLIC_SCRIPT,
   CMD_FLAG_AUTO_INVESTMENT,
+  CMD_FLAG_BYPASS_FUNDS_REQ,
   EXPORT_FORMULA,
   BENCHMARK_OFFICE,
   INDUSTRY_MULTIPLIER_MATERIALS,

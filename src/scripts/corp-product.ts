@@ -58,10 +58,10 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 const MODULE_NAME = 'corp-product';
 const SUBSCRIBER_NAME = 'corp-product';
 
-const TAIL_X_POS = 1230;
-const TAIL_Y_POS = 120;
-const TAIL_WIDTH = 1090;
-const TAIL_HEIGHT = 490;
+const TAIL_X_POS = 30;
+const TAIL_Y_POS = 1070;
+const TAIL_WIDTH = 1070;
+const TAIL_HEIGHT = 275;
 
 const UPDATE_DELAY = 0;
 
@@ -177,6 +177,7 @@ function handleProductLifecycleConfigRequest(
 export async function main(netscript: NS) {
   const nsPackage = getLocatorPackage(netscript);
   const nsLocator = nsPackage.locator;
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
 
   const corpInfo = await nsLocator.corporation['getCorporation']();
   DIVISION_NAMES = corpInfo.divisions
@@ -220,7 +221,6 @@ export async function main(netscript: NS) {
   );
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const eventListener = new EventListener(SUBSCRIBER_NAME);
   eventListener.addListener(
     ProductLifecycleConfigEvent,

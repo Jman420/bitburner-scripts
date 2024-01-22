@@ -101,7 +101,8 @@ async function getEligibleAugmentations(
             (aggregateValue, currentValue) => aggregateValue && currentValue,
             true
           );
-        eligible = eligible && augStats[statKey] !== 1;
+        eligible =
+          eligible && !ownedAugs.includes(augName) && augStats[statKey] !== 1;
       }
       if (eligible) {
         eligibleAugs.set(augName, factionName);
@@ -123,9 +124,44 @@ async function getEligibleAugmentations(
     });
   }
   if (sortByCost) {
-    augmentationDetails.sort((valueA, valueB) => valueB.price - valueA.price);
+    augmentationDetails.sort(
+      (valueA, valueB) =>
+        valueB.price - valueA.price || valueB.reputation - valueA.reputation
+    );
   }
   return augmentationDetails;
+}
+
+async function getFactionsNeedReputation(nsPackage: NetscriptPackage) {
+  const nsLocator = nsPackage.locator;
+  const singularityApi = nsLocator.singularity;
+  const gangApi = nsLocator.gang;
+
+  let eligibleAugs = await getEligibleAugmentations(nsPackage);
+  if (await gangApi['inGang']()) {
+    const gangInfo = await gangApi['getGangInformation']();
+    eligibleAugs = eligibleAugs.filter(
+      value => value.faction !== gangInfo.faction
+    );
+  }
+  eligibleAugs.sort(
+    (valueA, valueB) =>
+      valueB.reputation - valueA.reputation || valueB.price - valueA.price
+  );
+  const factionsNeedRep = new Map<string, number>(); // Key : factionName ; Value : reputation requirement
+  for (const augEntry of eligibleAugs) {
+    const currentFactionRep = await singularityApi['getFactionRep'](
+      augEntry.faction
+    );
+    if (currentFactionRep < augEntry.reputation) {
+      const factionRepEntry = factionsNeedRep.get(augEntry.faction);
+      if (!factionRepEntry || factionRepEntry < augEntry.reputation) {
+        factionsNeedRep.set(augEntry.faction, augEntry.reputation);
+      }
+    }
+  }
+
+  return factionsNeedRep;
 }
 
 export {
@@ -133,4 +169,5 @@ export {
   backdoorHost,
   getRemainingPrograms,
   getEligibleAugmentations,
+  getFactionsNeedReputation,
 };

@@ -26,6 +26,7 @@ import {
 import {CorpUpgradesData} from '/scripts/data/corporation-upgrades-data';
 import {
   CMD_FLAG_AUTO_INVESTMENT,
+  CMD_FLAG_BYPASS_FUNDS_REQ,
   PRICING_SETUP_SCRIPT,
   PRODUCT_LIFECYCLE_SCRIPT,
   RAW_MAX_DIVISIONS,
@@ -72,6 +73,7 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_CHEMICAL_BUDGET, 110e9],
   [CMD_FLAG_MATERIALS, 900e9],
   [CMD_FLAG_AUTO_INVESTMENT, false],
+  [CMD_FLAG_BYPASS_FUNDS_REQ, false],
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
@@ -107,11 +109,15 @@ export async function main(netscript: NS) {
   const chemicalBudget = cmdArgs[CMD_FLAG_CHEMICAL_BUDGET].valueOf() as number;
   const materialsBudget = cmdArgs[CMD_FLAG_MATERIALS].valueOf() as number;
   const autoInvestment = cmdArgs[CMD_FLAG_AUTO_INVESTMENT].valueOf() as boolean;
+  const bypassFundsReq = cmdArgs[
+    CMD_FLAG_BYPASS_FUNDS_REQ
+  ].valueOf() as boolean;
 
   terminalWriter.writeLine(`Agriculture Budget : ${agricultureBudget}`);
   terminalWriter.writeLine(`Chemical Budget : ${chemicalBudget}`);
   terminalWriter.writeLine(`Materials Budget : ${materialsBudget}`);
   terminalWriter.writeLine(`Auto Investment : ${autoInvestment}`);
+  terminalWriter.writeLine(`Bypass Funds Requirement : ${bypassFundsReq}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
@@ -125,14 +131,6 @@ export async function main(netscript: NS) {
   }
 
   let corpInfo = await corpApi['getCorporation']();
-  if (corpInfo.funds < REQUIRED_FUNDS) {
-    terminalWriter.writeLine(
-      `Insufficient funds for round 3.  Required funds : ${netscript.formatNumber(
-        REQUIRED_FUNDS
-      )}`
-    );
-    return;
-  }
   const bitnodeMultipliers = await nsLocator['getBitNodeMultipliers']();
   const maxDivisions =
     RAW_MAX_DIVISIONS * bitnodeMultipliers.CorporationDivisions;
@@ -140,6 +138,15 @@ export async function main(netscript: NS) {
   if (fraudDivisions < 0) {
     terminalWriter.writeLine(
       `Too many divisions created.  Please sell ${-fraudDivisions} divisions.`
+    );
+    return;
+  }
+
+  if (!bypassFundsReq && corpInfo.funds < REQUIRED_FUNDS) {
+    terminalWriter.writeLine(
+      `Insufficient funds for round 3.  Required funds : ${netscript.formatNumber(
+        REQUIRED_FUNDS
+      )}`
     );
     return;
   }
@@ -259,6 +266,7 @@ export async function main(netscript: NS) {
     DEFAULT_PRODUCT_DESIGN_OFFICE,
   ];
   runScript(netscript, PRODUCT_LIFECYCLE_SCRIPT, {args: scriptArgs});
+  await netscript.asleep(500); // Wait for script to start-up
 
   const tobaccoDivisionInfo = await corpApi['getDivision'](
     DivisionNames.TOBACCO

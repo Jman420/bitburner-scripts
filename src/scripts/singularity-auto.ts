@@ -34,18 +34,23 @@ import {SCRIPTS_KILL_ALL_SCRIPT} from '/scripts/scripts-kill-all';
 import {WGWH_SERIAL_ATTACK_SCRIPT} from '/scripts/wgwh-serial';
 import {WGWH_BATCH_ATTACK_SCRIPT} from '/scripts/wgwh-batch';
 import {CONTRACTS_AUTO_SCRIPT} from '/scripts/contracts-auto';
-import {STOCKS_TRADER_SCRIPT} from '/scripts/stocks-trader';
+import {
+  CMD_FLAG_FUNDS_LIMIT_PERCENT,
+  STOCKS_TRADER_SCRIPT,
+} from '/scripts/stocks-trader';
 import {
   STOCKS_TICKER_4SIGMA_SCRIPT,
   STOCKS_TICKER_HISTORY_SCRIPT,
 } from '/scripts/workflows/stocks';
 import {
   CMD_FLAG_AUTO_INVESTMENT,
+  CMD_FLAG_BYPASS_FUNDS_REQ,
   CORP_PUBLIC_SCRIPT,
   CORP_ROUND1_SCRIPT,
   CORP_ROUND2_SCRIPT,
   CORP_ROUND3_SCRIPT,
   CORP_ROUND4_SCRIPT,
+  ROUND1_ADVERT_LEVEL as CORP_ROUND1_ADVERT_LEVEL,
 } from '/scripts/workflows/corporation-shared';
 import {REQUIRED_FUNDS as CORP_ROUND2_REQUIRED_FUNDS} from '/scripts/corp-round2';
 import {REQUIRED_FUNDS as CORP_ROUND3_REQUIRED_FUNDS} from '/scripts/corp-round3';
@@ -76,9 +81,11 @@ import {
   attendCourse,
   backdoorHost,
   getEligibleAugmentations,
+  getFactionsNeedReputation,
   getRemainingPrograms,
 } from '/scripts/workflows/singularity';
 import {killWorkerScripts} from '/scripts/workflows/orchestration';
+import {DivisionNames} from '/scripts/data/corporation-enums';
 
 const MODULE_NAME = 'singularity-starter';
 const SUBSCRIBER_NAME = 'singularity-starter';
@@ -181,75 +188,6 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
-async function handleFactions(nsPackage: NetscriptPackage, logWriter: Logger) {
-  const logPrefix = 'Faction -';
-
-  const nsLocator = nsPackage.locator;
-  const netscript = nsPackage.netscript;
-  const singularityApi = nsLocator.singularity;
-
-  logWriter.writeLine(`${logPrefix} Waiting on membership eligibility...`);
-  let playerInfo = netscript.getPlayer();
-  let unjoinedFactions = Object.values(FactionName)
-    .map(value => value.toString())
-    .filter(value => !playerInfo.factions.includes(value));
-  while (unjoinedFactions.length > 0) {
-    const pendingInvites = await singularityApi['checkFactionInvitations']();
-    for (const invitingFaction of pendingInvites) {
-      if (unjoinedFactions.includes(invitingFaction)) {
-        logWriter.writeLine(
-          `${logPrefix} Joining faction : ${invitingFaction}`
-        );
-        await singularityApi['joinFaction'](invitingFaction);
-      }
-    }
-
-    playerInfo = netscript.getPlayer();
-    unjoinedFactions = unjoinedFactions.filter(
-      value => !playerInfo.factions.includes(value)
-    );
-    for (const factionName of unjoinedFactions) {
-      const factionData = FactionData[factionName];
-      if (
-        factionData.server &&
-        netscript.getServerRequiredHackingLevel(factionData.server) <=
-          playerInfo.skills.hacking
-      ) {
-        const hostPath = findHostPath(
-          netscript,
-          HOME_SERVER_NAME,
-          factionData.server
-        );
-        if (!hostPath) {
-          logWriter.writeLine(
-            `${logPrefix} Unable to install backdoor for faction.  Unable to find host path to server : ${factionData.server}`
-          );
-          continue;
-        }
-
-        const factionServer = await nsLocator['getServer'](factionData.server);
-        if (!factionServer.backdoorInstalled) {
-          logWriter.writeLine(
-            `${logPrefix} Installing backdoor on server : ${factionData.server} to join faction : ${factionName}`
-          );
-          await backdoorHost(nsLocator, hostPath);
-          logWriter.writeLine(
-            `${logPrefix} Installed backdoor on server : ${factionData.server}`
-          );
-        }
-      }
-    }
-
-    await netscript.asleep(WAIT_DELAY);
-    playerInfo = netscript.getPlayer();
-    unjoinedFactions = unjoinedFactions.filter(
-      value => !playerInfo.factions.includes(value)
-    );
-  }
-
-  logWriter.writeLine(`${logPrefix} Complete!`);
-}
-
 async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
   const logPrefix = 'Work -';
 
@@ -318,6 +256,29 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
   }
 
   logWriter.writeLine(
+    `${logPrefix} Earning reputation for factions to buy augmentations...`
+  );
+  const ownedAugmentations =
+    await singularityApi['getOwnedAugmentations'](true);
+  const factionsNeedRep = await getFactionsNeedReputation(nsPackage);
+  while (
+    ownedAugmentations.length < MAX_AUGMENTATIONS &&
+    factionsNeedRep.size > 0
+  ) {
+    const [factionName, neededRep] = Array.from(factionsNeedRep.entries())[0];
+
+    logWriter.writeLine(
+      `${logPrefix} Earning ${netscript.formatNumber(
+        neededRep
+      )} reputation for faction : ${factionName}`
+    );
+    await singularityApi['workForFaction'](factionName, 'hacking');
+    while ((await singularityApi['getFactionRep'](factionName)) < neededRep) {
+      await netscript.asleep(WAIT_DELAY);
+    }
+  }
+
+  logWriter.writeLine(
     `${logPrefix} Taking Algorithms course at ZB Institute...`
   );
   await attendCourse(
@@ -325,6 +286,75 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
     UniversityName.ZB,
     netscript.enums.UniversityClassType.algorithms
   );
+  logWriter.writeLine(`${logPrefix} Complete!`);
+}
+
+async function handleFactions(nsPackage: NetscriptPackage, logWriter: Logger) {
+  const logPrefix = 'Faction -';
+
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+  const singularityApi = nsLocator.singularity;
+
+  logWriter.writeLine(`${logPrefix} Waiting on membership eligibility...`);
+  let playerInfo = netscript.getPlayer();
+  let unjoinedFactions = Object.values(FactionName)
+    .map(value => value.toString())
+    .filter(value => !playerInfo.factions.includes(value));
+  while (unjoinedFactions.length > 0) {
+    const pendingInvites = await singularityApi['checkFactionInvitations']();
+    for (const invitingFaction of pendingInvites) {
+      if (unjoinedFactions.includes(invitingFaction)) {
+        logWriter.writeLine(
+          `${logPrefix} Joining faction : ${invitingFaction}`
+        );
+        await singularityApi['joinFaction'](invitingFaction);
+      }
+    }
+
+    playerInfo = netscript.getPlayer();
+    unjoinedFactions = unjoinedFactions.filter(
+      value => !playerInfo.factions.includes(value)
+    );
+    for (const factionName of unjoinedFactions) {
+      const factionData = FactionData[factionName];
+      if (
+        factionData.server &&
+        netscript.getServerRequiredHackingLevel(factionData.server) <=
+          playerInfo.skills.hacking
+      ) {
+        const hostPath = findHostPath(
+          netscript,
+          HOME_SERVER_NAME,
+          factionData.server
+        );
+        if (!hostPath) {
+          logWriter.writeLine(
+            `${logPrefix} Unable to install backdoor for faction.  Unable to find host path to server : ${factionData.server}`
+          );
+          continue;
+        }
+
+        const factionServer = await nsLocator['getServer'](factionData.server);
+        if (!factionServer.backdoorInstalled) {
+          logWriter.writeLine(
+            `${logPrefix} Installing backdoor on server : ${factionData.server} to join faction : ${factionName}`
+          );
+          await backdoorHost(nsLocator, hostPath);
+          logWriter.writeLine(
+            `${logPrefix} Installed backdoor on server : ${factionData.server}`
+          );
+        }
+      }
+    }
+
+    await netscript.asleep(WAIT_DELAY);
+    playerInfo = netscript.getPlayer();
+    unjoinedFactions = unjoinedFactions.filter(
+      value => !playerInfo.factions.includes(value)
+    );
+  }
+
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
@@ -470,7 +500,10 @@ async function handleStockMarket(
           `${logPrefix} Starting stocks trader script w/ historical ticker...`
         );
         await killWorkerScripts(nsPackage);
-        runScript(netscript, STOCKS_TRADER_SCRIPT, {tempScript: true});
+        runScript(netscript, STOCKS_TRADER_SCRIPT, {
+          args: [getCmdFlag(CMD_FLAG_FUNDS_LIMIT_PERCENT), 0],
+          tempScript: true,
+        });
       },
     },
     {
@@ -641,17 +674,25 @@ async function handleCorporation(
     await corpApi['createCorporation']('Corp', true);
   }
 
-  const corpRoundScriptArgs = [getCmdFlag(CMD_FLAG_AUTO_INVESTMENT)];
+  const corpRoundScriptArgs = [
+    getCmdFlag(CMD_FLAG_AUTO_INVESTMENT),
+    getCmdFlag(CMD_FLAG_BYPASS_FUNDS_REQ),
+  ];
   const autoInvestmentRounds = [
     {
       round: 1,
       scriptPath: CORP_ROUND1_SCRIPT,
       nextRoundFunds: CORP_ROUND2_REQUIRED_FUNDS,
+      waitForFunds: async () =>
+        (await corpApi['getHireAdVertCount'](DivisionNames.AGRICULTURE)) <=
+        CORP_ROUND1_ADVERT_LEVEL,
     },
     {
       round: 2,
       scriptPath: CORP_ROUND2_SCRIPT,
       nextRoundFunds: CORP_ROUND3_REQUIRED_FUNDS,
+      waitForFunds: async () =>
+        !corpInfo.divisions.includes(DivisionNames.TOBACCO),
     },
     {round: 3, scriptPath: CORP_ROUND3_SCRIPT},
     {round: 4, scriptPath: CORP_ROUND4_SCRIPT},
@@ -672,7 +713,11 @@ async function handleCorporation(
     });
     await waitForScripts(netscript, [autoRoundScriptPid]);
 
-    if (autoRoundInfo.nextRoundFunds) {
+    if (
+      autoRoundInfo.nextRoundFunds &&
+      autoRoundInfo.waitForFunds &&
+      (await autoRoundInfo.waitForFunds())
+    ) {
       logWriter.writeLine(
         `${logPrefix} Waiting for sufficient funds for round ${
           autoRoundInfo.round + 1
@@ -733,7 +778,9 @@ async function handleAugmentations(
     for (
       let augmentationDetails = eligibleAugmentations.shift();
       augmentationDetails &&
-      augmentationDetails.price <= netscript.getPlayer().money;
+      augmentationDetails.price <= netscript.getPlayer().money &&
+      augmentationDetails.reputation <=
+        (await singularityApi['getFactionRep'](augmentationDetails.faction));
       augmentationDetails = eligibleAugmentations.shift()
     ) {
       logWriter.writeLine(

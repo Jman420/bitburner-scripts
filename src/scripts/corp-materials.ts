@@ -146,6 +146,7 @@ async function purchaseMaterials(
 export async function main(netscript: NS) {
   const nsPackage = getLocatorPackage(netscript);
   const nsLocator = nsPackage.locator;
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
 
   const corpInfo = await nsLocator.corporation['getCorporation']();
   DIVISION_NAMES = corpInfo.divisions.map(value => `'${value}'`);
@@ -185,7 +186,6 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('See script logs for on-going purchase details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const purchasePromises = await purchaseMaterials(
     nsPackage,
     scriptLogWriter,

@@ -50,8 +50,8 @@ import {
 } from '/scripts/netscript-services/netscript-locator';
 
 export const STOCKS_TRADER_SCRIPT = `${SCRIPTS_DIR}/stocks-trader.js`;
-const CMD_FLAG_FUNDS_LIMIT_PERCENT = 'fundsLimitPercent';
-const CMD_FLAG_ENABLE_SHORT_SALES = 'enableShort';
+export const CMD_FLAG_FUNDS_LIMIT_PERCENT = 'fundsLimitPercent';
+export const CMD_FLAG_ENABLE_SHORT_SALES = 'enableShort';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_FUNDS_LIMIT_PERCENT, 0.25],
   [CMD_FLAG_ENABLE_SHORT_SALES, false],
@@ -106,9 +106,11 @@ async function tradeStocks(
         ),
       };
       logWriter.writeLine(
-        `Sold ${stockDetails.position.longShares} shares of ${
-          stockDetails.symbol
-        } for $${netscript.formatNumber(saleTransaction.profit)} profit`
+        `Sold ${netscript.formatNumber(
+          stockDetails.position.longShares
+        )} shares of ${stockDetails.symbol} for $${netscript.formatNumber(
+          saleTransaction.profit
+        )} profit`
       );
       totalSaleProfits += saleTransaction.profit;
       soldStocks.push(saleTransaction);
@@ -127,9 +129,11 @@ async function tradeStocks(
         ),
       };
       logWriter.writeLine(
-        `Sold ${stockDetails.position.shortShares} shares of ${
-          stockDetails.symbol
-        } for $${netscript.formatNumber(saleTransaction.profit)} profit`
+        `Sold ${netscript.formatNumber(
+          stockDetails.position.shortShares
+        )} shares of ${stockDetails.symbol} for $${netscript.formatNumber(
+          saleTransaction.profit
+        )} profit`
       );
       totalSaleProfits += saleTransaction.profit || 0;
       soldStocks.push(saleTransaction);
@@ -269,24 +273,11 @@ async function setupStockTrader(
     )} profit`
   );
 
-  const fundsLimit =
+  managerConfig.fundsLimit =
     netscript.getServerMoneyAvailable(HOME_SERVER_NAME) * fundsLimitPercent;
-  if (fundsLimit <= COMMISSION) {
-    terminalWriter.writeLine(
-      'Funds limit must be greater than transaction commission amount'
-    );
-    terminalWriter.writeLine(
-      `  Commission : $${netscript.formatNumber(COMMISSION)}`
-    );
-    terminalWriter.writeLine(
-      `  Funds Limit : $${netscript.formatNumber(fundsLimit)}`
-    );
-    netscript.exit();
-  }
-  managerConfig.fundsLimit = fundsLimit;
 
   const successMsg = `Stock trader setup successfully with funds limit $${netscript.formatNumber(
-    fundsLimit
+    managerConfig.fundsLimit
   )}`;
   scriptLogWriter.writeLine(successMsg);
   scriptLogWriter.writeLine('Waiting for Stock Ticker Event...');

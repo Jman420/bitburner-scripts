@@ -27,6 +27,7 @@ import {
 import {
   BENCHMARK_OFFICE,
   CMD_FLAG_AUTO_INVESTMENT,
+  CMD_FLAG_BYPASS_FUNDS_REQ,
   PRICING_SETUP_SCRIPT,
   RAW_MAX_DIVISIONS,
   ROUND1_ADVERT_LEVEL,
@@ -64,6 +65,7 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_AGRICULTURE_RESEARCH, 500],
   [CMD_FLAG_CHEMICAL_RESEARCH, 300],
   [CMD_FLAG_AUTO_INVESTMENT, false],
+  [CMD_FLAG_BYPASS_FUNDS_REQ, false],
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
@@ -99,10 +101,14 @@ export async function main(netscript: NS) {
     CMD_FLAG_CHEMICAL_RESEARCH
   ].valueOf() as number;
   const autoInvestment = cmdArgs[CMD_FLAG_AUTO_INVESTMENT].valueOf() as boolean;
+  const bypassFundsReq = cmdArgs[
+    CMD_FLAG_BYPASS_FUNDS_REQ
+  ].valueOf() as boolean;
 
   terminalWriter.writeLine(`Agriculture Research : ${agricultureResearch}`);
   terminalWriter.writeLine(`Chemical Research : ${chemicalResearch}`);
   terminalWriter.writeLine(`Auto Investment : ${autoInvestment}`);
+  terminalWriter.writeLine(`Bypass Funds Requirement : ${bypassFundsReq}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
@@ -116,7 +122,7 @@ export async function main(netscript: NS) {
   }
 
   let corpInfo = await corpApi['getCorporation']();
-  if (corpInfo.funds < REQUIRED_FUNDS) {
+  if (!bypassFundsReq && corpInfo.funds < REQUIRED_FUNDS) {
     terminalWriter.writeLine(
       `Insufficient funds for round 2.  Required funds : ${netscript.formatNumber(
         REQUIRED_FUNDS
@@ -136,8 +142,10 @@ export async function main(netscript: NS) {
   runScript(netscript, SMART_SUPPLY_SCRIPT);
   runScript(netscript, TEA_PARTY_SCRIPT);
 
-  scriptLogWriter.writeLine('Buying Export unlock...');
-  await corpApi['purchaseUnlock'](UnlockName.EXPORT);
+  if (!(await corpApi['hasUnlock'](UnlockName.EXPORT))) {
+    scriptLogWriter.writeLine('Buying Export unlock...');
+    await corpApi['purchaseUnlock'](UnlockName.EXPORT);
+  }
 
   scriptLogWriter.writeLine(
     `Upgrading Agriculture Division to ${AGRICULTURE_OFFICE_SIZE} employees...`

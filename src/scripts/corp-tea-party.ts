@@ -47,7 +47,7 @@ const ENERGY_MORALE_LIMIT_AUTOCOMPLETE = [25, 50, 75, 80, 90];
 const MODULE_NAME = 'corp-tea-party';
 const SUBSCRIBER_NAME = 'corp-tea-party';
 
-const TAIL_X_POS = 455;
+const TAIL_X_POS = 320;
 const TAIL_Y_POS = 1035;
 const TAIL_WIDTH = 855;
 const TAIL_HEIGHT = 310;

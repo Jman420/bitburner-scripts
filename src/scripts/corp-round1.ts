@@ -43,6 +43,7 @@ import {
 import {
   BENCHMARK_OFFICE,
   CMD_FLAG_AUTO_INVESTMENT,
+  CMD_FLAG_BYPASS_FUNDS_REQ,
   PRICING_SETUP_SCRIPT,
   ROUND1_ADVERT_LEVEL,
   SMART_SUPPLY_SCRIPT,
@@ -55,6 +56,7 @@ export const CMD_FLAG_MATERIALS_RATIO = 'materialsRatio';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_MATERIALS_RATIO, 0.87],
   [CMD_FLAG_AUTO_INVESTMENT, false],
+  [CMD_FLAG_BYPASS_FUNDS_REQ, false],
 ];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
@@ -65,6 +67,8 @@ const TAIL_X_POS = 615;
 const TAIL_Y_POS = 930;
 const TAIL_WIDTH = 790;
 const TAIL_HEIGHT = 415;
+
+const REQUIRED_FUNDS = 150e9;
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
@@ -80,9 +84,13 @@ export async function main(netscript: NS) {
   const cmdArgs = parseCmdFlags(netscript, CMD_FLAGS_SCHEMA);
   const materialsRatio = cmdArgs[CMD_FLAG_MATERIALS_RATIO].valueOf() as number;
   const autoInvestment = cmdArgs[CMD_FLAG_AUTO_INVESTMENT].valueOf() as boolean;
+  const bypassFundsReq = cmdArgs[
+    CMD_FLAG_BYPASS_FUNDS_REQ
+  ].valueOf() as boolean;
 
   terminalWriter.writeLine(`Materials Ratio : ${materialsRatio}`);
   terminalWriter.writeLine(`Auto Investment : ${autoInvestment}`);
+  terminalWriter.writeLine(`Bypass Funds Requirement : ${bypassFundsReq}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
@@ -95,12 +103,21 @@ export async function main(netscript: NS) {
     return;
   }
 
+  let corpInfo = await corpApi['getCorporation']();
+  if (!bypassFundsReq && corpInfo.funds < REQUIRED_FUNDS) {
+    terminalWriter.writeLine(
+      `Insufficient funds for round 1.  Required funds : ${netscript.formatNumber(
+        REQUIRED_FUNDS
+      )}`
+    );
+    return;
+  }
+
   terminalWriter.writeLine(
     'See script logs for on-going corporation upgrade details.'
   );
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  let corpInfo = await corpApi['getCorporation']();
   if (!corpInfo.divisions.includes(DivisionNames.AGRICULTURE)) {
     scriptLogWriter.writeLine('Creating Agriculture Division...');
     await createDivision(

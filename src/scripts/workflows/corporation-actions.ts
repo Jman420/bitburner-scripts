@@ -411,7 +411,7 @@ async function upgradeOffices(
         cityName,
         officeSize - officeInfo.size
       );
-      hireEmployees(nsLocator, divisionName, cityName);
+      await hireEmployees(nsLocator, divisionName, cityName);
     }
   }
 }
@@ -740,8 +740,8 @@ async function improveProductSupportOffices(
       assignments: employeeAssignments,
     };
 
-    upgradeOffices(nsLocator, divisionName, [cityName], maxOfficeSize);
-    assignEmployees(nsLocator, divisionName, [officeAssignments]);
+    await upgradeOffices(nsLocator, divisionName, [cityName], maxOfficeSize);
+    await assignEmployees(nsLocator, divisionName, [officeAssignments]);
   }
 }
 
