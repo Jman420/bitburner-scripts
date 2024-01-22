@@ -53,9 +53,9 @@ const MODULE_NAME = 'corp-public';
 const SUBSCRIBER_NAME = 'corp-public';
 
 const TAIL_X_POS = 615;
-const TAIL_Y_POS = 979;
+const TAIL_Y_POS = 930;
 const TAIL_WIDTH = 790;
-const TAIL_HEIGHT = 365;
+const TAIL_HEIGHT = 415;
 
 const MATERIALS_SPACE_RATIO = 0.1;
 
@@ -302,6 +302,7 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('Corporation Automation - Public');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const corpApi = nsLocator.corporation;
   const corporationInfo = await corpApi['getCorporation']();
   if (!corporationInfo.public) {
@@ -315,7 +316,6 @@ export async function main(netscript: NS) {
     'See script logs for on-going corporation upgrade details.'
   );
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
 
   scriptLogWriter.writeLine('Running required support scripts...');
   const scriptArgs = [

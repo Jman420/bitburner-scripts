@@ -828,7 +828,7 @@ async function takeBestInvestmentOffer(
     await waitForState(netscript, CorpState.START);
     currentOfferInfo = await corpApi['getInvestmentOffer']();
 
-    if (previousOfferFunds <= currentOfferInfo.funds) {
+    if (currentOfferInfo.funds <= previousOfferFunds) {
       decreaseCount++;
     } else {
       decreaseCount = 0;

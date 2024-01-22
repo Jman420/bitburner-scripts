@@ -60,9 +60,9 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_AUTO_INVESTMENT, false]];
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const TAIL_X_POS = 615;
-const TAIL_Y_POS = 979;
+const TAIL_Y_POS = 930;
 const TAIL_WIDTH = 790;
-const TAIL_HEIGHT = 365;
+const TAIL_HEIGHT = 415;
 
 const AGRICULTURE_MATERIALS_SPACE_RATIO = 0.1;
 const CHEMICAL_MATERIALS_SPACE_RATIO = 0.65;
@@ -85,6 +85,7 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine(`Auto Investment : ${autoInvestment}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const corpApi = nsLocator.corporation;
   const investmentOfferInfo = await corpApi['getInvestmentOffer']();
   if (investmentOfferInfo.round !== 4) {
@@ -107,7 +108,6 @@ export async function main(netscript: NS) {
     'See script logs for on-going corporation upgrade details.'
   );
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
 
   scriptLogWriter.writeLine('Running required support scripts...');
   await killWorkerScripts(nsPackage);
@@ -372,11 +372,6 @@ export async function main(netscript: NS) {
     await assignEmployees(nsLocator, DivisionNames.TOBACCO, [
       officeAssignments,
     ]);
-  }
-
-  scriptLogWriter.writeLine('Waiting for investment offer to stabalize...');
-  for (let cyclecCounter = 0; cyclecCounter < 15; cyclecCounter++) {
-    await waitForState(netscript, CorpState.START);
   }
 
   scriptLogWriter.writeLine('Corporation Round 4 setup complete!');

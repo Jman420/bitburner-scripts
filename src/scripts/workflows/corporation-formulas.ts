@@ -373,12 +373,22 @@ function calculateAssignmentCounts(
 
   const result = new Map<EmployeePosition, number>();
   let favoredPosition = EmployeePosition.RESEARCH_DEVELOPMENT;
-  let favoredRatio = 0;
+  let favoredRatio = -1;
+  let neglectedPosition = EmployeePosition.INTERN;
+  let neglectedRatio = Number.MAX_SAFE_INTEGER;
   let totalAssignedCount = 0;
   for (const [positionName, ratioValue] of assignmentRatios.entries()) {
-    if (favoredRatio < ratioValue && ratioValue < 1) {
+    if (ratioValue >= 1) {
+      continue;
+    }
+
+    if (favoredRatio < ratioValue) {
       favoredRatio = ratioValue;
       favoredPosition = positionName;
+    }
+    if (neglectedRatio > ratioValue) {
+      neglectedRatio = ratioValue;
+      neglectedPosition = positionName;
     }
 
     const employeeCount =
@@ -387,11 +397,17 @@ function calculateAssignmentCounts(
     totalAssignedCount += employeeCount;
   }
 
-  if (totalAssignedCount < officeSize) {
+  if (totalAssignedCount < adjustedOfficeSize) {
     const favoredPositionCount = result.get(favoredPosition) ?? 0;
     result.set(
       favoredPosition,
-      favoredPositionCount + officeSize - totalAssignedCount
+      favoredPositionCount + (adjustedOfficeSize - totalAssignedCount)
+    );
+  } else if (totalAssignedCount > adjustedOfficeSize) {
+    const neglectedPositionCount = result.get(neglectedPosition) ?? 0;
+    result.set(
+      neglectedPosition,
+      neglectedPositionCount - (adjustedOfficeSize - totalAssignedCount)
     );
   }
   return result;

@@ -48,6 +48,8 @@ const INDUSTRY_MULTIPLIER_MATERIALS: CorpMaterialName[] = [
 const FRAUD_DIVISION_NAME_PREFIX = 'f-';
 const RAW_MAX_DIVISIONS = 20;
 
+const ROUND1_ADVERT_LEVEL = 2;
+
 export {
   TeaPartyConfig,
   ProductLifecycleConfig,
@@ -69,4 +71,5 @@ export {
   INDUSTRY_MULTIPLIER_MATERIALS,
   FRAUD_DIVISION_NAME_PREFIX,
   RAW_MAX_DIVISIONS,
+  ROUND1_ADVERT_LEVEL,
 };

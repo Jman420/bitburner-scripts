@@ -25,10 +25,10 @@ import {
 const MODULE_NAME = 'corp-price';
 const SUBSCRIBER_NAME = 'corp-price';
 
-export const TAIL_X_POS = 1230;
-export const TAIL_Y_POS = 120;
-export const TAIL_WIDTH = 1090;
-export const TAIL_HEIGHT = 490;
+export const TAIL_X_POS = 425;
+export const TAIL_Y_POS = 1000;
+export const TAIL_WIDTH = 825;
+export const TAIL_HEIGHT = 345;
 
 const UPDATE_DELAY = 0;
 

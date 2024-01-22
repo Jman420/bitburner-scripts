@@ -79,9 +79,9 @@ const MODULE_NAME = 'corp-round3';
 const SUBSCRIBER_NAME = 'corp-round3';
 
 const TAIL_X_POS = 615;
-const TAIL_Y_POS = 979;
+const TAIL_Y_POS = 930;
 const TAIL_WIDTH = 790;
-const TAIL_HEIGHT = 365;
+const TAIL_HEIGHT = 415;
 
 export const REQUIRED_FUNDS = 27e12; // $27t
 
@@ -114,6 +114,7 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine(`Auto Investment : ${autoInvestment}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const corpApi = nsLocator.corporation;
   const investmentOfferInfo = await corpApi['getInvestmentOffer']();
   if (investmentOfferInfo.round !== 3) {
@@ -148,7 +149,6 @@ export async function main(netscript: NS) {
   );
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   scriptLogWriter.writeLine('Running required support scripts...');
   await killWorkerScripts(nsPackage);
   runScript(netscript, PRICING_SETUP_SCRIPT);
@@ -159,8 +159,69 @@ export async function main(netscript: NS) {
   await corpApi['purchaseUnlock'](UnlockName.MARKET_RESEARCH_DEMAND);
   await corpApi['purchaseUnlock'](UnlockName.MARKET_DATA_COMPETITION);
 
-  scriptLogWriter.writeLine('Creating Tobacco Division...');
-  await createDivision(nsLocator, DivisionNames.TOBACCO, IndustryType.TOBACCO);
+  scriptLogWriter.writeLine(
+    `Creating ${fraudDivisions} fraudulent divisions to boost investment offers...`
+  );
+  await createFraudDivisions(nsLocator, fraudDivisions);
+
+  if (!corpInfo.divisions.includes(DivisionNames.TOBACCO)) {
+    scriptLogWriter.writeLine('Creating Tobacco Division...');
+    await createDivision(
+      nsLocator,
+      DivisionNames.TOBACCO,
+      IndustryType.TOBACCO
+    );
+
+    scriptLogWriter.writeLine('Improving Tobacco Division...');
+    const productDivisionBudget =
+      corpInfo.funds * 0.99 -
+      agricultureBudget -
+      chemicalBudget -
+      materialsBudget -
+      1e9;
+    await improveProductDivision(
+      nsLocator,
+      DivisionNames.TOBACCO,
+      productDivisionBudget
+    );
+
+    scriptLogWriter.writeLine('Improving Agriculture & Chemical Divisions...');
+    await improveSupportDivision(
+      nsLocator,
+      DivisionNames.AGRICULTURE,
+      agricultureBudget
+    );
+    await improveSupportDivision(
+      nsLocator,
+      DivisionNames.CHEMICAL,
+      chemicalBudget
+    );
+
+    scriptLogWriter.writeLine('Buying optimal industry materials...');
+    const industryMaterialTasks = [];
+    industryMaterialTasks.push(
+      buyIndustryMaterials(
+        nsPackage,
+        DivisionNames.AGRICULTURE,
+        AGRICULTURE_MATERIALS_SPACE_RATIO
+      )
+    );
+    industryMaterialTasks.push(
+      buyIndustryMaterials(
+        nsPackage,
+        DivisionNames.CHEMICAL,
+        CHEMICAL_MATERIALS_SPACE_RATIO
+      )
+    );
+    industryMaterialTasks.push(
+      buyIndustryMaterials(
+        nsPackage,
+        DivisionNames.TOBACCO,
+        TOBACCO_MATERIALS_SPACE_RATIO
+      )
+    );
+    await Promise.allSettled(industryMaterialTasks);
+  }
 
   scriptLogWriter.writeLine('Setting up export supply chains...');
   for (const cityName of CITY_NAMES) {
@@ -189,24 +250,6 @@ export async function main(netscript: NS) {
     );
   }
 
-  scriptLogWriter.writeLine(
-    `Creating ${fraudDivisions} fraudulent divisions to boost investment offers...`
-  );
-  await createFraudDivisions(nsLocator, fraudDivisions);
-
-  scriptLogWriter.writeLine('Improving Tobacco Division...');
-  const productDivisionBudget =
-    corpInfo.funds * 0.99 -
-    agricultureBudget -
-    chemicalBudget -
-    materialsBudget -
-    1e9;
-  await improveProductDivision(
-    nsLocator,
-    DivisionNames.TOBACCO,
-    productDivisionBudget
-  );
-
   scriptLogWriter.writeLine('Starting Product Lifecycle Management script...');
   await killWorkerScripts(nsPackage);
   const scriptArgs = [
@@ -216,43 +259,6 @@ export async function main(netscript: NS) {
     DEFAULT_PRODUCT_DESIGN_OFFICE,
   ];
   runScript(netscript, PRODUCT_LIFECYCLE_SCRIPT, {args: scriptArgs});
-
-  scriptLogWriter.writeLine('Improving Agriculture & Chemical Divisions...');
-  await improveSupportDivision(
-    nsLocator,
-    DivisionNames.AGRICULTURE,
-    agricultureBudget
-  );
-  await improveSupportDivision(
-    nsLocator,
-    DivisionNames.CHEMICAL,
-    chemicalBudget
-  );
-
-  scriptLogWriter.writeLine('Buying optimal industry materials...');
-  const industryMaterialTasks = [];
-  industryMaterialTasks.push(
-    buyIndustryMaterials(
-      nsPackage,
-      DivisionNames.AGRICULTURE,
-      AGRICULTURE_MATERIALS_SPACE_RATIO
-    )
-  );
-  industryMaterialTasks.push(
-    buyIndustryMaterials(
-      nsPackage,
-      DivisionNames.CHEMICAL,
-      CHEMICAL_MATERIALS_SPACE_RATIO
-    )
-  );
-  industryMaterialTasks.push(
-    buyIndustryMaterials(
-      nsPackage,
-      DivisionNames.TOBACCO,
-      TOBACCO_MATERIALS_SPACE_RATIO
-    )
-  );
-  await Promise.allSettled(industryMaterialTasks);
 
   const tobaccoDivisionInfo = await corpApi['getDivision'](
     DivisionNames.TOBACCO
@@ -266,7 +272,7 @@ export async function main(netscript: NS) {
     scriptLogWriter.writeLine('  - Develop the first product');
     scriptLogWriter.writeLine('  - Setup product development and pricing');
     scriptLogWriter.writeLine('  - Wait for product sales to stabalize');
-    scriptLogWriter.writeLine('  - Wait for investment offer of at least $?');
+    scriptLogWriter.writeLine('  - Wait for investment offer of at least $30q');
     return;
   }
 

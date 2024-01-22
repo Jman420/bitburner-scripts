@@ -92,7 +92,7 @@ const WAIT_DELAY = 500;
 
 const MIN_HACK_LEVEL = 10;
 const ATTACK_TARGETS_NEED = 10;
-const HOME_TARGET_RAM = 1e6; // 1PB
+const HOME_TARGET_RAM = 500000; // 500TB
 const HOME_TARGET_CORES = 6;
 const BATCH_ATTACK_RAM_NEEDED = 8000; //8TB
 const GANG_KARMA_REQ = -54000;
@@ -658,7 +658,7 @@ async function handleCorporation(
   ];
 
   let corpInfo = await corpApi['getCorporation']();
-  const investmentInfo = await corpApi['getInvestmentOffer']();
+  let investmentInfo = await corpApi['getInvestmentOffer']();
   while (investmentInfo.round < autoInvestmentRounds.length + 1) {
     const autoRoundInfo = autoInvestmentRounds[investmentInfo.round - 1];
 
@@ -675,7 +675,7 @@ async function handleCorporation(
     if (autoRoundInfo.nextRoundFunds) {
       logWriter.writeLine(
         `${logPrefix} Waiting for sufficient funds for round ${
-          autoRoundInfo.round
+          autoRoundInfo.round + 1
         } investment automation : $${netscript.formatNumber(
           autoRoundInfo.nextRoundFunds
         )}`
@@ -686,6 +686,9 @@ async function handleCorporation(
         corpInfo = await corpApi['getCorporation']();
       }
     }
+
+    await netscript.asleep(WAIT_DELAY);
+    investmentInfo = await corpApi['getInvestmentOffer']();
   }
   logWriter.writeLine(`${logPrefix} Investment rounds complete!`);
 
@@ -812,5 +815,5 @@ export async function main(netscript: NS) {
   concurrentTasks.push(handleAugmentations(nsPackage, scriptLogWriter));
   await Promise.all(concurrentTasks);
 
-  scriptLogWriter.writeLine('Singularity quick start completed!');
+  scriptLogWriter.writeLine('Singularity automation completed!');
 }

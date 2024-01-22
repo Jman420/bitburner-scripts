@@ -19,10 +19,10 @@ import {
 const MODULE_NAME = 'corp-supply';
 const SUBSCRIBER_NAME = 'corp-supply';
 
-export const TAIL_X_POS = 1230;
-export const TAIL_Y_POS = 120;
-export const TAIL_WIDTH = 1090;
-export const TAIL_HEIGHT = 490;
+export const TAIL_X_POS = 520;
+export const TAIL_Y_POS = 965;
+export const TAIL_WIDTH = 805;
+export const TAIL_HEIGHT = 380;
 
 const UPDATE_DELAY = 0;
 const MAX_CONGESTION_COUNT = 5;

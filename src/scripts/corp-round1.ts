@@ -41,12 +41,14 @@ import {
   getOptimalIndustryMaterials,
 } from '/scripts/workflows/corporation-optimization';
 import {
+  BENCHMARK_OFFICE,
   CMD_FLAG_AUTO_INVESTMENT,
   PRICING_SETUP_SCRIPT,
+  ROUND1_ADVERT_LEVEL,
   SMART_SUPPLY_SCRIPT,
 } from '/scripts/workflows/corporation-shared';
 import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
-import {REQUIRED_FUNDS as ROUND_2_REQUIRED_FUNDS} from '/scripts/corp-round2';
+import {REQUIRED_FUNDS as ROUND2_REQUIRED_FUNDS} from '/scripts/corp-round2';
 import {killWorkerScripts} from '/scripts/workflows/orchestration';
 
 export const CMD_FLAG_MATERIALS_RATIO = 'materialsRatio';
@@ -60,11 +62,9 @@ const MODULE_NAME = 'corp-round1';
 const SUBSCRIBER_NAME = 'corp-round1';
 
 const TAIL_X_POS = 615;
-const TAIL_Y_POS = 979;
+const TAIL_Y_POS = 930;
 const TAIL_WIDTH = 790;
-const TAIL_HEIGHT = 365;
-
-const TARGET_ADVERT_LEVEL = 2;
+const TAIL_HEIGHT = 415;
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
@@ -85,6 +85,7 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine(`Auto Investment : ${autoInvestment}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const corpApi = nsLocator.corporation;
   const investmentOfferInfo = await corpApi['getInvestmentOffer']();
   if (investmentOfferInfo.round !== 1) {
@@ -99,89 +100,95 @@ export async function main(netscript: NS) {
   );
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
-  scriptLogWriter.writeLine('Creating Agriculture Division...');
-  await createDivision(
-    nsLocator,
-    DivisionNames.AGRICULTURE,
-    IndustryType.AGRICULTURE
-  );
-
-  scriptLogWriter.writeLine(
-    'Calculating optimal storage & factory upgrades...'
-  );
-  const corpInfo = await corpApi['getCorporation']();
-  const advertLevel = await corpApi['getHireAdVertCount'](
-    DivisionNames.AGRICULTURE
-  );
-  const advertCost = getAdvertCost(advertLevel, TARGET_ADVERT_LEVEL);
-  const upgradesBudget = corpInfo.funds - advertCost;
-  const optimalUpgrades = await getOptimalDivisionFactoryAndStorage(
-    nsLocator,
-    DivisionNames.AGRICULTURE,
-    upgradesBudget,
-    materialsRatio
-  );
-  if (!optimalUpgrades) {
-    scriptLogWriter.writeLine(
-      'Round failed!  Unable to find optimal storage & factory upgrades.'
-    );
-    return;
-  }
-  scriptLogWriter.writeLine(
-    `  Smart Storage Level : ${optimalUpgrades.smartStorageLevel}`
-  );
-  scriptLogWriter.writeLine(
-    `  Warehouse Level : ${optimalUpgrades.warehouseLevel}`
-  );
-  scriptLogWriter.writeLine(
-    `  Warehouse Size : ${optimalUpgrades.warehouseSize}`
-  );
-  scriptLogWriter.writeLine(
-    `  Smart Factories Level : ${optimalUpgrades.smartFactoriesLevel}`
-  );
-  scriptLogWriter.writeLine(
-    `  Production Multiplier : ${netscript.formatNumber(
-      optimalUpgrades.production
-    )}`
-  );
-  scriptLogWriter.writeLine(
-    `  Total Cost : $${netscript.formatNumber(optimalUpgrades.cost)}`
-  );
-
-  scriptLogWriter.writeLine('Buying optimal storage & factory upgrades...');
-  await buyCorpUpgrade(
-    nsLocator,
-    UpgradeName.SMART_STORAGE,
-    optimalUpgrades.smartStorageLevel
-  );
-  await buyCorpUpgrade(
-    nsLocator,
-    UpgradeName.SMART_FACTORIES,
-    optimalUpgrades.smartFactoriesLevel
-  );
-  await buyAdvert(nsLocator, DivisionNames.AGRICULTURE, TARGET_ADVERT_LEVEL);
-
-  scriptLogWriter.writeLine(
-    'Upgrading warehouses to optimal level & setting output sales...'
-  );
-  for (const cityName of CITY_NAMES) {
-    await improveWarehouse(
+  let corpInfo = await corpApi['getCorporation']();
+  if (!corpInfo.divisions.includes(DivisionNames.AGRICULTURE)) {
+    scriptLogWriter.writeLine('Creating Agriculture Division...');
+    await createDivision(
       nsLocator,
       DivisionNames.AGRICULTURE,
-      cityName,
-      optimalUpgrades.warehouseLevel
+      IndustryType.AGRICULTURE
     );
+
+    scriptLogWriter.writeLine(
+      'Calculating optimal storage & factory upgrades...'
+    );
+    corpInfo = await corpApi['getCorporation']();
+    const advertLevel = await corpApi['getHireAdVertCount'](
+      DivisionNames.AGRICULTURE
+    );
+    const advertCost = getAdvertCost(advertLevel, ROUND1_ADVERT_LEVEL);
+    const upgradesBudget = corpInfo.funds - advertCost;
+    const optimalUpgrades = await getOptimalDivisionFactoryAndStorage(
+      nsLocator,
+      DivisionNames.AGRICULTURE,
+      upgradesBudget,
+      materialsRatio
+    );
+    if (!optimalUpgrades) {
+      scriptLogWriter.writeLine(
+        'Round failed!  Unable to find optimal storage & factory upgrades.'
+      );
+      return;
+    }
+    scriptLogWriter.writeLine(
+      `  Smart Storage Level : ${optimalUpgrades.smartStorageLevel}`
+    );
+    scriptLogWriter.writeLine(
+      `  Warehouse Level : ${optimalUpgrades.warehouseLevel}`
+    );
+    scriptLogWriter.writeLine(
+      `  Warehouse Size : ${optimalUpgrades.warehouseSize}`
+    );
+    scriptLogWriter.writeLine(
+      `  Smart Factories Level : ${optimalUpgrades.smartFactoriesLevel}`
+    );
+    scriptLogWriter.writeLine(
+      `  Production Multiplier : ${netscript.formatNumber(
+        optimalUpgrades.production
+      )}`
+    );
+    scriptLogWriter.writeLine(
+      `  Total Cost : $${netscript.formatNumber(optimalUpgrades.cost)}`
+    );
+
+    scriptLogWriter.writeLine('Buying optimal storage & factory upgrades...');
+    await buyCorpUpgrade(
+      nsLocator,
+      UpgradeName.SMART_STORAGE,
+      optimalUpgrades.smartStorageLevel
+    );
+    await buyCorpUpgrade(
+      nsLocator,
+      UpgradeName.SMART_FACTORIES,
+      optimalUpgrades.smartFactoriesLevel
+    );
+    await buyAdvert(nsLocator, DivisionNames.AGRICULTURE, ROUND1_ADVERT_LEVEL);
+
+    scriptLogWriter.writeLine(
+      'Upgrading warehouses to optimal level & setting output sales...'
+    );
+    for (const cityName of CITY_NAMES) {
+      await improveWarehouse(
+        nsLocator,
+        DivisionNames.AGRICULTURE,
+        cityName,
+        optimalUpgrades.warehouseLevel
+      );
+    }
   }
 
   scriptLogWriter.writeLine('Waiting for Morale & Energy to max out (100)...');
   await waitForMoraleAndEnergy(nsPackage, DivisionNames.AGRICULTURE);
 
   scriptLogWriter.writeLine('Buying optimal industry materials...');
+  const warehouseInfo = await corpApi['getWarehouse'](
+    DivisionNames.AGRICULTURE,
+    BENCHMARK_OFFICE
+  );
   const optimalIndustryMaterials = await getOptimalIndustryMaterials(
     nsLocator,
     IndustryType.AGRICULTURE,
-    optimalUpgrades.warehouseSize * materialsRatio
+    warehouseInfo.size * materialsRatio
   );
   const industryMaterialsTasks = await manageIndustryMaterials(
     nsPackage,
@@ -234,7 +241,7 @@ export async function main(netscript: NS) {
   }
   scriptLogWriter.writeLine(
     `The next round requires at least $${netscript.formatNumber(
-      ROUND_2_REQUIRED_FUNDS
+      ROUND2_REQUIRED_FUNDS
     )} funds`
   );
 }
