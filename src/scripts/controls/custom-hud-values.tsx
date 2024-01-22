@@ -83,7 +83,6 @@ async function updatePolledMetrics(
   nsPackage: NetscriptPackage,
   logWriter: Logger,
   setCity: ReactSetStateFunction<string>,
-  setLocation: ReactSetStateFunction<string>,
   setScriptsExp: ReactSetStateFunction<string>,
   setScriptsIncome: ReactSetStateFunction<string>,
   setCorpIncome: ReactSetStateFunction<string>,
@@ -126,7 +125,6 @@ async function updatePolledMetrics(
   const playerInfo = netscript.getPlayer();
   const karmaLevel = netscriptExtended.heart.break();
   setCity(playerInfo.city);
-  setLocation(playerInfo.location);
   setKarmaLevel(netscript.formatNumber(karmaLevel));
   logWriter.writeLine(ENTRY_DIVIDER);
 }
@@ -158,7 +156,6 @@ function CustomHudValues({
   const uiTheme = netscript.ui.getTheme();
 
   const [city, setCity] = useState('');
-  const [location, setLocation] = useState('');
   const [scriptsExp, setScriptsExp] = useState('');
   const [scriptsIncome, setScriptsIncome] = useState('');
   const [gangIncome, setGangIncome] = useState('');
@@ -173,7 +170,6 @@ function CustomHudValues({
       nsPackage,
       logWriter,
       setCity,
-      setLocation,
       setScriptsExp,
       setScriptsIncome,
       setCorpIncome,
@@ -185,7 +181,6 @@ function CustomHudValues({
       nsPackage,
       logWriter,
       setCity,
-      setLocation,
       setScriptsExp,
       setScriptsIncome,
       setCorpIncome,
@@ -225,16 +220,6 @@ function CustomHudValues({
         }}
       >
         {city}
-      </label>
-      <br style={{display: excludeLocationMetrics ? 'none' : ''}} />
-      <label
-        id="locationValue"
-        style={{
-          color: uiTheme.infolight,
-          display: excludeLocationMetrics ? 'none' : '',
-        }}
-      >
-        {location}
       </label>
       <br style={{display: excludeLocationMetrics ? 'none' : ''}} />
       <label

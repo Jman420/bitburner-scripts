@@ -35,16 +35,6 @@ function CustomHudLabels({
       </label>
       <br style={{display: excludeLocationMetrics ? 'none' : ''}} />
       <label
-        title="Current location witin the city"
-        style={{
-          color: uiTheme.infolight,
-          display: excludeLocationMetrics ? 'none' : '',
-        }}
-      >
-        Location
-      </label>
-      <br style={{display: excludeLocationMetrics ? 'none' : ''}} />
-      <label
         title="Script hacking experience per second"
         style={{
           color: uiTheme.hack,
