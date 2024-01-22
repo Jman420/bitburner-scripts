@@ -75,6 +75,7 @@ import {
 import {
   attendCourse,
   backdoorHost,
+  getEligibleAugmentations,
   getRemainingPrograms,
 } from '/scripts/workflows/singularity';
 import {killWorkerScripts} from '/scripts/workflows/orchestration';
@@ -97,6 +98,7 @@ const BATCH_ATTACK_RAM_NEEDED = 8000; //8TB
 const GANG_KARMA_REQ = -54000;
 const CORP_FUNDS_REQ = 150e9; // 150b
 const CORP_DIVIDENDS_RATE = 0.1; // 10%
+const MAX_AUGMENTATIONS = 20;
 
 async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
   const logPrefix = 'Hacking -';
@@ -584,16 +586,18 @@ async function handleGang(nsPackage: NetscriptPackage, logWriter: Logger) {
   const gangAugmentations = await singularityApi['getAugmentationsFromFaction'](
     gangInfo.faction
   );
-  const maxRepAugmentation = gangAugmentations
-    .map(value => {
-      return {
-        name: value,
-        reputation: netscript.singularity.getAugmentationRepReq(value),
-      };
-    })
-    .reduce((maxValue, value) =>
-      value.reputation > maxValue.reputation ? value : maxValue
-    );
+  const maxRepAugmentation = (
+    await Promise.all(
+      gangAugmentations.map(async value => {
+        return {
+          name: value,
+          reputation: await singularityApi['getAugmentationRepReq'](value),
+        };
+      })
+    )
+  ).reduce((maxValue, value) =>
+    value.reputation > maxValue.reputation ? value : maxValue
+  );
   logWriter.writeLine(
     `${logPrefix} Waiting for ${netscript.formatNumber(
       maxRepAugmentation.reputation
@@ -629,8 +633,7 @@ async function handleCorporation(
         CORP_FUNDS_REQ
       )}`
     );
-    const playerInfo = netscript.getPlayer();
-    while (playerInfo.money < CORP_FUNDS_REQ) {
+    while (netscript.getPlayer().money <= CORP_FUNDS_REQ) {
       await netscript.asleep(WAIT_DELAY);
     }
 
@@ -707,6 +710,48 @@ async function handleCorporation(
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
+async function handleAugmentations(
+  nsPackage: NetscriptPackage,
+  logWriter: Logger
+) {
+  const logPrefix = 'Augments -';
+
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+  const singularityApi = nsLocator.singularity;
+
+  logWriter.writeLine(
+    `${logPrefix} Waiting for sufficient funds to purchase augmentations...`
+  );
+  let ownedAugmentations = await singularityApi['getOwnedAugmentations']();
+  while (ownedAugmentations.length < MAX_AUGMENTATIONS) {
+    let eligibleAugmentations = await getEligibleAugmentations(nsPackage);
+
+    for (
+      let augmentationDetails = eligibleAugmentations.shift();
+      augmentationDetails &&
+      augmentationDetails.price <= netscript.getPlayer().money;
+      augmentationDetails = eligibleAugmentations.shift()
+    ) {
+      logWriter.writeLine(
+        `${logPrefix} Purchasing augmentation ${augmentationDetails.name} from faction ${augmentationDetails.faction}...`
+      );
+      await singularityApi['purchaseAugmentation'](
+        augmentationDetails.faction,
+        augmentationDetails.name
+      );
+
+      // Re-evaluate eligible augmentations to include newly available pre-requisite augmentations
+      eligibleAugmentations = await getEligibleAugmentations(nsPackage);
+    }
+
+    await netscript.asleep(WAIT_DELAY);
+    ownedAugmentations = await singularityApi['getOwnedAugmentations']();
+  }
+
+  logWriter.writeLine(`${logPrefix} Complete!`);
+}
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
   const nsPackage = getLocatorPackage(netscript);
@@ -764,7 +809,7 @@ export async function main(netscript: NS) {
   concurrentTasks.push(handleStockMarket(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleGang(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleCorporation(nsPackage, scriptLogWriter));
-  // TODO (JMG) : Add task for buying augmentations
+  concurrentTasks.push(handleAugmentations(nsPackage, scriptLogWriter));
   await Promise.all(concurrentTasks);
 
   scriptLogWriter.writeLine('Singularity quick start completed!');

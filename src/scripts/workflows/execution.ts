@@ -162,7 +162,7 @@ async function waitForScripts(
   while (scriptsRunning) {
     scriptsRunning = false;
     for (const scriptPid of scriptPids) {
-      scriptsRunning = (await netscript.isRunning(scriptPid)) || scriptsRunning;
+      scriptsRunning = netscript.isRunning(scriptPid) || scriptsRunning;
     }
 
     if (scriptsRunning) {
