@@ -3,4 +3,8 @@ interface HackExperienceFarmConfig {
   optimalOnlyCount: number;
 }
 
-export {HackExperienceFarmConfig};
+interface FactionReputationFarmConfig {
+  includeHome: boolean;
+}
+
+export {HackExperienceFarmConfig, FactionReputationFarmConfig};

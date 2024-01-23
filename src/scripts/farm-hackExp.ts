@@ -17,6 +17,7 @@ import {
 } from '/scripts/workflows/cmd-args';
 import {CMD_FLAG_TARGETS_CSV} from '/scripts/workers/shared';
 import {SCRIPTS_DIR} from '/scripts/common/shared';
+import {openTail} from '/scripts/workflows/ui';
 
 import {
   analyzeHost,
@@ -37,11 +38,11 @@ import {
   scoreHostForExperience,
   sortOptimalTargetHosts,
 } from '/scripts/workflows/scoring';
-import {openTail} from '/scripts/workflows/ui';
+
 import {HackExperienceFarmConfig} from '/scripts/workflows/farms';
+import {EventListener, sendMessage} from '/scripts/comms/event-comms';
 import {FarmHackExpConfigEvent} from '/scripts/comms/events/farm-hackExp-config-event';
 import {FarmHackExpConfigRequest} from '/scripts/comms/requests/farm-hackExp-config-request';
-import {EventListener, sendMessage} from '/scripts/comms/event-comms';
 import {FarmHackExpConfigResponse} from '/scripts/comms/responses/farm-hackExp-config-response';
 
 export const FARM_HACK_EXP_SCRIPT = `${SCRIPTS_DIR}/farm-hackExp.js`;
@@ -56,10 +57,10 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 const MODULE_NAME = 'farm-hackExp';
 const SUBSCRIBER_NAME = 'farm-hackExp';
 
-const TAIL_X_POS = 1045;
-const TAIL_Y_POS = 154;
-const TAIL_WIDTH = 1275;
-const TAIL_HEIGHT = 510;
+const TAIL_X_POS = 1454;
+const TAIL_Y_POS = 115;
+const TAIL_WIDTH = 650;
+const TAIL_HEIGHT = 500;
 
 let managerConfig: HackExperienceFarmConfig;
 

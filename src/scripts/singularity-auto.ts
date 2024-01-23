@@ -82,10 +82,12 @@ import {
   backdoorHost,
   getEligibleAugmentations,
   getFactionsNeedReputation,
+  getPurchasedAugmentations,
   getRemainingPrograms,
 } from '/scripts/workflows/singularity';
 import {killWorkerScripts} from '/scripts/workflows/orchestration';
 import {DivisionNames} from '/scripts/data/corporation-enums';
+import {FARM_FACTION_REPUTATION_SCRIPT} from '/scripts/farm-factionRep';
 
 const MODULE_NAME = 'singularity-starter';
 const SUBSCRIBER_NAME = 'singularity-starter';
@@ -148,6 +150,95 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
   }
 
   let homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
+  let factionsNeedRep = await getFactionsNeedReputation(nsPackage);
+  while (factionsNeedRep.size > 0) {
+    let gangInfo = await nsLocator.gang['getGangInformation']();
+    let corpInfo = await nsLocator.corporation['getCorporation']();
+    homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
+
+    if (gangInfo.moneyGainRate > 0 || corpInfo.dividendEarnings > 0) {
+      logWriter.writeLine(
+        `${logPrefix} Running faction reputation farm script...`
+      );
+      runScript(netscript, FARM_FACTION_REPUTATION_SCRIPT, {tempScript: true});
+
+      logWriter.writeLine(
+        `${logPrefix} Waiting for all factions reputation to be satisifed...`
+      );
+      while (factionsNeedRep.size > 0) {
+        await netscript.asleep(WAIT_DELAY);
+        factionsNeedRep = await getFactionsNeedReputation(nsPackage);
+      }
+
+      await nsLocator['scriptKill'](
+        FARM_FACTION_REPUTATION_SCRIPT,
+        netscript.getHostname()
+      );
+      runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
+    } else if (homeServerInfo.maxRam < BATCH_ATTACK_RAM_NEEDED) {
+      logWriter.writeLine(`${logPrefix} Running WGWH serial attack script...`);
+      runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
+      const wgwhSerialArgs = netscript.serverExists(NETSCRIPT_SERVER_NAME)
+        ? [getCmdFlag(CMD_FLAG_INCLUDE_HOME)]
+        : [];
+      runScript(netscript, WGWH_SERIAL_ATTACK_SCRIPT, {
+        args: wgwhSerialArgs,
+        tempScript: true,
+      });
+
+      logWriter.writeLine(
+        `${logPrefix} Waiting for sufficient available RAM for WGWH batch attacks...`
+      );
+      while (
+        homeServerInfo.maxRam < BATCH_ATTACK_RAM_NEEDED ||
+        gangInfo.moneyGainRate > 0 ||
+        corpInfo.dividendEarnings > 0
+      ) {
+        await netscript.asleep(WAIT_DELAY);
+        gangInfo = await nsLocator.gang['getGangInformation']();
+        corpInfo = await nsLocator.corporation['getCorporation']();
+        homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
+      }
+
+      logWriter.writeLine(`${logPrefix} Killing WGWH serial attack scripts...`);
+      await nsLocator['scriptKill'](
+        WGWH_SERIAL_ATTACK_SCRIPT,
+        netscript.getHostname()
+      );
+      runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
+    } else {
+      logWriter.writeLine(`${logPrefix} Running WGWH batch attack script...`);
+      runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
+      const wgwhBatchArgs = netscript.serverExists(NETSCRIPT_SERVER_NAME)
+        ? [getCmdFlag(CMD_FLAG_INCLUDE_HOME)]
+        : [];
+      runScript(netscript, WGWH_BATCH_ATTACK_SCRIPT, {
+        args: wgwhBatchArgs,
+        tempScript: true,
+      });
+
+      logWriter.writeLine(
+        `${logPrefix} Waiting for secondary income (gang or corporation)...`
+      );
+      while (gangInfo.moneyGainRate > 0 || corpInfo.dividendEarnings > 0) {
+        await netscript.asleep(WAIT_DELAY);
+        gangInfo = await nsLocator.gang['getGangInformation']();
+        corpInfo = await nsLocator.corporation['getCorporation']();
+      }
+
+      logWriter.writeLine(`${logPrefix} Killing WGWH batch attack scripts...`);
+      await nsLocator['scriptKill'](
+        WGWH_BATCH_ATTACK_SCRIPT,
+        netscript.getHostname()
+      );
+      runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
+    }
+
+    await netscript.asleep(WAIT_DELAY);
+    factionsNeedRep = await getFactionsNeedReputation(nsPackage);
+  }
+
+  homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
   if (homeServerInfo.maxRam < BATCH_ATTACK_RAM_NEEDED) {
     logWriter.writeLine(`${logPrefix} Running WGWH serial attack script...`);
     runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
@@ -258,13 +349,9 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
   logWriter.writeLine(
     `${logPrefix} Earning reputation for factions to buy augmentations...`
   );
-  const ownedAugmentations =
-    await singularityApi['getOwnedAugmentations'](true);
-  const factionsNeedRep = await getFactionsNeedReputation(nsPackage);
-  while (
-    ownedAugmentations.length < MAX_AUGMENTATIONS &&
-    factionsNeedRep.size > 0
-  ) {
+  let purchasedAugs = await getPurchasedAugmentations(nsPackage);
+  let factionsNeedRep = await getFactionsNeedReputation(nsPackage);
+  while (purchasedAugs.length < MAX_AUGMENTATIONS && factionsNeedRep.size > 0) {
     const [factionName, neededRep] = Array.from(factionsNeedRep.entries())[0];
 
     logWriter.writeLine(
@@ -276,6 +363,10 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
     while ((await singularityApi['getFactionRep'](factionName)) < neededRep) {
       await netscript.asleep(WAIT_DELAY);
     }
+
+    await netscript.asleep(WAIT_DELAY);
+    purchasedAugs = await getPurchasedAugmentations(nsPackage);
+    factionsNeedRep = await getFactionsNeedReputation(nsPackage);
   }
 
   logWriter.writeLine(
@@ -659,6 +750,7 @@ async function handleCorporation(
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const corpApi = nsLocator.corporation;
+  const singularityApi = nsLocator.singularity;
 
   if (!(await corpApi['hasCorporation']())) {
     logWriter.writeLine(
@@ -755,6 +847,37 @@ async function handleCorporation(
     await corpApi['issueDividends'](CORP_DIVIDENDS_RATE);
   }
 
+  logWriter.writeLine(`${logPrefix} Bribing factions for reputation...`);
+  let factionsNeedRep = await getFactionsNeedReputation(nsPackage);
+  while (factionsNeedRep.size > 0) {
+    for (const [factionName, totalNeededRep] of factionsNeedRep.entries()) {
+      const currentFactionRep =
+        await singularityApi['getFactionRep'](factionName);
+      const bribeAmount = (totalNeededRep - currentFactionRep) * 1e9; // 1rep -> $1b
+
+      logWriter.writeLine(
+        `${logPrefix} Waiting for $${netscript.formatNumber(
+          bribeAmount
+        )} funds to bribe ${factionName}...`
+      );
+      corpInfo = await corpApi['getCorporation']();
+      while (corpInfo.funds < bribeAmount) {
+        await netscript.asleep(WAIT_DELAY);
+        corpInfo = await corpApi['getCorporation']();
+      }
+
+      logWriter.writeLine(
+        `${logPrefix} Bribing ${factionName} with $${netscript.formatNumber(
+          bribeAmount
+        )}...`
+      );
+      await corpApi['bribe'](factionName, bribeAmount);
+    }
+
+    await netscript.asleep(WAIT_DELAY);
+    factionsNeedRep = await getFactionsNeedReputation(nsPackage);
+  }
+
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
@@ -771,8 +894,8 @@ async function handleAugmentations(
   logWriter.writeLine(
     `${logPrefix} Waiting for sufficient funds to purchase augmentations...`
   );
-  let ownedAugmentations = await singularityApi['getOwnedAugmentations']();
-  while (ownedAugmentations.length < MAX_AUGMENTATIONS) {
+  let purchasedAugs = await getPurchasedAugmentations(nsPackage);
+  while (purchasedAugs.length < MAX_AUGMENTATIONS) {
     let eligibleAugmentations = await getEligibleAugmentations(nsPackage);
 
     for (
@@ -796,8 +919,10 @@ async function handleAugmentations(
     }
 
     await netscript.asleep(WAIT_DELAY);
-    ownedAugmentations = await singularityApi['getOwnedAugmentations']();
+    purchasedAugs = await getPurchasedAugmentations(nsPackage);
   }
+
+  // TODO (JMG) : Add logic to dump all remaining funds into home upgrades and NeuroFlux before install augmentations
 
   logWriter.writeLine(`${logPrefix} Complete!`);
 }

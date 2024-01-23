@@ -102,7 +102,9 @@ async function getEligibleAugmentations(
             true
           );
         eligible =
-          eligible && !ownedAugs.includes(augName) && augStats[statKey] !== 1;
+          eligible &&
+          !ownedAugs.includes(augName) &&
+          (augStats[statKey] !== 1 || augName === 'The Red Pill');
       }
       if (eligible) {
         eligibleAugs.set(augName, factionName);
@@ -164,10 +166,20 @@ async function getFactionsNeedReputation(nsPackage: NetscriptPackage) {
   return factionsNeedRep;
 }
 
+async function getPurchasedAugmentations(nsPackage: NetscriptPackage) {
+  const nsLocator = nsPackage.locator;
+  const singularityApi = nsLocator.singularity;
+
+  const allAugs = await singularityApi['getOwnedAugmentations'](true);
+  const installedAugs = await singularityApi['getOwnedAugmentations'](false);
+  return allAugs.slice(installedAugs.length); // Purchased augmentations are always at the end of the allAugs array
+}
+
 export {
   attendCourse,
   backdoorHost,
   getRemainingPrograms,
   getEligibleAugmentations,
   getFactionsNeedReputation,
+  getPurchasedAugmentations,
 };
