@@ -114,6 +114,8 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
 
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
+  const gangApi = nsLocator.gang;
+  const corpApi = nsLocator.corporation;
 
   let attackTargets = filterHostsCanHack(
     netscript,
@@ -152,11 +154,18 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
   let homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
   let factionsNeedRep = await getFactionsNeedReputation(nsPackage);
   while (factionsNeedRep.size > 0) {
-    let gangInfo = await nsLocator.gang['getGangInformation']();
-    let corpInfo = await nsLocator.corporation['getCorporation']();
+    let gangInfo = (await gangApi['inGang']())
+      ? await gangApi['getGangInformation']()
+      : undefined;
+    let corpInfo = (await corpApi['hasCorporation']())
+      ? await corpApi['getCorporation']()
+      : undefined;
     homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
 
-    if (gangInfo.moneyGainRate > 0 || corpInfo.dividendEarnings > 0) {
+    if (
+      (gangInfo && gangInfo.moneyGainRate > 0) ||
+      (corpInfo && corpInfo.dividendEarnings > 0)
+    ) {
       logWriter.writeLine(
         `${logPrefix} Running faction reputation farm script...`
       );
@@ -187,16 +196,20 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
       });
 
       logWriter.writeLine(
-        `${logPrefix} Waiting for sufficient available RAM for WGWH batch attacks...`
+        `${logPrefix} Waiting for sufficient available RAM for WGWH batch attacks or for a secondary income source...`
       );
       while (
         homeServerInfo.maxRam < BATCH_ATTACK_RAM_NEEDED ||
-        gangInfo.moneyGainRate > 0 ||
-        corpInfo.dividendEarnings > 0
+        (gangInfo && gangInfo.moneyGainRate <= 0) ||
+        (corpInfo && corpInfo.dividendEarnings <= 0)
       ) {
         await netscript.asleep(WAIT_DELAY);
-        gangInfo = await nsLocator.gang['getGangInformation']();
-        corpInfo = await nsLocator.corporation['getCorporation']();
+        gangInfo = (await gangApi['inGang']())
+          ? await gangApi['getGangInformation']()
+          : undefined;
+        corpInfo = (await corpApi['hasCorporation']())
+          ? await corpApi['getCorporation']()
+          : undefined;
         homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
       }
 
@@ -220,10 +233,17 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
       logWriter.writeLine(
         `${logPrefix} Waiting for secondary income (gang or corporation)...`
       );
-      while (gangInfo.moneyGainRate > 0 || corpInfo.dividendEarnings > 0) {
+      while (
+        (gangInfo && gangInfo.moneyGainRate <= 0) ||
+        (corpInfo && corpInfo.dividendEarnings <= 0)
+      ) {
         await netscript.asleep(WAIT_DELAY);
-        gangInfo = await nsLocator.gang['getGangInformation']();
-        corpInfo = await nsLocator.corporation['getCorporation']();
+        gangInfo = (await gangApi['inGang']())
+          ? await gangApi['getGangInformation']()
+          : undefined;
+        corpInfo = (await corpApi['hasCorporation']())
+          ? await corpApi['getCorporation']()
+          : undefined;
       }
 
       logWriter.writeLine(`${logPrefix} Killing WGWH batch attack scripts...`);
