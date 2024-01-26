@@ -1,4 +1,4 @@
-import {CrimeTask, NS} from '@ns';
+import {CrimeTask, NS, StudyTask} from '@ns';
 
 import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
@@ -60,16 +60,20 @@ import {
   CMD_FLAG_TASK_FOCUS,
   TASK_FOCUS_RESPECT,
 } from '/scripts/gang-manager';
+import {FARM_FACTION_REPUTATION_SCRIPT} from '/scripts/farm-factionRep';
 
 import {FactionName} from '/scripts/data/faction-enums';
 import {FactionData} from '/scripts/data/faction-data';
 import {ProgramData} from '/scripts/data/program-data';
 import {UniversityName} from '/scripts/data/university-enums';
-import {HOME_SERVER_NAME, NETSCRIPT_SERVER_NAME} from '/scripts/common/shared';
+import {DivisionNames} from '/scripts/data/corporation-enums';
+import {
+  HOME_SERVER_NAME,
+  NETSCRIPT_SERVER_NAME,
+  SCRIPTS_DIR,
+} from '/scripts/common/shared';
 
 import {sendMessage} from '/scripts/comms/event-comms';
-import {WgwhManagerConfigEvent} from '/scripts/comms/events/wgwh-manager-config-event';
-import {FarmHackExpConfigEvent} from '/scripts/comms/events/farm-hackExp-config-event';
 import {GangManagerConfigEvent} from '/scripts/comms/events/gang-manager-config-event';
 
 import {
@@ -78,6 +82,7 @@ import {
   scanWideNetwork,
 } from '/scripts/workflows/recon';
 import {
+  NEUROFLUX_NAME,
   attendCourse,
   backdoorHost,
   getEligibleAugmentations,
@@ -86,14 +91,14 @@ import {
   getRemainingPrograms,
 } from '/scripts/workflows/singularity';
 import {killWorkerScripts} from '/scripts/workflows/orchestration';
-import {DivisionNames} from '/scripts/data/corporation-enums';
-import {FARM_FACTION_REPUTATION_SCRIPT} from '/scripts/farm-factionRep';
+
+const SINGULARITY_AUTO_SCRIPT = `${SCRIPTS_DIR}/singularity-auto.js`;
 
 const MODULE_NAME = 'singularity-starter';
 const SUBSCRIBER_NAME = 'singularity-starter';
 
-const TAIL_X_POS = 1180;
-const TAIL_Y_POS = 150;
+const TAIL_X_POS = 1405;
+const TAIL_Y_POS = 35;
 const TAIL_WIDTH = 850;
 const TAIL_HEIGHT = 565;
 
@@ -107,8 +112,17 @@ const BATCH_ATTACK_RAM_NEEDED = 8000; //8TB
 const GANG_KARMA_REQ = -54000;
 const CORP_FUNDS_REQ = 150e9; // 150b
 const CORP_DIVIDENDS_RATE = 0.1; // 10%
-const MAX_AUGMENTATIONS = 20;
+const MAX_AUGMENTATIONS = 40;
 
+/* Hacking Task Overview
+ *   - Run HackExp Farm until sufficient targets for attack
+ *   - Until max augmentations are purchased
+ *     @ If factions need reputation & active secondary income source then run Reputation Farm
+ *     @ If sufficient RAM for Batch Attacks then run WGWH Batch Attack
+ *     @ Else run WGWH Serial Attack
+ *   - Run WGWH Batch Attack
+ *   - Complete
+ */
 async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
   const logPrefix = 'Hacking -';
 
@@ -152,8 +166,9 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
   }
 
   let homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
-  let factionsNeedRep = await getFactionsNeedReputation(nsPackage);
-  while (factionsNeedRep.size > 0) {
+  const purchasedAugs = await getPurchasedAugmentations(nsPackage);
+  while (purchasedAugs.length < MAX_AUGMENTATIONS) {
+    let factionsNeedRep = await getFactionsNeedReputation(nsPackage);
     let gangInfo = (await gangApi['inGang']())
       ? await gangApi['getGangInformation']()
       : undefined;
@@ -163,8 +178,9 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
     homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
 
     if (
-      (gangInfo && gangInfo.moneyGainRate > 0) ||
-      (corpInfo && corpInfo.dividendEarnings > 0)
+      factionsNeedRep.size > 0 &&
+      ((gangInfo && gangInfo.moneyGainRate > 0) ||
+        (corpInfo && corpInfo.dividendEarnings > 0))
     ) {
       logWriter.writeLine(
         `${logPrefix} Running faction reputation farm script...`
@@ -255,7 +271,6 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
     }
 
     await netscript.asleep(WAIT_DELAY);
-    factionsNeedRep = await getFactionsNeedReputation(nsPackage);
   }
 
   homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
@@ -299,6 +314,17 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
+/* Work Task Overview
+ *   - Until sufficient karma for gang or hacking programs remain
+ *     @ Create next available hacking program
+ *     @ If karma insufficient for gang then perform crime
+ *     @ Else attend Algorithms course at ZD Institue
+ *   - Until max augmentations are purchased
+ *     @ If factions require reputation then perform faction work
+ *     @ Else attend Algorithms course at ZD Institue
+ *   - Attend Algorithms course at ZD Institue
+ *   - Complete
+ */
 async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
   const logPrefix = 'Work -';
 
@@ -324,7 +350,7 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
         );
         // Note : The createProgram() function returns a boolean to indicate if the job assignment was successful
         while (
-          netscript.singularity.getCurrentWork()?.type === 'CREATE_PROGRAM'
+          (await singularityApi['getCurrentWork']())?.type === 'CREATE_PROGRAM'
         ) {
           await netscript.asleep(WAIT_DELAY);
         }
@@ -336,21 +362,23 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
       }
     }
 
+    const currentWork = (await singularityApi['getCurrentWork']()) as
+      | CrimeTask
+      | StudyTask
+      | undefined;
     if (currentKarma > GANG_KARMA_REQ) {
-      const currentWork = (await singularityApi['getCurrentWork']()) as
-        | CrimeTask
-        | undefined;
+      const crimeTask = currentWork as CrimeTask | undefined;
       const crimeJob =
         (await singularityApi['getCrimeChance']('Homicide')) >= 0.8
           ? 'Homicide'
           : 'Mug';
-      if (!currentWork || currentWork.crimeType !== crimeJob) {
+      if (crimeTask?.crimeType !== crimeJob) {
         logWriter.writeLine(
           `${logPrefix} Committing crime for cash & karma : ${crimeJob}`
         );
         await singularityApi['commitCrime'](crimeJob);
       }
-    } else {
+    } else if (currentWork?.type !== 'CLASS') {
       logWriter.writeLine(
         `${logPrefix} Taking Algorithms course at ZB Institute...`
       );
@@ -370,18 +398,32 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
     `${logPrefix} Earning reputation for factions to buy augmentations...`
   );
   let purchasedAugs = await getPurchasedAugmentations(nsPackage);
-  let factionsNeedRep = await getFactionsNeedReputation(nsPackage);
-  while (purchasedAugs.length < MAX_AUGMENTATIONS && factionsNeedRep.size > 0) {
-    const [factionName, neededRep] = Array.from(factionsNeedRep.entries())[0];
+  while (purchasedAugs.length < MAX_AUGMENTATIONS) {
+    let factionsNeedRep = await getFactionsNeedReputation(nsPackage);
+    const currentWork = (await singularityApi['getCurrentWork']()) as
+      | StudyTask
+      | undefined;
+    if (factionsNeedRep.size > 0) {
+      const [factionName, neededRep] = Array.from(factionsNeedRep.entries())[0];
 
-    logWriter.writeLine(
-      `${logPrefix} Earning ${netscript.formatNumber(
-        neededRep
-      )} reputation for faction : ${factionName}`
-    );
-    await singularityApi['workForFaction'](factionName, 'hacking');
-    while ((await singularityApi['getFactionRep'](factionName)) < neededRep) {
-      await netscript.asleep(WAIT_DELAY);
+      logWriter.writeLine(
+        `${logPrefix} Earning ${netscript.formatNumber(
+          neededRep
+        )} reputation for faction : ${factionName}`
+      );
+      await singularityApi['workForFaction'](factionName, 'hacking');
+      while ((await singularityApi['getFactionRep'](factionName)) < neededRep) {
+        await netscript.asleep(WAIT_DELAY);
+      }
+    } else if (currentWork?.type !== 'CLASS') {
+      logWriter.writeLine(
+        `${logPrefix} Taking Algorithms course at ZB Institute...`
+      );
+      await attendCourse(
+        nsPackage,
+        UniversityName.ZB,
+        netscript.enums.UniversityClassType.algorithms
+      );
     }
 
     await netscript.asleep(WAIT_DELAY);
@@ -400,6 +442,12 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
+/* Factions Task Overview
+ *   - While there are unjoined factions
+ *     @ Accept any pending faction invites for known factions
+ *     @ Install any available backdoors needed for faction invitations
+ *   - Complete
+ */
 async function handleFactions(nsPackage: NetscriptPackage, logWriter: Logger) {
   const logPrefix = 'Faction -';
 
@@ -431,6 +479,7 @@ async function handleFactions(nsPackage: NetscriptPackage, logWriter: Logger) {
       const factionData = FactionData[factionName];
       if (
         factionData.server &&
+        netscript.hasRootAccess(factionData.server) &&
         netscript.getServerRequiredHackingLevel(factionData.server) <=
           playerInfo.skills.hacking
       ) {
@@ -469,38 +518,11 @@ async function handleFactions(nsPackage: NetscriptPackage, logWriter: Logger) {
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
-async function handleLambdaServer(netscript: NS, logWriter: Logger) {
-  const logPrefix = 'Lambda -';
-
-  if (!netscript.serverExists(NETSCRIPT_SERVER_NAME)) {
-    logWriter.writeLine(`${logPrefix} Running lambda server manager script...`);
-    runScript(netscript, SERVER_LAMBDA_SCRIPT, {tempScript: true});
-
-    logWriter.writeLine(
-      `${logPrefix} Waiting for Lambda Server to be purchased...`
-    );
-    while (!netscript.serverExists(NETSCRIPT_SERVER_NAME)) {
-      await netscript.asleep(WAIT_DELAY);
-    }
-  }
-
-  const attackTargets = filterHostsCanHack(
-    netscript,
-    scanWideNetwork(netscript, false, true, false, true)
-  );
-  if (attackTargets.length < ATTACK_TARGETS_NEED) {
-    logWriter.writeLine(
-      `${logPrefix} Including home server in hack exp farm...`
-    );
-    await sendMessage(new FarmHackExpConfigEvent({includeHomeAttacker: true}));
-  } else {
-    logWriter.writeLine(`${logPrefix} Including home server in wgwh attack...`);
-    await sendMessage(new WgwhManagerConfigEvent({includeHomeAttacker: true}));
-  }
-
-  logWriter.writeLine(`${logPrefix} Complete!`);
-}
-
+/* Tor Purchases Task Overview
+ *   @ Purchase Tor Router
+ *   @ Purchase all remaining hacking programs from DarkWeb
+ *   @ Complete
+ */
 async function handleTorPurchases(
   nsPackage: NetscriptPackage,
   logWriter: Logger
@@ -520,7 +542,7 @@ async function handleTorPurchases(
   }
   logWriter.writeLine(`${logPrefix} Tor Router purchased.`);
 
-  logWriter.writeLine(`${logPrefix} Waiting to purchase DarkWeb Programs...`);
+  logWriter.writeLine(`${logPrefix} Waiting to purchase DarkWeb programs...`);
   let remainingPrograms = getRemainingPrograms(netscript);
   while (remainingPrograms.length > 0) {
     for (const programName of remainingPrograms) {
@@ -942,14 +964,51 @@ async function handleAugmentations(
     purchasedAugs = await getPurchasedAugmentations(nsPackage);
   }
 
-  // TODO (JMG) : Add logic to dump all remaining funds into home upgrades and NeuroFlux before install augmentations
+  logWriter.writeLine(
+    `${logPrefix} Purchasing all available Home RAM upgrades...`
+  );
+  while (await singularityApi['upgradeHomeRam']());
+
+  logWriter.writeLine(
+    `${logPrefix} Purchasing all available Home Core upgrades...`
+  );
+  while (await singularityApi['upgradeHomeCores']());
+
+  logWriter.writeLine(
+    `${logPrefix} Determining if Neuroflux Governor is available...`
+  );
+  const neurofluxFactions =
+    await singularityApi['getAugmentationFactions'](NEUROFLUX_NAME);
+  const factionDetails = await Promise.all(
+    neurofluxFactions.map(async value => {
+      return {
+        name: value,
+        reputation: await singularityApi['getFactionRep'](value),
+      };
+    })
+  );
+  const targetFaction = factionDetails
+    .sort((valueA, valueB) => valueA.reputation - valueB.reputation)
+    .at(0);
+  if (targetFaction) {
+    logWriter.writeLine(
+      `${logPrefix} Dumping remaining funds into Neuroflux Governor...`
+    );
+    while (
+      singularityApi['purchaseAugmentation'](targetFaction.name, NEUROFLUX_NAME)
+    );
+  }
+
+  logWriter.writeLine(`${logPrefix} Installing augmentations...`);
+  singularityApi['installAugmentations'](SINGULARITY_AUTO_SCRIPT);
 
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
-/** @param {NS} netscript */
 export async function main(netscript: NS) {
   const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
+  const singularityApi = nsLocator.singularity;
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
@@ -963,6 +1022,30 @@ export async function main(netscript: NS) {
   scriptLogWriter.writeLine('Running coding contract auto solver script...');
   runScript(netscript, CONTRACTS_AUTO_SCRIPT, {tempScript: true});
 
+  if (!netscript.serverExists(NETSCRIPT_SERVER_NAME)) {
+    scriptLogWriter.writeLine('Running lambda server manager script...');
+    runScript(netscript, SERVER_LAMBDA_SCRIPT, {tempScript: true});
+
+    scriptLogWriter.writeLine(
+      'Committing crime while waiting for lambda server to be purchased...'
+    );
+    while (!netscript.serverExists(NETSCRIPT_SERVER_NAME)) {
+      const currentWork = (await singularityApi['getCurrentWork']()) as
+        | CrimeTask
+        | undefined;
+      const crimeJob =
+        (await singularityApi['getCrimeChance']('Homicide')) >= 0.8
+          ? 'Homicide'
+          : 'Mug';
+      if (!currentWork || currentWork.crimeType !== crimeJob) {
+        scriptLogWriter.writeLine(`Committing crime for cash : ${crimeJob}`);
+        await singularityApi['commitCrime'](crimeJob);
+      }
+
+      await netscript.asleep(WAIT_DELAY);
+    }
+  }
+
   scriptLogWriter.writeLine('Running hacknet manager script...');
   const hacknetManagerArgs = [
     getCmdFlag(CMD_FLAG_PURCHASE_NODES),
@@ -972,9 +1055,6 @@ export async function main(netscript: NS) {
     args: hacknetManagerArgs,
     tempScript: true,
   });
-
-  scriptLogWriter.writeLine('Rooting all available hosts...');
-  runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
 
   const playerInfo = netscript.getPlayer();
   if (playerInfo.skills.hacking < 10) {
@@ -993,14 +1073,16 @@ export async function main(netscript: NS) {
     }
   }
 
+  scriptLogWriter.writeLine('Rooting all available hosts...');
+  runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
+
   scriptLogWriter.writeLine('Running concurrent tasks...');
   const concurrentTasks = [];
   concurrentTasks.push(handleHacking(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleWorkTasks(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleFactions(nsPackage, scriptLogWriter));
-  concurrentTasks.push(handleLambdaServer(netscript, scriptLogWriter));
-  concurrentTasks.push(handleTorPurchases(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleHomeUpgrades(nsPackage, scriptLogWriter));
+  concurrentTasks.push(handleTorPurchases(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleStockMarket(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleGang(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleCorporation(nsPackage, scriptLogWriter));

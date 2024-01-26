@@ -12,6 +12,8 @@ import {
 import {ProgramName} from '/scripts/data/program-enums';
 import {ProgramData} from '/scripts/data/program-data';
 
+const NEUROFLUX_NAME = 'NeuroFlux Governor';
+
 // Multiplier Property Key ; Value should be greater than 1
 const AUGMENTATION_STAT_PROPERTIES = [
   'hacking',
@@ -176,6 +178,7 @@ async function getPurchasedAugmentations(nsPackage: NetscriptPackage) {
 }
 
 export {
+  NEUROFLUX_NAME,
   attendCourse,
   backdoorHost,
   getRemainingPrograms,

@@ -13,6 +13,7 @@ import {
 
 import {initializeScript} from '/scripts/workflows/execution';
 import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
+import {NEUROFLUX_NAME} from '/scripts/workflows/singularity';
 
 const CMD_FLAG_FACTION = 'faction';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_FACTION, '']];
@@ -56,10 +57,7 @@ export async function main(netscript: NS) {
   let levelCounter: number;
   for (
     levelCounter = 0;
-    await singularityApi['purchaseAugmentation'](
-      factionName,
-      'NeuroFlux Governor'
-    );
+    await singularityApi['purchaseAugmentation'](factionName, NEUROFLUX_NAME);
     levelCounter++
   );
   terminalWriter.writeLine(

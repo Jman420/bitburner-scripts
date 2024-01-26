@@ -92,14 +92,14 @@ async function manageOrdersAndPurchases(
       nodeCost <= availableFunds
     ) {
       logWriter.writeLine(
-        `Purchasing new Hacknet Node for $${netscript.formatNumber(
+        `Purchasing new hacknet node for $${netscript.formatNumber(
           nodeCost
         )}...`
       );
       const newNodeIndex = hacknetApi.purchaseNode();
 
       logWriter.writeLine(
-        `Adding new Hacknet Node ${newNodeIndex} Upgrade Orders...`
+        `Adding new hacknet node ${newNodeIndex} upgrade orders...`
       );
       const nodeUpgradeOrders = getNodeUpgradeOrders(hacknetApi, newNodeIndex);
       sortUpgradeOrders(nodeUpgradeOrders);
