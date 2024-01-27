@@ -70,16 +70,26 @@ function getRemainingPrograms(netscript: NS) {
 
 async function getEligibleAugmentations(
   nsPackage: NetscriptPackage,
+  includeGang = true,
+  honorPrereq = true,
   sortByCost = true
 ) {
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const singularityApi = nsLocator.singularity;
+  const gangApi = nsLocator.gang;
 
   const playerInfo = netscript.getPlayer();
+  let includedFactions = playerInfo.factions;
+  if (!includeGang && (await gangApi['inGang']())) {
+    const gangInfo = await gangApi['getGangInformation']();
+    includedFactions = includedFactions.filter(
+      value => value !== gangInfo.faction
+    );
+  }
   const ownedAugs = await singularityApi['getOwnedAugmentations'](true);
   const eligibleAugs = new Map<string, string>();
-  for (const factionName of playerInfo.factions) {
+  for (const factionName of includedFactions) {
     const factionAugs =
       await singularityApi['getAugmentationsFromFaction'](factionName);
     for (const augName of factionAugs) {
@@ -97,16 +107,20 @@ async function getEligibleAugmentations(
         const statKey = AUGMENTATION_STAT_PROPERTIES[statCounter];
         const preRequisites =
           await singularityApi['getAugmentationPrereq'](augName);
-        eligible = preRequisites
-          .map(preReqName => ownedAugs.includes(preReqName))
-          .reduce(
-            (aggregateValue, currentValue) => aggregateValue && currentValue,
-            true
-          );
         eligible =
-          eligible &&
           !ownedAugs.includes(augName) &&
           (augStats[statKey] !== 1 || augName === 'The Red Pill');
+        if (honorPrereq) {
+          eligible =
+            eligible &&
+            preRequisites
+              .map(preReqName => ownedAugs.includes(preReqName))
+              .reduce(
+                (aggregateValue, currentValue) =>
+                  aggregateValue && currentValue,
+                true
+              );
+        }
       }
       if (eligible) {
         eligibleAugs.set(augName, factionName);
@@ -139,15 +153,8 @@ async function getEligibleAugmentations(
 async function getFactionsNeedReputation(nsPackage: NetscriptPackage) {
   const nsLocator = nsPackage.locator;
   const singularityApi = nsLocator.singularity;
-  const gangApi = nsLocator.gang;
 
-  let eligibleAugs = await getEligibleAugmentations(nsPackage);
-  if (await gangApi['inGang']()) {
-    const gangInfo = await gangApi['getGangInformation']();
-    eligibleAugs = eligibleAugs.filter(
-      value => value.faction !== gangInfo.faction
-    );
-  }
+  const eligibleAugs = await getEligibleAugmentations(nsPackage, false, false);
   eligibleAugs.sort(
     (valueA, valueB) =>
       valueB.reputation - valueA.reputation || valueB.price - valueA.price
