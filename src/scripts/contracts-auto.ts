@@ -32,10 +32,10 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 const MODULE_NAME = 'contracts-auto';
 const SUBSCRIBER_NAME = 'contracts-auto';
 
-const TAIL_X_POS = 840;
-const TAIL_Y_POS = 185;
-const TAIL_WIDTH = 1115;
-const TAIL_HEIGHT = 500;
+const TAIL_X_POS = 1195;
+const TAIL_Y_POS = 70;
+const TAIL_WIDTH = 985;
+const TAIL_HEIGHT = 460;
 
 const UPDATE_DELAY = 3.6e6; // 1hr
 
@@ -69,6 +69,10 @@ async function solveContracts(
     logWriter.writeLine(
       `  ${contract.hostname} - ${contract.type} : ${contract.filename} # ${contract.attemptsRemaining} ? ${solutionResult}`
     );
+    logWriter.writeLine(
+      `    Attempts remaining : ${contract.attemptsRemaining}`
+    );
+    logWriter.writeLine(`    Solution Result : ${solutionResult}`);
   }
   logWriter.writeLine(SECTION_DIVIDER);
 }

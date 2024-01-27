@@ -29,8 +29,8 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 const MODULE_NAME = 'server-lambda';
 const SUBSCRIBER_NAME = 'server-lambda';
 
-const TAIL_X_POS = 1500;
-const TAIL_Y_POS = 86;
+const TAIL_X_POS = 1015;
+const TAIL_Y_POS = 105;
 const TAIL_WIDTH = 820;
 const TAIL_HEIGHT = 380;
 

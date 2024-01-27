@@ -15,8 +15,8 @@ const React = getReactModel().reactNS;
 const MODULE_NAME = 'ui-stocks';
 const SUBSCRIBER_NAME = 'ui-stocks';
 
-const TAIL_X_POS = 900;
-const TAIL_Y_POS = 120;
+const TAIL_X_POS = 510;
+const TAIL_Y_POS = 140;
 const TAIL_WIDTH = 330;
 const TAIL_HEIGHT = 265;
 

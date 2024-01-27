@@ -58,8 +58,8 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 const MODULE_NAME = 'wgwh-serial';
 const SUBSCRIBER_NAME = 'wgwh-serial';
 
-const TAIL_X_POS = 1454;
-const TAIL_Y_POS = 115;
+const TAIL_X_POS = 1015;
+const TAIL_Y_POS = 105;
 const TAIL_WIDTH = 650;
 const TAIL_HEIGHT = 500;
 

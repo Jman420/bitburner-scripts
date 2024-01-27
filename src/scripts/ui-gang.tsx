@@ -15,8 +15,8 @@ const React = getReactModel().reactNS;
 const MODULE_NAME = 'ui-gang';
 const SUBSCRIBER_NAME = 'ui-gang';
 
-const TAIL_X_POS = 1340;
-const TAIL_Y_POS = 18;
+const TAIL_X_POS = 360;
+const TAIL_Y_POS = 175;
 const TAIL_WIDTH = 330;
 const TAIL_HEIGHT = 265;
 

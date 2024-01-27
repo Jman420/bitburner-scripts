@@ -72,8 +72,8 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 const MODULE_NAME = 'gangs-manager';
 const SUBSCRIBER_NAME = 'gangs-manager';
 
-const TAIL_X_POS = 1605;
-const TAIL_Y_POS = 48;
+const TAIL_X_POS = 690;
+const TAIL_Y_POS = 175;
 const TAIL_WIDTH = 650;
 const TAIL_HEIGHT = 415;
 

@@ -24,8 +24,8 @@ const React = getReactModel().reactNS;
 const MODULE_NAME = 'ui-wgwh';
 const SUBSCRIBER_NAME = 'ui-wgwh';
 
-const TAIL_X_POS = 645;
-const TAIL_Y_POS = 154;
+const TAIL_X_POS = 615;
+const TAIL_Y_POS = 105;
 const TAIL_WIDTH = 400;
 const TAIL_HEIGHT = 435;
 

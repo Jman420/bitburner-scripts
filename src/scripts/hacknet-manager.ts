@@ -44,7 +44,7 @@ const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
 const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const TAIL_X_POS = 1660;
-const TAIL_Y_POS = 15;
+const TAIL_Y_POS = 0;
 const TAIL_WIDTH = 670;
 const TAIL_HEIGHT = 515;
 
@@ -212,6 +212,19 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine(`Max Nodes : ${maxNodes}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
+  terminalWriter.writeLine('Initializing Hacknet Upgrade Orders...');
+  const upgradeOrders = initializeUpgradeOrders(netscript.hacknet);
+  terminalWriter.writeLine(
+    `Found ${upgradeOrders.length} available Hacknet Upgrades.`
+  );
+  terminalWriter.writeLine(SECTION_DIVIDER);
+
+  const nodeCount = netscript.hacknet.numNodes();
+  if (nodeCount >= maxNodes && upgradeOrders.length < 1) {
+    terminalWriter.writeLine('No further purchases necessary.');
+    return;
+  }
+
   managerConfig = {
     purchaseNodes: purchaseNodes,
     purchaseUpgrades: purchaseUpgrades,
@@ -235,13 +248,6 @@ export async function main(netscript: NS) {
     handleHacknetConfigRequest,
     scriptLogWriter
   );
-
-  scriptLogWriter.writeLine('Initializing Hacknet Upgrade Orders...');
-  const upgradeOrders = initializeUpgradeOrders(netscript.hacknet);
-  scriptLogWriter.writeLine(
-    `Found ${upgradeOrders.length} available Hacknet Upgrades.`
-  );
-  scriptLogWriter.writeLine(SECTION_DIVIDER);
 
   await manageOrdersAndPurchases(netscript, upgradeOrders, scriptLogWriter);
 }

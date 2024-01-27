@@ -15,8 +15,8 @@ const React = getReactModel().reactNS;
 const MODULE_NAME = 'ui-hacknet';
 const SUBSCRIBER_NAME = 'ui-hacknet';
 
-const TAIL_X_POS = 1320;
-const TAIL_Y_POS = 52;
+const TAIL_X_POS = 1330;
+const TAIL_Y_POS = 0;
 const TAIL_WIDTH = 330;
 const TAIL_HEIGHT = 265;
 
