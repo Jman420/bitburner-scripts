@@ -13,6 +13,7 @@ import {
 
 import {initializeScript} from '/scripts/workflows/execution';
 import {parseNumber} from '/scripts/workflows/parsing';
+import {repDonationAmount} from '/scripts/workflows/formulas';
 
 const CMD_FLAG_REPUTATION = 'reputation';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_REPUTATION, '']];
@@ -36,8 +37,7 @@ export async function main(netscript: NS) {
   logWriter.writeLine(SECTION_DIVIDER);
 
   const repAmount = parseNumber(targetReputation);
-  const player = netscript.getPlayer();
-  const donationAmount = (repAmount * 10 ** 6) / player.mults.faction_rep;
+  const donationAmount = repDonationAmount(netscript, repAmount);
 
   logWriter.writeLine(
     `Required donation : $${netscript.formatNumber(

@@ -64,8 +64,9 @@ async function manageOutputPricing(
 
   logWriter.writeLine('Setting up output pricing...');
   const corpApi = nsLocator.corporation;
-  const corporationInfo = await corpApi['getCorporation']();
-  for (const divisionName of corporationInfo.divisions.filter(
+  const corpInfo = await corpApi['getCorporation']();
+  const hasBonusTime = (await corpApi['getBonusTime']()) > 0;
+  for (const divisionName of corpInfo.divisions.filter(
     value => !value.includes(FRAUD_DIVISION_NAME_PREFIX)
   )) {
     logWriter.writeLine(`  Division : ${divisionName} ...`);
@@ -80,12 +81,14 @@ async function manageOutputPricing(
           cityName,
           producedMaterial
         );
-        const optimalPrice = await getOptimalSellingPrice(
-          nsLocator,
-          divisionName,
-          cityName,
-          materialInfo
-        );
+        const optimalPrice = !hasBonusTime
+          ? await getOptimalSellingPrice(
+              nsLocator,
+              divisionName,
+              cityName,
+              materialInfo
+            )
+          : undefined;
         const optimalPriceString = optimalPrice
           ? optimalPrice.toString()
           : 'MP';

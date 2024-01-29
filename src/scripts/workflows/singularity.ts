@@ -11,8 +11,11 @@ import {
 } from '/scripts/netscript-services/netscript-locator';
 import {ProgramName} from '/scripts/data/program-enums';
 import {ProgramData} from '/scripts/data/program-data';
+import {favorToRep, repToFavor} from '/scripts/workflows/formulas';
+import {FactionData} from '/scripts/data/faction-data';
 
-const NEUROFLUX_NAME = 'NeuroFlux Governor';
+const NEUROFLUX_AUGMENTATION_NAME = 'NeuroFlux Governor';
+const RED_PILL_AUGMENTATION_NAME = 'The Red Pill';
 
 // Multiplier Property Key ; Value should be greater than 1
 const AUGMENTATION_STAT_PROPERTIES = [
@@ -175,6 +178,62 @@ async function getFactionsNeedReputation(nsPackage: NetscriptPackage) {
   return factionsNeedRep;
 }
 
+async function getFactionsNeedFavor(nsPackage: NetscriptPackage) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+  const singularityApi = nsLocator.singularity;
+
+  const favorToDonate = netscript.getFavorToDonate();
+  const repForDonateFavor = favorToRep(favorToDonate);
+  const eligibleFactions = Object.values(FactionData).filter(
+    value => value.criticalPath
+  );
+  const factionsNeedFavor = new Map<string, number>(); // Key : factionName ; Value : reputation requirement
+  for (const factionInfo of eligibleFactions) {
+    const factionName = factionInfo.name;
+    const currentFactionFavor =
+      await singularityApi['getFactionFavor'](factionName);
+    const currentFactionRep =
+      await singularityApi['getFactionRep'](factionName);
+    if (
+      currentFactionFavor < favorToDonate &&
+      currentFactionRep < repForDonateFavor
+    ) {
+      factionsNeedFavor.set(factionName, repForDonateFavor - currentFactionRep);
+    }
+  }
+
+  return factionsNeedFavor;
+}
+
+async function factionsNeedReset(nsPackage: NetscriptPackage) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+  const singularityApi = nsLocator.singularity;
+
+  const playerInfo = netscript.getPlayer();
+  const factionsInfo = await Promise.all(
+    playerInfo.factions.map(async value => {
+      return {
+        name: value,
+        favor: await singularityApi['getFactionFavor'](value),
+        reputation: await singularityApi['getFactionRep'](value),
+      };
+    })
+  );
+  const factionsNeedReset = factionsInfo
+    .map(
+      value =>
+        (value.favor < 66 && repToFavor(value.reputation) >= 66) ||
+        (value.favor >= 66 &&
+          value.favor < 150 &&
+          repToFavor(value.reputation) >= 150)
+    )
+    .reduce((aggregateValue, currentValue) => aggregateValue || currentValue);
+
+  return factionsNeedReset;
+}
+
 async function getPurchasedAugmentations(nsPackage: NetscriptPackage) {
   const nsLocator = nsPackage.locator;
   const singularityApi = nsLocator.singularity;
@@ -185,11 +244,14 @@ async function getPurchasedAugmentations(nsPackage: NetscriptPackage) {
 }
 
 export {
-  NEUROFLUX_NAME,
+  NEUROFLUX_AUGMENTATION_NAME,
+  RED_PILL_AUGMENTATION_NAME,
   attendCourse,
   backdoorHost,
   getRemainingPrograms,
   getEligibleAugmentations,
   getFactionsNeedReputation,
+  getFactionsNeedFavor,
+  factionsNeedReset,
   getPurchasedAugmentations,
 };

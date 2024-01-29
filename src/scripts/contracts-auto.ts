@@ -37,7 +37,7 @@ const TAIL_Y_POS = 70;
 const TAIL_WIDTH = 985;
 const TAIL_HEIGHT = 460;
 
-const UPDATE_DELAY = 3.6e6; // 1hr
+const UPDATE_DELAY = 9e5; // 15min
 
 async function solveContracts(
   nsPackage: NetscriptPackage,
@@ -67,7 +67,7 @@ async function solveContracts(
       }
     }
     logWriter.writeLine(
-      `  ${contract.hostname} - ${contract.type} : ${contract.filename} # ${contract.attemptsRemaining} ? ${solutionResult}`
+      `  ${contract.hostname} - ${contract.type} : ${contract.filename}`
     );
     logWriter.writeLine(
       `    Attempts remaining : ${contract.attemptsRemaining}`

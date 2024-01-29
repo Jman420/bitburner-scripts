@@ -3,24 +3,29 @@ export const FactionData: {
     name: string;
     server?: string;
     gangEligible?: boolean;
+    criticalPath?: boolean;
   };
 } = {
   // Hacking
   CyberSec: {
     name: 'CyberSec',
     server: 'CSEC',
+    criticalPath: true,
   },
   NiteSec: {
     name: 'NiteSec',
     server: 'avmnite-02h',
+    criticalPath: true,
   },
   'The Black Hand': {
     name: 'The Black Hand',
     server: 'I.I.I.I',
+    criticalPath: true,
   },
   BitRunners: {
     name: 'BitRunners',
     server: 'run4theh111z',
+    criticalPath: true,
   },
 
   // Crime
@@ -36,6 +41,7 @@ export const FactionData: {
   // End Game
   Daedalus: {
     name: 'Daedalus',
+    criticalPath: true,
   },
   'The Covenant': {
     name: 'The Covenant',

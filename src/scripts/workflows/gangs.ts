@@ -437,6 +437,15 @@ async function getCriminalTaskDetails(
   return result;
 }
 
+async function gangHasIncome(nsLocator: NetscriptLocator) {
+  const gangApi = nsLocator.gang;
+
+  const gangInfo = (await gangApi['inGang']())
+    ? await gangApi['getGangInformation']()
+    : undefined;
+  return gangInfo && gangInfo.moneyGainRate > 0;
+}
+
 export {
   TaskFocus,
   GangManagerConfig,
@@ -472,4 +481,5 @@ export {
   getRespectGainIncrease,
   getWantedLevelGainIncrease,
   getCriminalTaskDetails,
+  gangHasIncome,
 };

@@ -51,10 +51,15 @@ import {
   CORP_ROUND3_SCRIPT,
   CORP_ROUND4_SCRIPT,
   ROUND1_ADVERT_LEVEL as CORP_ROUND1_ADVERT_LEVEL,
+  corpHasIncome,
 } from '/scripts/workflows/corporation-shared';
 import {REQUIRED_FUNDS as CORP_ROUND2_REQUIRED_FUNDS} from '/scripts/corp-round2';
 import {REQUIRED_FUNDS as CORP_ROUND3_REQUIRED_FUNDS} from '/scripts/corp-round3';
-import {GANG_MANAGER_SCRIPT, TaskFocus} from '/scripts/workflows/gangs';
+import {
+  GANG_MANAGER_SCRIPT,
+  TaskFocus,
+  gangHasIncome,
+} from '/scripts/workflows/gangs';
 import {
   CMD_FLAG_PURCHASE_AUGMENTATIONS,
   CMD_FLAG_TASK_FOCUS,
@@ -82,15 +87,19 @@ import {
   scanWideNetwork,
 } from '/scripts/workflows/recon';
 import {
-  NEUROFLUX_NAME,
+  NEUROFLUX_AUGMENTATION_NAME,
+  RED_PILL_AUGMENTATION_NAME,
   attendCourse,
   backdoorHost,
+  factionsNeedReset,
   getEligibleAugmentations,
+  getFactionsNeedFavor,
   getFactionsNeedReputation,
   getPurchasedAugmentations,
   getRemainingPrograms,
 } from '/scripts/workflows/singularity';
 import {killWorkerScripts} from '/scripts/workflows/orchestration';
+import {repDonationAmount} from '/scripts/workflows/formulas';
 
 const SINGULARITY_AUTO_SCRIPT = `${SCRIPTS_DIR}/singularity-auto.js`;
 
@@ -112,7 +121,6 @@ const BATCH_ATTACK_RAM_NEEDED = 8000; //8TB
 const GANG_KARMA_REQ = -54000;
 const CORP_FUNDS_REQ = 150e9; // 150b
 const CORP_DIVIDENDS_RATE = 0.1; // 10%
-const MAX_AUGMENTATIONS = 40;
 
 /* Hacking Task Overview
  *   - Run HackExp Farm until sufficient targets for attack
@@ -128,8 +136,6 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
 
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
-  const gangApi = nsLocator.gang;
-  const corpApi = nsLocator.corporation;
 
   let attackTargets = filterHostsCanHack(
     netscript,
@@ -166,26 +172,25 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
   }
 
   let homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
-  const purchasedAugs = await getPurchasedAugmentations(nsPackage);
-  while (purchasedAugs.length < MAX_AUGMENTATIONS) {
-    let factionsNeedRep = await getFactionsNeedReputation(nsPackage);
-    let gangInfo = (await gangApi['inGang']())
-      ? await gangApi['getGangInformation']()
-      : undefined;
-    let corpInfo = (await corpApi['hasCorporation']())
-      ? await corpApi['getCorporation']()
-      : undefined;
+  let factionsNeedRep = await getFactionsNeedReputation(nsPackage);
+  let factionsNeedFavor = await getFactionsNeedFavor(nsPackage);
+  while (factionsNeedRep.size > 0 || factionsNeedFavor.size > 0) {
     homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
 
     if (
       factionsNeedRep.size > 0 &&
-      ((gangInfo && gangInfo.moneyGainRate > 0) ||
-        (corpInfo && corpInfo.dividendEarnings > 0))
+      ((await gangHasIncome(nsLocator)) || (await corpHasIncome(nsLocator)))
     ) {
       logWriter.writeLine(
         `${logPrefix} Running faction reputation farm script...`
       );
-      runScript(netscript, FARM_FACTION_REPUTATION_SCRIPT, {tempScript: true});
+      const hackExpFarmArgs = netscript.serverExists(NETSCRIPT_SERVER_NAME)
+        ? [getCmdFlag(CMD_FLAG_INCLUDE_HOME)]
+        : undefined;
+      runScript(netscript, FARM_FACTION_REPUTATION_SCRIPT, {
+        args: hackExpFarmArgs,
+        tempScript: true,
+      });
 
       logWriter.writeLine(
         `${logPrefix} Waiting for all factions reputation to be satisifed...`
@@ -212,21 +217,19 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
       });
 
       logWriter.writeLine(
-        `${logPrefix} Waiting for sufficient available RAM for WGWH batch attacks or for a secondary income source...`
+        `${logPrefix} Waiting for sufficient available RAM for WGWH batch attacks or for a secondary income source and factions need reputation...`
       );
       while (
-        homeServerInfo.maxRam < BATCH_ATTACK_RAM_NEEDED ||
-        (gangInfo && gangInfo.moneyGainRate <= 0) ||
-        (corpInfo && corpInfo.dividendEarnings <= 0)
+        homeServerInfo.maxRam < BATCH_ATTACK_RAM_NEEDED &&
+        (factionsNeedRep.size < 1 ||
+          (factionsNeedRep.size > 0 &&
+            !(await gangHasIncome(nsLocator)) &&
+            !(await corpHasIncome(nsLocator))))
       ) {
         await netscript.asleep(WAIT_DELAY);
-        gangInfo = (await gangApi['inGang']())
-          ? await gangApi['getGangInformation']()
-          : undefined;
-        corpInfo = (await corpApi['hasCorporation']())
-          ? await corpApi['getCorporation']()
-          : undefined;
+
         homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
+        factionsNeedRep = await getFactionsNeedReputation(nsPackage);
       }
 
       logWriter.writeLine(`${logPrefix} Killing WGWH serial attack scripts...`);
@@ -247,19 +250,16 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
       });
 
       logWriter.writeLine(
-        `${logPrefix} Waiting for secondary income (gang or corporation)...`
+        `${logPrefix} Waiting for secondary income source and factions need reputation...`
       );
       while (
-        (gangInfo && gangInfo.moneyGainRate <= 0) ||
-        (corpInfo && corpInfo.dividendEarnings <= 0)
+        factionsNeedRep.size < 1 ||
+        (factionsNeedRep.size > 0 &&
+          !(await gangHasIncome(nsLocator)) &&
+          !(await corpHasIncome(nsLocator)))
       ) {
         await netscript.asleep(WAIT_DELAY);
-        gangInfo = (await gangApi['inGang']())
-          ? await gangApi['getGangInformation']()
-          : undefined;
-        corpInfo = (await corpApi['hasCorporation']())
-          ? await corpApi['getCorporation']()
-          : undefined;
+        factionsNeedRep = await getFactionsNeedReputation(nsPackage);
       }
 
       logWriter.writeLine(`${logPrefix} Killing WGWH batch attack scripts...`);
@@ -271,6 +271,8 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
     }
 
     await netscript.asleep(WAIT_DELAY);
+    factionsNeedRep = await getFactionsNeedReputation(nsPackage);
+    factionsNeedFavor = await getFactionsNeedFavor(nsPackage);
   }
 
   homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
@@ -346,7 +348,7 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
         (await singularityApi['createProgram'](programData.name))
       ) {
         logWriter.writeLine(
-          `${logPrefix} Crime put on hold to create ${programKey}...`
+          `${logPrefix} Work put on hold to create ${programKey}...`
         );
         // Note : The createProgram() function returns a boolean to indicate if the job assignment was successful
         while (
@@ -380,7 +382,7 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
       }
     } else if (currentWork?.type !== 'CLASS') {
       logWriter.writeLine(
-        `${logPrefix} Taking Algorithms course at ZB Institute...`
+        `${logPrefix} Taking Algorithms course at ZB Institute to boost Int...`
       );
       await attendCourse(
         nsPackage,
@@ -397,9 +399,9 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
   logWriter.writeLine(
     `${logPrefix} Earning reputation for factions to buy augmentations...`
   );
-  let purchasedAugs = await getPurchasedAugmentations(nsPackage);
-  while (purchasedAugs.length < MAX_AUGMENTATIONS) {
-    let factionsNeedRep = await getFactionsNeedReputation(nsPackage);
+  let factionsNeedFavor = await getFactionsNeedFavor(nsPackage);
+  let factionsNeedRep = await getFactionsNeedReputation(nsPackage);
+  while (factionsNeedFavor.size > 0 || factionsNeedRep.size > 0) {
     const currentWork = (await singularityApi['getCurrentWork']()) as
       | StudyTask
       | undefined;
@@ -427,7 +429,7 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
     }
 
     await netscript.asleep(WAIT_DELAY);
-    purchasedAugs = await getPurchasedAugmentations(nsPackage);
+    factionsNeedFavor = await getFactionsNeedFavor(nsPackage);
     factionsNeedRep = await getFactionsNeedReputation(nsPackage);
   }
 
@@ -792,7 +794,6 @@ async function handleCorporation(
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const corpApi = nsLocator.corporation;
-  const singularityApi = nsLocator.singularity;
 
   if (!(await corpApi['hasCorporation']())) {
     logWriter.writeLine(
@@ -889,35 +890,67 @@ async function handleCorporation(
     await corpApi['issueDividends'](CORP_DIVIDENDS_RATE);
   }
 
-  logWriter.writeLine(`${logPrefix} Bribing factions for reputation...`);
+  logWriter.writeLine(`${logPrefix} Complete!`);
+}
+
+async function handleBribes(nsPackage: NetscriptPackage, logWriter: Logger) {
+  const logPrefix = 'Bribes -';
+
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+  const singularityApi = nsLocator.singularity;
+  const corpApi = nsLocator.corporation;
+
+  logWriter.writeLine(
+    `${logPrefix} Waiting for factions to bribe for reputation...`
+  );
+  const corpConstants = await corpApi['getConstants']();
+  const favorToDonate = netscript.getFavorToDonate();
+
   let factionsNeedRep = await getFactionsNeedReputation(nsPackage);
-  while (factionsNeedRep.size > 0) {
+  let factionsNeedFavor = await getFactionsNeedFavor(nsPackage);
+  while (factionsNeedRep.size > 0 || factionsNeedFavor.size > 0) {
     for (const [factionName, totalNeededRep] of factionsNeedRep.entries()) {
       const currentFactionRep =
         await singularityApi['getFactionRep'](factionName);
-      const bribeAmount = (totalNeededRep - currentFactionRep) * 1e9; // 1rep -> $1b
+      const requiredRep = totalNeededRep - currentFactionRep;
 
-      logWriter.writeLine(
-        `${logPrefix} Waiting for $${netscript.formatNumber(
-          bribeAmount
-        )} funds to bribe ${factionName}...`
-      );
-      corpInfo = await corpApi['getCorporation']();
-      while (corpInfo.funds < bribeAmount) {
-        await netscript.asleep(WAIT_DELAY);
-        corpInfo = await corpApi['getCorporation']();
+      if (await corpApi['hasCorporation']()) {
+        const corpBribeAmount =
+          requiredRep * corpConstants.bribeAmountPerReputation;
+        if (await corpApi['bribe'](factionName, corpBribeAmount)) {
+          logWriter.writeLine(
+            `${logPrefix} Corporation bribed faction ${factionName} with $${netscript.formatNumber(
+              corpBribeAmount
+            )} for ${netscript.formatNumber(requiredRep)}`
+          );
+          continue;
+        }
       }
 
-      logWriter.writeLine(
-        `${logPrefix} Bribing ${factionName} with $${netscript.formatNumber(
-          bribeAmount
-        )}...`
-      );
-      await corpApi['bribe'](factionName, bribeAmount);
+      const currentFactionFavor =
+        await singularityApi['getFactionFavor'](factionName);
+      if (currentFactionFavor >= favorToDonate) {
+        const playerBribeAmount = repDonationAmount(netscript, requiredRep);
+        if (
+          await singularityApi['donateToFaction'](
+            factionName,
+            playerBribeAmount
+          )
+        ) {
+          logWriter.writeLine(
+            `${logPrefix} Player bribed faction ${factionName} with $${netscript.formatNumber(
+              playerBribeAmount
+            )} for ${netscript.formatNumber(requiredRep)}`
+          );
+          continue;
+        }
+      }
     }
 
     await netscript.asleep(WAIT_DELAY);
     factionsNeedRep = await getFactionsNeedReputation(nsPackage);
+    factionsNeedFavor = await getFactionsNeedFavor(nsPackage);
   }
 
   logWriter.writeLine(`${logPrefix} Complete!`);
@@ -934,12 +967,16 @@ async function handleAugmentations(
   const singularityApi = nsLocator.singularity;
 
   logWriter.writeLine(
-    `${logPrefix} Waiting for sufficient funds to purchase augmentations...`
+    `${logPrefix} Waiting for sufficient funds & reputation to purchase augmentations...`
   );
-  let purchasedAugs = await getPurchasedAugmentations(nsPackage);
-  while (purchasedAugs.length < MAX_AUGMENTATIONS) {
-    let eligibleAugmentations = await getEligibleAugmentations(nsPackage);
-
+  let eligibleAugmentations = await getEligibleAugmentations(nsPackage);
+  let factionsNeedFavor = await getFactionsNeedFavor(nsPackage);
+  let factionsNeedRep = await getFactionsNeedReputation(nsPackage);
+  while (
+    eligibleAugmentations.length > 0 ||
+    factionsNeedFavor.size > 0 ||
+    factionsNeedRep.size > 0
+  ) {
     for (
       let augmentationDetails = eligibleAugmentations.shift();
       augmentationDetails &&
@@ -961,46 +998,96 @@ async function handleAugmentations(
     }
 
     await netscript.asleep(WAIT_DELAY);
+    eligibleAugmentations = await getEligibleAugmentations(nsPackage);
+    factionsNeedFavor = await getFactionsNeedFavor(nsPackage);
+    factionsNeedRep = await getFactionsNeedReputation(nsPackage);
+  }
+
+  logWriter.writeLine(`${logPrefix} Complete!`);
+}
+
+async function handleSoftReset(nsPackage: NetscriptPackage, logWriter: Logger) {
+  const logPrefix = 'SoftReset -';
+
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+  const singularityApi = nsLocator.singularity;
+
+  logWriter.writeLine(
+    `${logPrefix} Waiting for faction with reputation for reset or The Red Pill or all available augmentations to be purchased...`
+  );
+  let factionNeedsReset = await factionsNeedReset(nsPackage);
+  let purchasedAugs = await getPurchasedAugmentations(nsPackage);
+  let eligibleAugmentations = await getEligibleAugmentations(nsPackage);
+  while (
+    !factionNeedsReset &&
+    !purchasedAugs.includes(RED_PILL_AUGMENTATION_NAME) &&
+    eligibleAugmentations.length > 0
+  ) {
+    await netscript.asleep(WAIT_DELAY);
+    factionNeedsReset = await factionsNeedReset(nsPackage);
     purchasedAugs = await getPurchasedAugmentations(nsPackage);
+    eligibleAugmentations = await getEligibleAugmentations(nsPackage);
   }
 
   logWriter.writeLine(
-    `${logPrefix} Purchasing all available Home RAM upgrades...`
+    `${logPrefix} Purchasing any remaining eligible augmentations...`
   );
-  while (await singularityApi['upgradeHomeRam']());
+  for (const augInfo of eligibleAugmentations) {
+    if (
+      await singularityApi['purchaseAugmentation'](
+        augInfo.faction,
+        augInfo.name
+      )
+    ) {
+      logWriter.writeLine(`${logPrefix}   Purchased ${augInfo.name}`);
+    }
+  }
 
-  logWriter.writeLine(
-    `${logPrefix} Purchasing all available Home Core upgrades...`
-  );
-  while (await singularityApi['upgradeHomeCores']());
-
-  logWriter.writeLine(
-    `${logPrefix} Determining if Neuroflux Governor is available...`
-  );
-  const neurofluxFactions =
-    await singularityApi['getAugmentationFactions'](NEUROFLUX_NAME);
-  const factionDetails = await Promise.all(
-    neurofluxFactions.map(async value => {
-      return {
-        name: value,
-        reputation: await singularityApi['getFactionRep'](value),
-      };
-    })
-  );
-  const targetFaction = factionDetails
-    .sort((valueA, valueB) => valueA.reputation - valueB.reputation)
-    .at(0);
-  if (targetFaction) {
+  purchasedAugs = await getPurchasedAugmentations(nsPackage);
+  if (purchasedAugs.length > 0) {
     logWriter.writeLine(
-      `${logPrefix} Dumping remaining funds into Neuroflux Governor...`
+      `${logPrefix} Purchasing all available Home RAM upgrades...`
     );
-    while (
-      singularityApi['purchaseAugmentation'](targetFaction.name, NEUROFLUX_NAME)
-    );
-  }
+    while (await singularityApi['upgradeHomeRam']());
 
-  logWriter.writeLine(`${logPrefix} Installing augmentations...`);
-  singularityApi['installAugmentations'](SINGULARITY_AUTO_SCRIPT);
+    logWriter.writeLine(
+      `${logPrefix} Purchasing all available Home Core upgrades...`
+    );
+    while (await singularityApi['upgradeHomeCores']());
+
+    logWriter.writeLine(
+      `${logPrefix} Determining if Neuroflux Governor is available...`
+    );
+    const neurofluxFactions = await singularityApi['getAugmentationFactions'](
+      NEUROFLUX_AUGMENTATION_NAME
+    );
+    const factionDetails = await Promise.all(
+      neurofluxFactions.map(async value => {
+        return {
+          name: value,
+          reputation: await singularityApi['getFactionRep'](value),
+        };
+      })
+    );
+    const targetFaction = factionDetails
+      .sort((valueA, valueB) => valueA.reputation - valueB.reputation)
+      .at(0);
+    if (targetFaction) {
+      logWriter.writeLine(
+        `${logPrefix} Dumping remaining funds into Neuroflux Governor...`
+      );
+      while (
+        await singularityApi['purchaseAugmentation'](
+          targetFaction.name,
+          NEUROFLUX_AUGMENTATION_NAME
+        )
+      );
+    }
+
+    logWriter.writeLine(`${logPrefix} Installing augmentations...`);
+    singularityApi['installAugmentations'](SINGULARITY_AUTO_SCRIPT);
+  }
 
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
@@ -1086,7 +1173,9 @@ export async function main(netscript: NS) {
   concurrentTasks.push(handleStockMarket(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleGang(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleCorporation(nsPackage, scriptLogWriter));
+  concurrentTasks.push(handleBribes(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleAugmentations(nsPackage, scriptLogWriter));
+  concurrentTasks.push(handleSoftReset(nsPackage, scriptLogWriter));
   await Promise.all(concurrentTasks);
 
   scriptLogWriter.writeLine('Singularity automation completed!');

@@ -1,6 +1,7 @@
 import {CityName, CorpMaterialName} from '@ns';
 
 import {ResearchName} from '/scripts/data/corporation-enums';
+import {NetscriptLocator} from '/scripts/netscript-services/netscript-locator';
 
 interface TeaPartyConfig {
   energyLimit: number;
@@ -51,6 +52,15 @@ const RAW_MAX_DIVISIONS = 20;
 
 const ROUND1_ADVERT_LEVEL = 2;
 
+async function corpHasIncome(nsLocator: NetscriptLocator) {
+  const corpApi = nsLocator.corporation;
+
+  const corpInfo = (await corpApi['hasCorporation']())
+    ? await corpApi['getCorporation']()
+    : undefined;
+  return corpInfo && corpInfo.dividendEarnings <= 0;
+}
+
 export {
   TeaPartyConfig,
   ProductLifecycleConfig,
@@ -74,4 +84,5 @@ export {
   FRAUD_DIVISION_NAME_PREFIX,
   RAW_MAX_DIVISIONS,
   ROUND1_ADVERT_LEVEL,
+  corpHasIncome,
 };

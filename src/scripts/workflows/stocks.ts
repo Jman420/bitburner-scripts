@@ -88,6 +88,26 @@ async function getStockPosition(nsLocator: NetscriptLocator, symbol: string) {
   return result;
 }
 
+async function getPortfolioValue(nsLocator: NetscriptLocator) {
+  const stockApi = nsLocator.stock;
+
+  let portfolioValue = 0;
+  const allSymbols = await stockApi['getSymbols']();
+  for (const stockSymbol of allSymbols) {
+    const stockPosition = await getStockPosition(nsLocator, stockSymbol);
+    const askPrice = await stockApi['getAskPrice'](stockSymbol);
+    const bidPrice = await stockApi['getBidPrice'](stockSymbol);
+
+    const longValue = stockPosition.longShares * askPrice;
+    const shortValue = stockPosition.shortShares * bidPrice;
+
+    portfolioValue += longValue;
+    portfolioValue += shortValue;
+  }
+
+  return portfolioValue;
+}
+
 async function buyPosition(
   symbol: string,
   price: number,
@@ -120,6 +140,21 @@ async function sellPosition(
   const saleTotal = salePrice * shares;
   const saleCost = purchasePrice * shares + COMMISSION * 2;
   return saleTotal - saleCost;
+}
+
+async function sellPortfolio(nsLocator: NetscriptLocator) {
+  const stockApi = nsLocator.stock;
+
+  const allSymbols = await stockApi['getSymbols']();
+  for (const stockSymbol of allSymbols) {
+    const stockPosition = await getStockPosition(nsLocator, stockSymbol);
+    if (stockPosition.longShares > 0) {
+      await stockApi['sellStock'](stockSymbol, stockPosition.longShares);
+    }
+    if (stockPosition.shortShares > 0) {
+      await stockApi['sellShort'](stockSymbol, stockPosition.shortShares);
+    }
+  }
 }
 
 async function getHostnamesFromSymbol(
@@ -170,7 +205,9 @@ export {
   TOTAL_STOCKS,
   runStockTicker,
   getStockPosition,
+  getPortfolioValue,
   buyPosition,
   sellPosition,
+  sellPortfolio,
   getHostnamesFromSymbol,
 };
