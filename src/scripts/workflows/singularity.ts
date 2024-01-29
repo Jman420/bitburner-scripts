@@ -224,12 +224,16 @@ async function factionsNeedReset(nsPackage: NetscriptPackage) {
   const factionsNeedReset = factionsInfo
     .map(
       value =>
-        (value.favor < 66 && repToFavor(value.reputation) >= 66) ||
+        (value.favor < 66 &&
+          value.favor + repToFavor(value.reputation) >= 66) ||
         (value.favor >= 66 &&
           value.favor < 150 &&
-          repToFavor(value.reputation) >= 150)
+          value.favor + repToFavor(value.reputation) >= 150)
     )
-    .reduce((aggregateValue, currentValue) => aggregateValue || currentValue);
+    .reduce(
+      (aggregateValue, currentValue) => aggregateValue || currentValue,
+      false
+    );
 
   return factionsNeedReset;
 }

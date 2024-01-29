@@ -6,7 +6,9 @@ async function getPlayerTotalValue(nsPackage: NetscriptPackage) {
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
-  const portfolioValue = await getPortfolioValue(nsLocator);
+  const portfolioValue = netscript.stock.hasTIXAPIAccess()
+    ? await getPortfolioValue(nsLocator)
+    : 0;
   const playerInfo = netscript.getPlayer();
   return playerInfo.money + portfolioValue;
 }

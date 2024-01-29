@@ -145,6 +145,10 @@ async function sellPosition(
 async function sellPortfolio(nsLocator: NetscriptLocator) {
   const stockApi = nsLocator.stock;
 
+  if (!(await stockApi['hasTIXAPIAccess']())) {
+    return;
+  }
+
   const allSymbols = await stockApi['getSymbols']();
   for (const stockSymbol of allSymbols) {
     const stockPosition = await getStockPosition(nsLocator, stockSymbol);

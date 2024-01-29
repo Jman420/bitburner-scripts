@@ -41,6 +41,7 @@ import {
 import {
   STOCKS_TICKER_4SIGMA_SCRIPT,
   STOCKS_TICKER_HISTORY_SCRIPT,
+  sellPortfolio,
 } from '/scripts/workflows/stocks';
 import {
   CMD_FLAG_AUTO_INVESTMENT,
@@ -100,6 +101,11 @@ import {
 } from '/scripts/workflows/singularity';
 import {killWorkerScripts} from '/scripts/workflows/orchestration';
 import {repDonationAmount} from '/scripts/workflows/formulas';
+import {getPlayerTotalValue} from '/scripts/workflows/player';
+import {StocksTraderConfigEvent} from '/scripts/comms/events/stocks-trader-config-event';
+import {FarmHackExpConfigEvent} from '/scripts/comms/events/farm-hackExp-config-event';
+import {WgwhManagerConfigEvent} from '/scripts/comms/events/wgwh-manager-config-event';
+import {FarmFactionRepConfigEvent} from '/scripts/comms/events/farm-factionRep-config-event';
 
 const SINGULARITY_AUTO_SCRIPT = `${SCRIPTS_DIR}/singularity-auto.js`;
 
@@ -114,20 +120,22 @@ const TAIL_HEIGHT = 565;
 const WAIT_DELAY = 500;
 
 const MIN_HACK_LEVEL = 10;
-const ATTACK_TARGETS_NEED = 10;
+const ATTACK_TARGETS_NEED = 8;
 const HOME_TARGET_RAM = 500000; // 500TB
 const HOME_TARGET_CORES = 6;
 const BATCH_ATTACK_RAM_NEEDED = 8000; //8TB
 const GANG_KARMA_REQ = -54000;
 const CORP_FUNDS_REQ = 150e9; // 150b
 const CORP_DIVIDENDS_RATE = 0.1; // 10%
+const BYPASS_LAMBDA_HOME_RAM = 1024; // 1TB
 
 /* Hacking Task Overview
  *   - Run HackExp Farm until sufficient targets for attack
- *   - Until max augmentations are purchased
+ *   - Until all factions have required reputation & favor
  *     @ If factions need reputation & active secondary income source then run Reputation Farm
  *     @ If sufficient RAM for Batch Attacks then run WGWH Batch Attack
  *     @ Else run WGWH Serial Attack
+ *   - If insufficient RAM for WGWH Batch Attacks then run WGWH Serial Attack and wait for sufficient RAM for WGWH Batch Attacks
  *   - Run WGWH Batch Attack
  *   - Complete
  */
@@ -316,12 +324,39 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
+/** Lambda Server Overview
+ *   - Wait until the Lambda Server is purchased
+ *   - Include home server in currently active hacking attacks
+ *   - Complete
+ */
+async function handleLambdaServer(netscript: NS, logWriter: Logger) {
+  const logPrefix = 'Lambda -';
+
+  if (!netscript.serverExists(NETSCRIPT_SERVER_NAME)) {
+    logWriter.writeLine(
+      `${logPrefix} Waiting for Lambda Server to be purchased...`
+    );
+    while (!netscript.serverExists(NETSCRIPT_SERVER_NAME)) {
+      await netscript.asleep(WAIT_DELAY);
+    }
+  }
+
+  logWriter.writeLine(
+    `${logPrefix} Including home server in current hacking activities...`
+  );
+  sendMessage(new FarmHackExpConfigEvent({includeHomeAttacker: true}));
+  sendMessage(new WgwhManagerConfigEvent({includeHomeAttacker: true}));
+  sendMessage(new FarmFactionRepConfigEvent({includeHome: true}));
+
+  logWriter.writeLine(`${logPrefix} Complete!`);
+}
+
 /* Work Task Overview
  *   - Until sufficient karma for gang or hacking programs remain
  *     @ Create next available hacking program
  *     @ If karma insufficient for gang then perform crime
  *     @ Else attend Algorithms course at ZD Institue
- *   - Until max augmentations are purchased
+ *   - Until all factions have needed reputation & favor
  *     @ If factions require reputation then perform faction work
  *     @ Else attend Algorithms course at ZD Institue
  *   - Attend Algorithms course at ZD Institue
@@ -360,6 +395,7 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
         logWriter.writeLine(
           `${logPrefix} Rooting all newly available hosts...`
         );
+        await killWorkerScripts(nsPackage, HOME_SERVER_NAME);
         runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
       }
     }
@@ -554,6 +590,7 @@ async function handleTorPurchases(
           `${logPrefix} Purchased program from DarkWeb : ${programName}`
         );
         logWriter.writeLine(`${logPrefix} Rooting newly available servers...`);
+        await killWorkerScripts(nsPackage, HOME_SERVER_NAME);
         runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
       }
     }
@@ -565,6 +602,10 @@ async function handleTorPurchases(
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
+/* Home Upgrades Overview
+ *   - Purchase Home RAM & Core updates when available until their limits are met
+ *   - Complete
+ */
 async function handleHomeUpgrades(
   nsPackage: NetscriptPackage,
   logWriter: Logger
@@ -611,6 +652,12 @@ async function handleHomeUpgrades(
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
+/* Stock Market Overview
+ *   - Purchase all stock market access upgrades in cost order
+ *     @ After purchasing API access run the historical ticker & stock trader scripts
+ *     @ After purchasing 4S API access run the 4Sigma ticker
+ *   - Complete
+ */
 async function handleStockMarket(
   nsPackage: NetscriptPackage,
   logWriter: Logger
@@ -620,14 +667,18 @@ async function handleStockMarket(
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const stocksApi = nsLocator.stock;
+
+  const stocksConstants = netscript.stock.getConstants();
   const accessUpgrades = [
     {
       name: 'Stock Exchange Account',
+      cost: stocksConstants.WSEAccountCost,
       hasUpgradeFunc: netscript.stock.hasWSEAccount,
       purchaseFunc: stocksApi['purchaseWseAccount'],
     },
     {
       name: 'TIX API Access',
+      cost: stocksConstants.TIXAPICost,
       hasUpgradeFunc: netscript.stock.hasTIXAPIAccess,
       purchaseFunc: stocksApi['purchaseTixApi'],
       scriptHandler: async () => {
@@ -643,11 +694,13 @@ async function handleStockMarket(
     },
     {
       name: '4Sigma Market Data',
+      cost: stocksConstants.MarketData4SCost,
       hasUpgradeFunc: netscript.stock.has4SData,
       purchaseFunc: stocksApi['purchase4SMarketData'],
     },
     {
       name: '4Sigma API Access',
+      cost: stocksConstants.MarketDataTixApi4SCost,
       hasUpgradeFunc: netscript.stock.has4SDataTIXAPI,
       purchaseFunc: stocksApi['purchase4SMarketDataTixApi'],
       scriptHandler: async () => {
@@ -674,16 +727,24 @@ async function handleStockMarket(
   while (accessUpgrades.length > 0) {
     while (
       accessUpgrades.length > 0 &&
-      (await accessUpgrades[0].purchaseFunc())
+      (accessUpgrades[0].hasUpgradeFunc() ||
+        (await getPlayerTotalValue(nsPackage)) >= accessUpgrades[0].cost)
     ) {
       const purchasedUpgrade = accessUpgrades.shift();
       if (!purchasedUpgrade) {
         continue;
       }
 
-      logWriter.writeLine(
-        `${logPrefix} Purchased stock market access : ${purchasedUpgrade.name}`
-      );
+      if (!purchasedUpgrade.hasUpgradeFunc()) {
+        logWriter.writeLine(
+          `${logPrefix} Purchasing stock market access : ${purchasedUpgrade.name}`
+        );
+        await sendMessage(new StocksTraderConfigEvent({purchaseStocks: false}));
+        await sellPortfolio(nsLocator);
+        await purchasedUpgrade.purchaseFunc();
+        sendMessage(new StocksTraderConfigEvent({purchaseStocks: true}));
+      }
+
       if (purchasedUpgrade.scriptHandler) {
         await purchasedUpgrade.scriptHandler();
       }
@@ -695,6 +756,15 @@ async function handleStockMarket(
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
+/* Gang Overview
+ *   - Wait until karma reaches gang limit (-54000)
+ *   - Wait for membership in a gang eligible faction
+ *   - Create gang with a gang eligible faction
+ *   - Run gang manager script with purchase augmentations & task focus respect args
+ *   - Wait until gang sufficient gang reputation to purchase eligible augmentations
+ *   - Switch gang manager task focus to money
+ *   - Complete
+ */
 async function handleGang(nsPackage: NetscriptPackage, logWriter: Logger) {
   const logPrefix = 'Gang -';
 
@@ -785,6 +855,17 @@ async function handleGang(nsPackage: NetscriptPackage, logWriter: Logger) {
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
+/* Corporation Overview
+ *   - If no corporation exists then
+ *     @ Wait until player has sufficient funds to start corporation
+ *     @ Create corporation
+ *   - Run applicable corporation investment round automation scripts
+ *     @ Wait until investment round automation script completes
+ *     @ Wait until sufficient corporation funds to fund next investment round automation
+ *   - Take corporation public (issue 0 shares)
+ *   - Run corporation public automation script
+ *   - Issue dividends
+ */
 async function handleCorporation(
   nsPackage: NetscriptPackage,
   logWriter: Logger
@@ -797,16 +878,19 @@ async function handleCorporation(
 
   if (!(await corpApi['hasCorporation']())) {
     logWriter.writeLine(
-      `${logPrefix} Waiting for sufficient funds to create corporation : ${netscript.formatNumber(
+      `${logPrefix} Waiting for sufficient player funds to create corporation : ${netscript.formatNumber(
         CORP_FUNDS_REQ
       )}`
     );
-    while (netscript.getPlayer().money <= CORP_FUNDS_REQ) {
+    while ((await getPlayerTotalValue(nsPackage)) <= CORP_FUNDS_REQ) {
       await netscript.asleep(WAIT_DELAY);
     }
 
     logWriter.writeLine(`${logPrefix} Creating corporation...`);
+    await sendMessage(new StocksTraderConfigEvent({purchaseStocks: false}));
+    await sellPortfolio(nsLocator);
     await corpApi['createCorporation']('Corp', true);
+    sendMessage(new StocksTraderConfigEvent({purchaseStocks: true}));
   }
 
   const corpRoundScriptArgs = [
@@ -893,6 +977,13 @@ async function handleCorporation(
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
+/* Bribes Overview
+ *   - Until all factions have sufficient reputation & favor
+ *     @ For every faction that needs reputation
+ *       @ If corporation is able to bribe faction then do so
+ *       @ Else if player is able to bribe faction then do so
+ *   - Complete
+ */
 async function handleBribes(nsPackage: NetscriptPackage, logWriter: Logger) {
   const logPrefix = 'Bribes -';
 
@@ -904,7 +995,6 @@ async function handleBribes(nsPackage: NetscriptPackage, logWriter: Logger) {
   logWriter.writeLine(
     `${logPrefix} Waiting for factions to bribe for reputation...`
   );
-  const corpConstants = await corpApi['getConstants']();
   const favorToDonate = netscript.getFavorToDonate();
 
   let factionsNeedRep = await getFactionsNeedReputation(nsPackage);
@@ -916,6 +1006,7 @@ async function handleBribes(nsPackage: NetscriptPackage, logWriter: Logger) {
       const requiredRep = totalNeededRep - currentFactionRep;
 
       if (await corpApi['hasCorporation']()) {
+        const corpConstants = await corpApi['getConstants']();
         const corpBribeAmount =
           requiredRep * corpConstants.bribeAmountPerReputation;
         if (await corpApi['bribe'](factionName, corpBribeAmount)) {
@@ -956,6 +1047,11 @@ async function handleBribes(nsPackage: NetscriptPackage, logWriter: Logger) {
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
+/* Augmentations Overview
+ *   - While factions need reputation or favor and eligbile augmentations remain
+ *     @ Purchase augmentations in reducing cost order
+ *   - Complete
+ */
 async function handleAugmentations(
   nsPackage: NetscriptPackage,
   logWriter: Logger
@@ -1006,6 +1102,16 @@ async function handleAugmentations(
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
+/* Soft Reset Overview
+ *   - Wait until a faction needs reset for favor, all augmentations are purchased or The Red Pill is purchased
+ *   - Purchase any remaining augmentations in reducing cost order
+ *   - If augmentations were purchased then
+ *     @ Dump any remaining funds into Home RAM
+ *     @ Dump any remaining funds into Home Cores
+ *     @ Dump any remaining funds into Neuroflux Governor (if available)
+ *     @ Install augmentations & restart singularity-auto script
+ *   - Complete
+ */
 async function handleSoftReset(nsPackage: NetscriptPackage, logWriter: Logger) {
   const logPrefix = 'SoftReset -';
 
@@ -1014,7 +1120,7 @@ async function handleSoftReset(nsPackage: NetscriptPackage, logWriter: Logger) {
   const singularityApi = nsLocator.singularity;
 
   logWriter.writeLine(
-    `${logPrefix} Waiting for faction with reputation for reset or The Red Pill or all available augmentations to be purchased...`
+    `${logPrefix} Waiting for faction to need reset for favor or The Red Pill or all available augmentations to be purchased...`
   );
   let factionNeedsReset = await factionsNeedReset(nsPackage);
   let purchasedAugs = await getPurchasedAugmentations(nsPackage);
@@ -1028,6 +1134,14 @@ async function handleSoftReset(nsPackage: NetscriptPackage, logWriter: Logger) {
     factionNeedsReset = await factionsNeedReset(nsPackage);
     purchasedAugs = await getPurchasedAugmentations(nsPackage);
     eligibleAugmentations = await getEligibleAugmentations(nsPackage);
+  }
+
+  if (netscript.stock.hasTIXAPIAccess()) {
+    logWriter.writeLine(
+      `${logPrefix} Killing stock trader script and selling stock portfolio...`
+    );
+    await nsLocator['scriptKill'](STOCKS_TRADER_SCRIPT, HOME_SERVER_NAME);
+    await sellPortfolio(nsLocator);
   }
 
   logWriter.writeLine(
@@ -1086,12 +1200,36 @@ async function handleSoftReset(nsPackage: NetscriptPackage, logWriter: Logger) {
     }
 
     logWriter.writeLine(`${logPrefix} Installing augmentations...`);
-    singularityApi['installAugmentations'](SINGULARITY_AUTO_SCRIPT);
+    await singularityApi['installAugmentations'](SINGULARITY_AUTO_SCRIPT);
+  } else {
+    logWriter.writeLine(
+      `${logPrefix} Unable to soft reset; no augmentations purchased.`
+    );
+    if (netscript.stock.hasTIXAPIAccess()) {
+      logWriter.writeLine(`${logPrefix} Restarting stock trader...`);
+      await killWorkerScripts(nsPackage);
+      runScript(netscript, STOCKS_TRADER_SCRIPT, {
+        args: [getCmdFlag(CMD_FLAG_FUNDS_LIMIT_PERCENT), 0],
+        tempScript: true,
+      });
+    }
   }
 
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
+/* Startup Overview
+ *   - Run coding contract solver script
+ *   - If lambda server doesn't exist
+ *     @ Run lambda server manager script
+ *     @ Perform crime until lambda server exists
+ *   - Run hacknet manager script
+ *   - If player's hack level is under 10 then
+ *     @ Attend free compSci classes
+ *     @ Wait until hack level is at least 10
+ *   - Root all available hosts
+ *   - Run concurrent tasks
+ */
 export async function main(netscript: NS) {
   const nsPackage = getLocatorPackage(netscript);
   const nsLocator = nsPackage.locator;
@@ -1116,7 +1254,11 @@ export async function main(netscript: NS) {
     scriptLogWriter.writeLine(
       'Committing crime while waiting for lambda server to be purchased...'
     );
-    while (!netscript.serverExists(NETSCRIPT_SERVER_NAME)) {
+    let homeServer = await nsLocator['getServer'](HOME_SERVER_NAME);
+    while (
+      !netscript.serverExists(NETSCRIPT_SERVER_NAME) &&
+      homeServer.maxRam < BYPASS_LAMBDA_HOME_RAM
+    ) {
       const currentWork = (await singularityApi['getCurrentWork']()) as
         | CrimeTask
         | undefined;
@@ -1130,6 +1272,7 @@ export async function main(netscript: NS) {
       }
 
       await netscript.asleep(WAIT_DELAY);
+      homeServer = await nsLocator['getServer'](HOME_SERVER_NAME);
     }
   }
 
@@ -1166,6 +1309,7 @@ export async function main(netscript: NS) {
   scriptLogWriter.writeLine('Running concurrent tasks...');
   const concurrentTasks = [];
   concurrentTasks.push(handleHacking(nsPackage, scriptLogWriter));
+  concurrentTasks.push(handleLambdaServer(netscript, scriptLogWriter));
   concurrentTasks.push(handleWorkTasks(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleFactions(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleHomeUpgrades(nsPackage, scriptLogWriter));

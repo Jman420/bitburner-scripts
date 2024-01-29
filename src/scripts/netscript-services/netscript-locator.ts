@@ -28,8 +28,8 @@ type NetscriptExtended = NS & {heart: {break(): number}};
 
 const DEBUG = false;
 
-const MAX_RETRIES = 10;
-const RETRY_DELAY = 500;
+const MAX_RETRIES = 20;
+const RETRY_DELAY = 250;
 const DEFAULT_MEMBER_PATH = 'netscript';
 
 const SERVICE_SCRIPTS_PATH = 'scripts/netscript-services';
