@@ -158,10 +158,16 @@ function handleUpdateConfigEvent(
   }
 
   logWriter.writeLine('Update settings event received...');
-  managerConfig = eventData.config;
+  const newConfig = eventData.config;
+  managerConfig.purchaseNodes =
+    newConfig.purchaseNodes ?? managerConfig.purchaseNodes;
+  managerConfig.purchaseUpgrades =
+    newConfig.purchaseUpgrades ?? managerConfig.purchaseUpgrades;
+  managerConfig.fundsLimit = newConfig.fundsLimit ?? managerConfig.fundsLimit;
   if (managerConfig.fundsLimit < 0) {
     managerConfig.fundsLimit = netscript.getPlayer().money * fundsLimitPercent;
   }
+  managerConfig.maxNodes = newConfig.maxNodes ?? managerConfig.maxNodes;
   if (managerConfig.maxNodes < 0) {
     managerConfig.maxNodes = DEFAULT_MAX_NODES;
   }
@@ -173,6 +179,7 @@ function handleUpdateConfigEvent(
   logWriter.writeLine(
     `  Funds Limit : $${netscript.formatNumber(managerConfig.fundsLimit)}`
   );
+  logWriter.writeLine(`  Max Nodes : ${managerConfig.maxNodes}`);
 }
 
 function handleHacknetConfigRequest(

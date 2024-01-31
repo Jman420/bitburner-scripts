@@ -14,6 +14,7 @@ import {openTail} from '/scripts/workflows/ui';
 
 import {
   NetscriptExtended,
+  NetscriptLocator,
   NetscriptPackage,
   getLocatorPackage,
 } from '/scripts/netscript-services/netscript-locator';
@@ -106,6 +107,7 @@ import {StocksTraderConfigEvent} from '/scripts/comms/events/stocks-trader-confi
 import {FarmHackExpConfigEvent} from '/scripts/comms/events/farm-hackExp-config-event';
 import {WgwhManagerConfigEvent} from '/scripts/comms/events/wgwh-manager-config-event';
 import {FarmFactionRepConfigEvent} from '/scripts/comms/events/farm-factionRep-config-event';
+import {HacknetManagerConfigEvent} from '/scripts/comms/events/hacknet-manager-config-event';
 
 const SINGULARITY_AUTO_SCRIPT = `${SCRIPTS_DIR}/singularity-auto.js`;
 
@@ -128,6 +130,43 @@ const GANG_KARMA_REQ = -54000;
 const CORP_FUNDS_REQ = 150e9; // 150b
 const CORP_DIVIDENDS_RATE = 0.1; // 10%
 const BYPASS_LAMBDA_HOME_RAM = 1024; // 1TB
+
+let purchasesEnabled = true;
+
+async function togglePurchases(enablePurchases: boolean) {
+  purchasesEnabled = enablePurchases;
+  const messageTasks = [];
+  messageTasks.push(
+    sendMessage(
+      new HacknetManagerConfigEvent({
+        purchaseNodes: enablePurchases,
+        purchaseUpgrades: enablePurchases,
+      })
+    )
+  );
+  messageTasks.push(
+    sendMessage(new StocksTraderConfigEvent({purchaseStocks: enablePurchases}))
+  );
+  messageTasks.push(
+    sendMessage(
+      new GangManagerConfigEvent({
+        buyAugmentations: enablePurchases,
+        buyEquipment: enablePurchases,
+      })
+    )
+  );
+  await Promise.allSettled(messageTasks);
+}
+
+async function handlePurchase(
+  nsLocator: NetscriptLocator,
+  purchaseFunc: () => void | Promise<void>
+) {
+  await togglePurchases(false);
+  await sellPortfolio(nsLocator);
+  await purchaseFunc();
+  await togglePurchases(true);
+}
 
 /* Hacking Task Overview
  *   - Run HackExp Farm until sufficient targets for attack
@@ -355,7 +394,6 @@ async function handleLambdaServer(netscript: NS, logWriter: Logger) {
  *   - Until sufficient karma for gang or hacking programs remain
  *     @ Create next available hacking program
  *     @ If karma insufficient for gang then perform crime
- *     @ Else attend Algorithms course at ZD Institue
  *   - Until all factions have needed reputation & favor
  *     @ If factions require reputation then perform faction work
  *     @ Else attend Algorithms course at ZD Institue
@@ -416,15 +454,6 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
         );
         await singularityApi['commitCrime'](crimeJob);
       }
-    } else if (currentWork?.type !== 'CLASS') {
-      logWriter.writeLine(
-        `${logPrefix} Taking Algorithms course at ZB Institute to boost Int...`
-      );
-      await attendCourse(
-        nsPackage,
-        UniversityName.ZB,
-        netscript.enums.UniversityClassType.algorithms
-      );
     }
 
     await netscript.asleep(WAIT_DELAY);
@@ -556,15 +585,12 @@ async function handleFactions(nsPackage: NetscriptPackage, logWriter: Logger) {
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
-/* Tor Purchases Task Overview
+/* Tor Task Overview
  *   @ Purchase Tor Router
  *   @ Purchase all remaining hacking programs from DarkWeb
  *   @ Complete
  */
-async function handleTorPurchases(
-  nsPackage: NetscriptPackage,
-  logWriter: Logger
-) {
+async function handleTor(nsPackage: NetscriptPackage, logWriter: Logger) {
   const logPrefix = 'Tor -';
 
   const nsLocator = nsPackage.locator;
@@ -585,10 +611,19 @@ async function handleTorPurchases(
   while (remainingPrograms.length > 0) {
     for (const programName of remainingPrograms) {
       const programData = ProgramData[programName];
-      if (await singularityApi['purchaseProgram'](programData.name)) {
+
+      if (
+        purchasesEnabled &&
+        (await getPlayerTotalValue(nsPackage)) >=
+          (await singularityApi['getDarkwebProgramCost'](programData.name))
+      ) {
         logWriter.writeLine(
-          `${logPrefix} Purchased program from DarkWeb : ${programName}`
+          `${logPrefix} Purchasing program from DarkWeb : ${programName}`
         );
+        await handlePurchase(nsLocator, async () => {
+          await singularityApi['purchaseProgram'](programData.name);
+        });
+
         logWriter.writeLine(`${logPrefix} Rooting newly available servers...`);
         await killWorkerScripts(nsPackage, HOME_SERVER_NAME);
         runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
@@ -606,7 +641,7 @@ async function handleTorPurchases(
  *   - Purchase Home RAM & Core updates when available until their limits are met
  *   - Complete
  */
-async function handleHomeUpgrades(
+async function handleHomeServer(
   nsPackage: NetscriptPackage,
   logWriter: Logger
 ) {
@@ -625,9 +660,16 @@ async function handleHomeUpgrades(
     homeServerInfo.cpuCores < HOME_TARGET_CORES
   ) {
     while (
+      purchasesEnabled &&
       homeServerInfo.maxRam < HOME_TARGET_RAM &&
-      (await singularityApi['upgradeHomeRam']())
+      (await getPlayerTotalValue(nsPackage)) >=
+        (await singularityApi['getUpgradeHomeRamCost']())
     ) {
+      logWriter.writeLine(`${logPrefix} Upgrading home server RAM...`);
+      await handlePurchase(nsLocator, async () => {
+        await singularityApi['upgradeHomeRam']();
+      });
+
       homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
       logWriter.writeLine(
         `${logPrefix} Upgraded home RAM to ${netscript.formatRam(
@@ -636,9 +678,16 @@ async function handleHomeUpgrades(
       );
     }
     while (
+      purchasesEnabled &&
       homeServerInfo.cpuCores < HOME_TARGET_CORES &&
-      (await singularityApi['upgradeHomeCores']())
+      (await getPlayerTotalValue(nsPackage)) >=
+        (await singularityApi['getUpgradeHomeCoresCost']())
     ) {
+      logWriter.writeLine(`${logPrefix} Upgrading home server RAM...`);
+      await handlePurchase(nsLocator, async () => {
+        await singularityApi['upgradeHomeCores']();
+      });
+
       homeServerInfo = await nsLocator['getServer'](HOME_SERVER_NAME);
       logWriter.writeLine(
         `${logPrefix} Upgraded home cores to ${homeServerInfo.cpuCores}`
@@ -726,6 +775,7 @@ async function handleStockMarket(
   );
   while (accessUpgrades.length > 0) {
     while (
+      purchasesEnabled &&
       accessUpgrades.length > 0 &&
       (accessUpgrades[0].hasUpgradeFunc() ||
         (await getPlayerTotalValue(nsPackage)) >= accessUpgrades[0].cost)
@@ -739,10 +789,9 @@ async function handleStockMarket(
         logWriter.writeLine(
           `${logPrefix} Purchasing stock market access : ${purchasedUpgrade.name}`
         );
-        await sendMessage(new StocksTraderConfigEvent({purchaseStocks: false}));
-        await sellPortfolio(nsLocator);
-        await purchasedUpgrade.purchaseFunc();
-        sendMessage(new StocksTraderConfigEvent({purchaseStocks: true}));
+        await handlePurchase(nsLocator, async () => {
+          await purchasedUpgrade.purchaseFunc();
+        });
       }
 
       if (purchasedUpgrade.scriptHandler) {
@@ -882,15 +931,17 @@ async function handleCorporation(
         CORP_FUNDS_REQ
       )}`
     );
-    while ((await getPlayerTotalValue(nsPackage)) <= CORP_FUNDS_REQ) {
+    while (
+      !purchasesEnabled ||
+      (await getPlayerTotalValue(nsPackage)) <= CORP_FUNDS_REQ
+    ) {
       await netscript.asleep(WAIT_DELAY);
     }
 
     logWriter.writeLine(`${logPrefix} Creating corporation...`);
-    await sendMessage(new StocksTraderConfigEvent({purchaseStocks: false}));
-    await sellPortfolio(nsLocator);
-    await corpApi['createCorporation']('Corp', true);
-    sendMessage(new StocksTraderConfigEvent({purchaseStocks: true}));
+    await handlePurchase(nsLocator, async () => {
+      await corpApi['createCorporation']('Corp', true);
+    });
   }
 
   const corpRoundScriptArgs = [
@@ -1021,21 +1072,23 @@ async function handleBribes(nsPackage: NetscriptPackage, logWriter: Logger) {
 
       const currentFactionFavor =
         await singularityApi['getFactionFavor'](factionName);
-      if (currentFactionFavor >= favorToDonate) {
-        const playerBribeAmount = repDonationAmount(netscript, requiredRep);
-        if (
+      const playerBribeAmount = repDonationAmount(netscript, requiredRep);
+      if (
+        purchasesEnabled &&
+        currentFactionFavor >= favorToDonate &&
+        (await getPlayerTotalValue(nsPackage)) >= playerBribeAmount
+      ) {
+        logWriter.writeLine(
+          `${logPrefix} Player bribing faction ${factionName} with $${netscript.formatNumber(
+            playerBribeAmount
+          )} for ${netscript.formatNumber(requiredRep)}`
+        );
+        await handlePurchase(nsLocator, async () => {
           await singularityApi['donateToFaction'](
             factionName,
             playerBribeAmount
-          )
-        ) {
-          logWriter.writeLine(
-            `${logPrefix} Player bribed faction ${factionName} with $${netscript.formatNumber(
-              playerBribeAmount
-            )} for ${netscript.formatNumber(requiredRep)}`
           );
-          continue;
-        }
+        });
       }
     }
 
@@ -1075,8 +1128,9 @@ async function handleAugmentations(
   ) {
     for (
       let augmentationDetails = eligibleAugmentations.shift();
+      purchasesEnabled &&
       augmentationDetails &&
-      augmentationDetails.price <= netscript.getPlayer().money &&
+      (await getPlayerTotalValue(nsPackage)) >= augmentationDetails.price &&
       augmentationDetails.reputation <=
         (await singularityApi['getFactionRep'](augmentationDetails.faction));
       augmentationDetails = eligibleAugmentations.shift()
@@ -1084,10 +1138,14 @@ async function handleAugmentations(
       logWriter.writeLine(
         `${logPrefix} Purchasing augmentation ${augmentationDetails.name} from faction ${augmentationDetails.faction}...`
       );
-      await singularityApi['purchaseAugmentation'](
-        augmentationDetails.faction,
-        augmentationDetails.name
-      );
+      const factionName = augmentationDetails.faction;
+      const augmentationName = augmentationDetails.name;
+      await handlePurchase(nsLocator, async () => {
+        await singularityApi['purchaseAugmentation'](
+          factionName,
+          augmentationName
+        );
+      });
 
       // Re-evaluate eligible augmentations to include newly available pre-requisite augmentations
       eligibleAugmentations = await getEligibleAugmentations(nsPackage);
@@ -1136,13 +1194,11 @@ async function handleSoftReset(nsPackage: NetscriptPackage, logWriter: Logger) {
     eligibleAugmentations = await getEligibleAugmentations(nsPackage);
   }
 
-  if (netscript.stock.hasTIXAPIAccess()) {
-    logWriter.writeLine(
-      `${logPrefix} Killing stock trader script and selling stock portfolio...`
-    );
-    await nsLocator['scriptKill'](STOCKS_TRADER_SCRIPT, HOME_SERVER_NAME);
-    await sellPortfolio(nsLocator);
-  }
+  logWriter.writeLine(
+    `${logPrefix} Disabling purchases and selling stock portfolio...`
+  );
+  await togglePurchases(false);
+  await sellPortfolio(nsLocator);
 
   logWriter.writeLine(
     `${logPrefix} Purchasing any remaining eligible augmentations...`
@@ -1158,62 +1214,58 @@ async function handleSoftReset(nsPackage: NetscriptPackage, logWriter: Logger) {
     }
   }
 
+  logWriter.writeLine(
+    `${logPrefix} Purchasing all available Home RAM upgrades...`
+  );
+  while (await singularityApi['upgradeHomeRam']());
+
+  logWriter.writeLine(
+    `${logPrefix} Purchasing all available Home Core upgrades...`
+  );
+  while (await singularityApi['upgradeHomeCores']());
+
+  logWriter.writeLine(
+    `${logPrefix} Determining if Neuroflux Governor is available...`
+  );
+  const neurofluxFactions = await singularityApi['getAugmentationFactions'](
+    NEUROFLUX_AUGMENTATION_NAME
+  );
+  const factionDetails = await Promise.all(
+    neurofluxFactions.map(async value => {
+      return {
+        name: value,
+        reputation: await singularityApi['getFactionRep'](value),
+      };
+    })
+  );
+  const targetFaction = factionDetails
+    .sort((valueA, valueB) => valueA.reputation - valueB.reputation)
+    .at(0);
+  if (targetFaction) {
+    logWriter.writeLine(
+      `${logPrefix} Dumping remaining funds into Neuroflux Governor...`
+    );
+    while (
+      await singularityApi['purchaseAugmentation'](
+        targetFaction.name,
+        NEUROFLUX_AUGMENTATION_NAME
+      )
+    );
+  }
+
   purchasedAugs = await getPurchasedAugmentations(nsPackage);
   if (purchasedAugs.length > 0) {
-    logWriter.writeLine(
-      `${logPrefix} Purchasing all available Home RAM upgrades...`
-    );
-    while (await singularityApi['upgradeHomeRam']());
-
-    logWriter.writeLine(
-      `${logPrefix} Purchasing all available Home Core upgrades...`
-    );
-    while (await singularityApi['upgradeHomeCores']());
-
-    logWriter.writeLine(
-      `${logPrefix} Determining if Neuroflux Governor is available...`
-    );
-    const neurofluxFactions = await singularityApi['getAugmentationFactions'](
-      NEUROFLUX_AUGMENTATION_NAME
-    );
-    const factionDetails = await Promise.all(
-      neurofluxFactions.map(async value => {
-        return {
-          name: value,
-          reputation: await singularityApi['getFactionRep'](value),
-        };
-      })
-    );
-    const targetFaction = factionDetails
-      .sort((valueA, valueB) => valueA.reputation - valueB.reputation)
-      .at(0);
-    if (targetFaction) {
-      logWriter.writeLine(
-        `${logPrefix} Dumping remaining funds into Neuroflux Governor...`
-      );
-      while (
-        await singularityApi['purchaseAugmentation'](
-          targetFaction.name,
-          NEUROFLUX_AUGMENTATION_NAME
-        )
-      );
-    }
-
     logWriter.writeLine(`${logPrefix} Installing augmentations...`);
     await singularityApi['installAugmentations'](SINGULARITY_AUTO_SCRIPT);
   } else {
-    logWriter.writeLine(
-      `${logPrefix} Unable to soft reset; no augmentations purchased.`
-    );
-    if (netscript.stock.hasTIXAPIAccess()) {
-      logWriter.writeLine(`${logPrefix} Restarting stock trader...`);
-      await killWorkerScripts(nsPackage);
-      runScript(netscript, STOCKS_TRADER_SCRIPT, {
-        args: [getCmdFlag(CMD_FLAG_FUNDS_LIMIT_PERCENT), 0],
-        tempScript: true,
-      });
-    }
+    logWriter.writeLine(`${logPrefix} Soft resetting for faction favor...`);
+    await singularityApi['softReset'](SINGULARITY_AUTO_SCRIPT);
   }
+
+  logWriter.writeLine(
+    `${logPrefix} Re-enabling purchases after failed reset...`
+  );
+  await togglePurchases(true);
 
   logWriter.writeLine(`${logPrefix} Complete!`);
 }
@@ -1231,6 +1283,8 @@ async function handleSoftReset(nsPackage: NetscriptPackage, logWriter: Logger) {
  *   - Run concurrent tasks
  */
 export async function main(netscript: NS) {
+  purchasesEnabled = true;
+
   const nsPackage = getLocatorPackage(netscript);
   const nsLocator = nsPackage.locator;
   const singularityApi = nsLocator.singularity;
@@ -1312,8 +1366,8 @@ export async function main(netscript: NS) {
   concurrentTasks.push(handleLambdaServer(netscript, scriptLogWriter));
   concurrentTasks.push(handleWorkTasks(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleFactions(nsPackage, scriptLogWriter));
-  concurrentTasks.push(handleHomeUpgrades(nsPackage, scriptLogWriter));
-  concurrentTasks.push(handleTorPurchases(nsPackage, scriptLogWriter));
+  concurrentTasks.push(handleHomeServer(nsPackage, scriptLogWriter));
+  concurrentTasks.push(handleTor(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleStockMarket(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleGang(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleCorporation(nsPackage, scriptLogWriter));
