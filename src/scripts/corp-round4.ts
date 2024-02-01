@@ -81,6 +81,7 @@ export async function main(netscript: NS) {
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   terminalWriter.writeLine('Corporation Automation - Investor Round 4');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
@@ -95,7 +96,6 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine(`Bypass Funds Requirement : ${bypassFundsReq}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const corpApi = nsLocator.corporation;
   const investmentOfferInfo = await corpApi['getInvestmentOffer']();
   if (investmentOfferInfo.round !== 4) {

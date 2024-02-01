@@ -25,13 +25,12 @@ import {
   scanWideNetwork,
 } from '/scripts/workflows/recon';
 import {WORKERS_PACKAGE} from '/scripts/workers/package';
-import {WEAKEN_WORKER_SCRIPT} from '/scripts/workflows/orchestration';
 import {
-  infiniteLoop,
-  initializeScript,
-  runScript,
+  WEAKEN_WORKER_SCRIPT,
+  runWorkerScript,
   waitForScripts,
-} from '/scripts/workflows/execution';
+} from '/scripts/workflows/orchestration';
+import {infiniteLoop, initializeScript} from '/scripts/workflows/execution';
 import {
   ServerDetailsExtended,
   getHackingExpGain,
@@ -44,6 +43,7 @@ import {EventListener, sendMessage} from '/scripts/comms/event-comms';
 import {FarmHackExpConfigEvent} from '/scripts/comms/events/farm-hackExp-config-event';
 import {FarmHackExpConfigRequest} from '/scripts/comms/requests/farm-hackExp-config-request';
 import {FarmHackExpConfigResponse} from '/scripts/comms/responses/farm-hackExp-config-response';
+import {ExitEvent} from '/scripts/comms/events/exit-event';
 
 export const FARM_HACK_EXP_SCRIPT = `${SCRIPTS_DIR}/farm-hackExp.js`;
 export const CMD_FLAG_INCLUDE_HOME = 'includeHome';
@@ -63,6 +63,7 @@ const TAIL_WIDTH = 650;
 const TAIL_HEIGHT = 500;
 
 let managerConfig: HackExperienceFarmConfig;
+let workerPids: number[] | undefined;
 
 async function attackTargets(nsPackage: NetscriptPackage, logWriter: Logger) {
   const netscript = nsPackage.netscript;
@@ -109,21 +110,19 @@ async function attackTargets(nsPackage: NetscriptPackage, logWriter: Logger) {
     `Weakening ${targetHosts.length} hosts for hacking experience : ${targetHosts}`
   );
   const scriptArgs = [getCmdFlag(CMD_FLAG_TARGETS_CSV), targetHosts.join(',')];
-  const workerPids = [];
-  for (const hostname of rootedHosts) {
-    netscript.scp(WORKERS_PACKAGE, hostname);
-    workerPids.push(
-      runScript(netscript, WEAKEN_WORKER_SCRIPT, {
-        hostname: hostname,
-        useMaxThreads: true,
-        args: scriptArgs,
-        tempScript: true,
-      })
-    );
-  }
+  workerPids = runWorkerScript(
+    netscript,
+    WEAKEN_WORKER_SCRIPT,
+    WORKERS_PACKAGE,
+    true,
+    1,
+    managerConfig.includeHomeAttacker,
+    ...scriptArgs
+  );
 
   logWriter.writeLine('Waiting for all attacks to complete...');
   await waitForScripts(netscript, workerPids);
+  workerPids = undefined;
   logWriter.writeLine('Hack experience farm cycle complete!');
   logWriter.writeLine(SECTION_DIVIDER);
 }
@@ -157,12 +156,21 @@ function handleConfigRequest(
   sendMessage(new FarmHackExpConfigResponse(managerConfig), requestData.sender);
 }
 
+function handleExit(eventData: ExitEvent, netscript: NS) {
+  if (workerPids) {
+    for (const pid of workerPids) {
+      netscript.kill(pid);
+    }
+  }
+}
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
   const nsPackage = getLocatorPackage(netscript);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   terminalWriter.writeLine('Hacking Experience Farm - Using Weaken');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
@@ -185,8 +193,8 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('See script logs for on-going farming details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const eventListener = new EventListener(SUBSCRIBER_NAME);
+  eventListener.addListener(ExitEvent, handleExit, netscript);
   eventListener.addListener(
     FarmHackExpConfigEvent,
     handleUpdateConfigEvent,

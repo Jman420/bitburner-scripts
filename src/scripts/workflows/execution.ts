@@ -2,11 +2,8 @@ import {BasicHGWOptions, NS} from '@ns';
 
 import {randomIntWithinRange} from '/scripts/common/shared';
 
-import {copyFiles} from '/scripts/workflows/propagation';
 import {
   canRunScript,
-  findServersForRam,
-  getAvailableRam,
   maxScriptThreads,
   scanWideNetwork,
 } from '/scripts/workflows/recon';
@@ -101,76 +98,6 @@ function getPid(netscript: NS, scriptPath: string, targetHosts?: string[]) {
   return 0;
 }
 
-function runWorkerScript(
-  netscript: NS,
-  scriptPath: string,
-  workerPackage: string[],
-  useMaxThreads = false,
-  requiredThreads = 1,
-  includeHome = false,
-  ...scriptArgs: (string | number | boolean)[]
-) {
-  scriptArgs = scriptArgs.filter(value => value !== '');
-  requiredThreads = Math.ceil(requiredThreads);
-
-  const requiredRam = getRequiredRam(netscript, scriptPath, requiredThreads);
-  const scriptRam = netscript.getScriptRam(scriptPath);
-
-  let attackHosts: string[];
-  if (useMaxThreads) {
-    attackHosts = scanWideNetwork(netscript, includeHome, true, true);
-  } else {
-    attackHosts = findServersForRam(
-      netscript,
-      requiredRam,
-      scriptRam,
-      includeHome
-    );
-  }
-
-  const scriptPids = [];
-  for (const hostname of attackHosts) {
-    let hostThreads = Math.floor(
-      getAvailableRam(netscript, hostname) / netscript.getScriptRam(scriptPath)
-    );
-    if (hostThreads > requiredThreads) {
-      hostThreads = requiredThreads;
-    }
-    copyFiles(netscript, workerPackage, hostname);
-    const scriptPid = runScript(netscript, scriptPath, {
-      hostname: hostname,
-      threadCount: hostThreads,
-      useMaxThreads: useMaxThreads,
-      tempScript: true,
-      args: scriptArgs,
-    });
-    if (scriptPid) {
-      scriptPids.push(scriptPid);
-      requiredThreads -= hostThreads;
-    }
-  }
-
-  return scriptPids;
-}
-
-async function waitForScripts(
-  netscript: NS,
-  scriptPids: Array<number>,
-  sleepTime = 500
-) {
-  let scriptsRunning = true;
-  while (scriptsRunning) {
-    scriptsRunning = false;
-    for (const scriptPid of scriptPids) {
-      scriptsRunning = netscript.isRunning(scriptPid) || scriptsRunning;
-    }
-
-    if (scriptsRunning) {
-      await netscript.asleep(sleepTime);
-    }
-  }
-}
-
 async function runGWH(
   netscript: NS,
   gwhFunc: GrowWeakenHackFunction,
@@ -238,8 +165,6 @@ export {
   runScript,
   ensureRunning,
   getPid,
-  runWorkerScript,
-  waitForScripts,
   runGWH,
   initializeScript,
   delayedInfiniteLoop,

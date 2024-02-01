@@ -5,11 +5,7 @@ import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {getCmdFlag} from '/scripts/workflows/cmd-args';
 
-import {
-  initializeScript,
-  runScript,
-  waitForScripts,
-} from '/scripts/workflows/execution';
+import {initializeScript, runScript} from '/scripts/workflows/execution';
 import {openTail} from '/scripts/workflows/ui';
 
 import {
@@ -100,7 +96,10 @@ import {
   getPurchasedAugmentations,
   getRemainingPrograms,
 } from '/scripts/workflows/singularity';
-import {killWorkerScripts} from '/scripts/workflows/orchestration';
+import {
+  killWorkerScripts,
+  waitForScripts,
+} from '/scripts/workflows/orchestration';
 import {repDonationAmount} from '/scripts/workflows/formulas';
 import {getPlayerTotalValue} from '/scripts/workflows/player';
 import {StocksTraderConfigEvent} from '/scripts/comms/events/stocks-trader-config-event';
@@ -151,11 +150,10 @@ async function togglePurchases(enablePurchases: boolean) {
     sendMessage(
       new GangManagerConfigEvent({
         buyAugmentations: enablePurchases,
-        buyEquipment: enablePurchases,
       })
     )
   );
-  await Promise.allSettled(messageTasks);
+  await Promise.all(messageTasks);
 }
 
 async function handlePurchase(
@@ -438,22 +436,18 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
       }
     }
 
-    const currentWork = (await singularityApi['getCurrentWork']()) as
+    const crimeTask = (await singularityApi['getCurrentWork']()) as
       | CrimeTask
-      | StudyTask
       | undefined;
-    if (currentKarma > GANG_KARMA_REQ) {
-      const crimeTask = currentWork as CrimeTask | undefined;
-      const crimeJob =
-        (await singularityApi['getCrimeChance']('Homicide')) >= 0.8
-          ? 'Homicide'
-          : 'Mug';
-      if (crimeTask?.crimeType !== crimeJob) {
-        logWriter.writeLine(
-          `${logPrefix} Committing crime for cash & karma : ${crimeJob}`
-        );
-        await singularityApi['commitCrime'](crimeJob);
-      }
+    const crimeJob =
+      (await singularityApi['getCrimeChance']('Homicide')) >= 0.8
+        ? 'Homicide'
+        : 'Mug';
+    if (crimeTask?.crimeType !== crimeJob) {
+      logWriter.writeLine(
+        `${logPrefix} Committing crime for cash & karma : ${crimeJob}`
+      );
+      await singularityApi['commitCrime'](crimeJob);
     }
 
     await netscript.asleep(WAIT_DELAY);
@@ -1141,10 +1135,16 @@ async function handleAugmentations(
       const factionName = augmentationDetails.faction;
       const augmentationName = augmentationDetails.name;
       await handlePurchase(nsLocator, async () => {
-        await singularityApi['purchaseAugmentation'](
-          factionName,
-          augmentationName
-        );
+        if (
+          !(await singularityApi['purchaseAugmentation'](
+            factionName,
+            augmentationName
+          ))
+        ) {
+          logWriter.writeLine(
+            `${logPrefix} Failed to purchase augmentation ${augmentationName} from faction ${factionName}!`
+          );
+        }
       });
 
       // Re-evaluate eligible augmentations to include newly available pre-requisite augmentations
@@ -1291,13 +1291,13 @@ export async function main(netscript: NS) {
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   terminalWriter.writeLine('Singularity Quick Start Automation');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
   terminalWriter.writeLine('See script logs for on-going trade details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   scriptLogWriter.writeLine('Running coding contract auto solver script...');
   runScript(netscript, CONTRACTS_AUTO_SCRIPT, {tempScript: true});
 

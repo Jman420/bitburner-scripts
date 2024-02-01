@@ -88,24 +88,35 @@ async function getStockPosition(nsLocator: NetscriptLocator, symbol: string) {
   return result;
 }
 
-async function getPortfolioValue(nsLocator: NetscriptLocator) {
+async function getPortfolioValue(nsPackage: NetscriptPackage) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
   const stockApi = nsLocator.stock;
 
-  let portfolioValue = 0;
+  const result = {totalValue: 0, totalProfit: 0};
+  if (!netscript.stock.hasTIXAPIAccess()) {
+    return result;
+  }
+
   const allSymbols = await stockApi['getSymbols']();
   for (const stockSymbol of allSymbols) {
     const stockPosition = await getStockPosition(nsLocator, stockSymbol);
     const askPrice = await stockApi['getAskPrice'](stockSymbol);
     const bidPrice = await stockApi['getBidPrice'](stockSymbol);
 
-    const longValue = stockPosition.longShares * askPrice;
-    const shortValue = stockPosition.shortShares * bidPrice;
+    const longValue = stockPosition.longShares * bidPrice;
+    const shortValue = stockPosition.shortShares * askPrice;
 
-    portfolioValue += longValue;
-    portfolioValue += shortValue;
+    result.totalValue += longValue - COMMISSION;
+    result.totalValue += shortValue - COMMISSION;
+
+    result.totalProfit +=
+      longValue - stockPosition.longShares * stockPosition.longPrice;
+    result.totalProfit +=
+      shortValue - stockPosition.shortShares * stockPosition.shortPrice;
   }
 
-  return portfolioValue;
+  return result;
 }
 
 async function buyPosition(

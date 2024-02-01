@@ -208,12 +208,18 @@ async function getFactionsNeedFavor(nsPackage: NetscriptPackage) {
 
 async function factionsNeedReset(nsPackage: NetscriptPackage) {
   const nsLocator = nsPackage.locator;
-  const netscript = nsPackage.netscript;
   const singularityApi = nsLocator.singularity;
+  const gangApi = nsLocator.gang;
 
-  const playerInfo = netscript.getPlayer();
-  const factionsInfo = await Promise.all(
-    playerInfo.factions.map(async value => {
+  const eligibleFactions = [
+    ...new Set(
+      (await getEligibleAugmentations(nsPackage, false, false)).map(
+        value => value.faction
+      )
+    ),
+  ];
+  let factionsInfo = await Promise.all(
+    eligibleFactions.map(async value => {
       return {
         name: value,
         favor: await singularityApi['getFactionFavor'](value),
@@ -221,6 +227,12 @@ async function factionsNeedReset(nsPackage: NetscriptPackage) {
       };
     })
   );
+  if (await gangApi['inGang']()) {
+    const gangInfo = await gangApi['getGangInformation']();
+    factionsInfo = factionsInfo.filter(
+      value => value.name !== gangInfo.faction
+    );
+  }
   const factionsNeedReset = factionsInfo
     .map(
       value =>

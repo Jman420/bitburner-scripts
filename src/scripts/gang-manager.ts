@@ -435,6 +435,7 @@ export async function main(netscript: NS) {
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   terminalWriter.writeLine('Automatic Gang Manager');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
@@ -486,7 +487,6 @@ export async function main(netscript: NS) {
   engageWarfare = false;
   reduceWantedPenalty = false;
 
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const eventListener = new EventListener(SUBSCRIBER_NAME);
   eventListener.addListener(
     GangInfoChangedEvent,

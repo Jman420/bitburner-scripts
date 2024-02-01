@@ -339,6 +339,7 @@ export async function main(netscript: NS) {
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   terminalWriter.writeLine('Stock Market Trade Manager');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
@@ -376,7 +377,6 @@ export async function main(netscript: NS) {
   };
 
   const eventListener = new EventListener(SUBSCRIBER_NAME);
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   eventListener.addListener(
     StocksTraderConfigRequest,
     handleConfigRequest,

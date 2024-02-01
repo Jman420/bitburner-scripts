@@ -146,13 +146,14 @@ async function purchaseMaterials(
 export async function main(netscript: NS) {
   const nsPackage = getLocatorPackage(netscript);
   const nsLocator = nsPackage.locator;
+
+  initializeScript(netscript, SUBSCRIBER_NAME);
+  const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
 
   const corpInfo = await nsLocator.corporation['getCorporation']();
   DIVISION_NAMES = corpInfo.divisions.map(value => `'${value}'`);
 
-  initializeScript(netscript, SUBSCRIBER_NAME);
-  const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Purchase Industry Materials');
   terminalWriter.writeLine(SECTION_DIVIDER);
 

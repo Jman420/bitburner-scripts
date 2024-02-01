@@ -177,6 +177,9 @@ function handleProductLifecycleConfigRequest(
 export async function main(netscript: NS) {
   const nsPackage = getLocatorPackage(netscript);
   const nsLocator = nsPackage.locator;
+
+  initializeScript(netscript, SUBSCRIBER_NAME);
+  const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
 
   const corpInfo = await nsLocator.corporation['getCorporation']();
@@ -184,8 +187,6 @@ export async function main(netscript: NS) {
     .filter(value => !value.includes(FRAUD_DIVISION_NAME_PREFIX))
     .map(value => `'${value}'`);
 
-  initializeScript(netscript, SUBSCRIBER_NAME);
-  const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Corporation Product Lifecycle Manager');
   terminalWriter.writeLine(SECTION_DIVIDER);
 

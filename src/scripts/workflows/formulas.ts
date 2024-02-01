@@ -1,4 +1,7 @@
 import {NS} from '@ns';
+import {ServerDetails} from '/scripts/workflows/recon';
+
+const WEAKEN_REDUCTION_AMOUNT = 0.05;
 
 // https://github.com/bitburner-official/bitburner-src/blob/dev/src/Faction/formulas/favor.ts#L5
 function favorToRep(f: number): number {
@@ -17,4 +20,31 @@ function repDonationAmount(netscript: NS, repAmount: number) {
   return (repAmount * 10 ** 6) / playerInfo.mults.faction_rep;
 }
 
-export {favorToRep, repDonationAmount};
+function weakenThreadsRequired(targetReduction: number) {
+  return Math.ceil(targetReduction / WEAKEN_REDUCTION_AMOUNT);
+}
+
+function growThreadsRequired(
+  netscript: NS,
+  hostDetails: ServerDetails,
+  targetMultiplier: number
+) {
+  // growthAnalyze() is not accurate in its thread predictions... this will almost always require 2 cycles to fully grow the host
+  return netscript.growthAnalyze(hostDetails.hostname, targetMultiplier);
+}
+
+function hackThreadsRequired(
+  netscript: NS,
+  hostname: string,
+  targetHackFunds: number
+) {
+  return netscript.hackAnalyzeThreads(hostname, targetHackFunds);
+}
+
+export {
+  favorToRep,
+  repDonationAmount,
+  weakenThreadsRequired,
+  growThreadsRequired,
+  hackThreadsRequired,
+};

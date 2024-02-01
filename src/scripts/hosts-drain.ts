@@ -46,6 +46,15 @@ const TAIL_HEIGHT = 510;
 export async function main(netscript: NS) {
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
+  const netscriptEnabledLogging = DEFAULT_NETSCRIPT_ENABLED_LOGGING.filter(
+    value => value !== 'exec'
+  );
+  const scriptLogWriter = getLogger(
+    netscript,
+    MODULE_NAME,
+    LoggerMode.SCRIPT,
+    netscriptEnabledLogging
+  );
   terminalWriter.writeLine('Drain Hosts of all Funds');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
@@ -61,15 +70,6 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('See script logs for on-going attack details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  const netscriptEnabledLogging = DEFAULT_NETSCRIPT_ENABLED_LOGGING.filter(
-    value => value !== 'exec'
-  );
-  const scriptLogWriter = getLogger(
-    netscript,
-    MODULE_NAME,
-    LoggerMode.SCRIPT,
-    netscriptEnabledLogging
-  );
   if (targetHosts.length < 1) {
     scriptLogWriter.writeLine(
       'No target hosts provided.  Scanning wide network for targets...'

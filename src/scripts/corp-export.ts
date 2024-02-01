@@ -37,6 +37,9 @@ export async function main(netscript: NS) {
   const nsPackage = getLocatorPackage(netscript);
   const nsLocator = nsPackage.locator;
   const corpApi = nsLocator.corporation;
+
+  initializeScript(netscript, SUBSCRIBER_NAME);
+  const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
 
   const corpInfo = await corpApi['getCorporation']();
@@ -44,8 +47,6 @@ export async function main(netscript: NS) {
     .map(value => `'${value}'`)
     .filter(value => !value.includes(FRAUD_DIVISION_NAME_PREFIX));
 
-  initializeScript(netscript, SUBSCRIBER_NAME);
-  const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   terminalWriter.writeLine('Corporate Export Setup');
   terminalWriter.writeLine(SECTION_DIVIDER);
 

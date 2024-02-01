@@ -12,7 +12,7 @@ import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
 
 import {getReactModel, ReactSetStateFunction} from '/scripts/workflows/ui';
 import {scanWideNetwork} from '/scripts/workflows/recon';
-import {TOTAL_STOCKS} from '/scripts/workflows/stocks';
+import {getPortfolioValue, TOTAL_STOCKS} from '/scripts/workflows/stocks';
 import {
   NetscriptExtended,
   NetscriptPackage,
@@ -23,7 +23,7 @@ const useState = React.useState;
 
 async function updateStocksMetrics(
   eventData: StocksTickerEvent,
-  netscript: NS,
+  nsPackage: NetscriptPackage,
   logWriter: Logger,
   setStocksValue: ReactSetStateFunction<string>,
   setStocksProfit: ReactSetStateFunction<string>,
@@ -36,31 +36,18 @@ async function updateStocksMetrics(
     return;
   }
 
-  logWriter.writeLine('Calculating stock portfolio metrics...');
-  let totalValue = 0;
-  let totalProfit = 0;
-  for (const stockListing of eventData.stockListings) {
-    const longValue = stockListing.position.longShares * stockListing.askPrice;
-    const shortValue =
-      stockListing.position.shortShares * stockListing.bidPrice;
-    totalValue += longValue;
-    totalValue += shortValue;
+  const netscript = nsPackage.netscript;
 
-    totalProfit +=
-      longValue -
-      stockListing.position.longShares * stockListing.position.longPrice;
-    totalProfit +=
-      shortValue -
-      stockListing.position.shortShares * stockListing.position.shortPrice;
-  }
+  logWriter.writeLine('Calculating stock portfolio metrics...');
+  const portfolioMetrics = await getPortfolioValue(nsPackage);
 
   logWriter.writeLine('Updating stock portfolio metrics...');
-  setStocksValue(`$${netscript.formatNumber(totalValue)}`);
-  setStocksProfit(`$${netscript.formatNumber(totalProfit)}`);
+  setStocksValue(`$${netscript.formatNumber(portfolioMetrics.totalValue)}`);
+  setStocksProfit(`$${netscript.formatNumber(portfolioMetrics.totalProfit)}`);
 
   logWriter.writeLine('Updating Total Player Value...');
   const playerInfo = netscript.getPlayer();
-  const totalPlayerValue = playerInfo.money + totalValue;
+  const totalPlayerValue = playerInfo.money + portfolioMetrics.totalValue;
   setPlayerTotalValue(`$${netscript.formatNumber(totalPlayerValue)}`);
   logWriter.writeLine(ENTRY_DIVIDER);
 }
@@ -119,6 +106,8 @@ async function updatePolledMetrics(
     logWriter.writeLine('Retrieving corporation metrics...');
     const corpInfo = await corpApi['getCorporation']();
     setCorpIncome(`$${netscript.formatNumber(corpInfo.dividendEarnings)}`);
+  } else {
+    setCorpIncome(`$${netscript.formatNumber(0)}`);
   }
 
   logWriter.writeLine('Retrieving location & player metrics...');
@@ -192,7 +181,7 @@ function CustomHudValues({
     eventListener.addListener(
       StocksTickerEvent,
       updateStocksMetrics,
-      netscript,
+      nsPackage,
       logWriter,
       setStocksPortfolioValue,
       setStocksProfit,

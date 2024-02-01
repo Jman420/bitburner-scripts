@@ -139,6 +139,7 @@ export async function main(netscript: NS) {
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   logWriter.writeLine('Server Farm Purchase Manager');
   logWriter.writeLine(SECTION_DIVIDER);
 
@@ -161,7 +162,6 @@ export async function main(netscript: NS) {
   logWriter.writeLine('See script logs for on-going purchase details.');
   netscript.tail();
 
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   await delayedInfiniteLoop(
     netscript,
     LOOP_DELAY_MILLISEC,

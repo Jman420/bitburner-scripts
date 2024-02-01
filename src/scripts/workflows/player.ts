@@ -3,14 +3,11 @@ import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
 import {getPortfolioValue} from '/scripts/workflows/stocks';
 
 async function getPlayerTotalValue(nsPackage: NetscriptPackage) {
-  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
-  const portfolioValue = netscript.stock.hasTIXAPIAccess()
-    ? await getPortfolioValue(nsLocator)
-    : 0;
+  const portfolioMetrics = await getPortfolioValue(nsPackage);
   const playerInfo = netscript.getPlayer();
-  return playerInfo.money + portfolioValue;
+  return playerInfo.money + portfolioMetrics.totalValue;
 }
 
 export {getPlayerTotalValue};

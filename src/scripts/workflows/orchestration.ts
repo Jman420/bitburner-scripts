@@ -1,7 +1,13 @@
 import {NS} from '@ns';
 
-import {ServerDetails, analyzeHost} from '/scripts/workflows/recon';
-import {runWorkerScript, waitForScripts} from '/scripts/workflows/execution';
+import {
+  ServerDetails,
+  analyzeHost,
+  findServersForRam,
+  getAvailableRam,
+  scanWideNetwork,
+} from '/scripts/workflows/recon';
+import {getRequiredRam, runScript} from '/scripts/workflows/execution';
 
 import {WORKERS_PACKAGE} from '/scripts/workers/package';
 import {getCmdFlag} from '/scripts/workflows/cmd-args';
@@ -10,59 +16,85 @@ import {
   CMD_FLAG_TARGETS_CSV,
 } from '/scripts/workers/shared';
 import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
+import {
+  growThreadsRequired,
+  hackThreadsRequired,
+} from '/scripts/workflows/formulas';
+import {copyFiles} from '/scripts/workflows/propagation';
 
 const WEAKEN_WORKER_SCRIPT = '/scripts/workers/weaken.js';
 const GROW_WORKER_SCRIPT = '/scripts/workers/grow.js';
 const HACK_WORKER_SCRIPT = '/scripts/workers/hack.js';
 const SHARE_RAM_WORKER_SCRIPT = '/scripts/workers/share-ram.js';
 
-const WEAKEN_REDUCTION_AMOUNT = 0.05;
-
-function weakenThreadsRequired(targetReduction: number) {
-  return Math.ceil(targetReduction / WEAKEN_REDUCTION_AMOUNT);
-}
-
-async function weakenHost(
+function runWorkerScript(
   netscript: NS,
-  hostDetails: ServerDetails,
+  scriptPath: string,
+  workerPackage: string[],
   useMaxThreads = false,
-  includeHomeAttacker = false,
-  influenceStocks = false
+  requiredThreads = 1,
+  includeHome = false,
+  ...scriptArgs: (string | number | boolean)[]
 ) {
-  while (hostDetails.securityLevel > hostDetails.minSecurityLevel) {
-    const targetWeaknessReduction =
-      hostDetails.securityLevel - hostDetails.minSecurityLevel;
-    let requiredThreads = 0;
-    if (!useMaxThreads) {
-      requiredThreads = weakenThreadsRequired(targetWeaknessReduction);
-    }
+  scriptArgs = scriptArgs.filter(value => value !== '');
+  requiredThreads = Math.ceil(requiredThreads);
 
-    const scriptPids = runWorkerScript(
+  const requiredRam = getRequiredRam(netscript, scriptPath, requiredThreads);
+  const scriptRam = netscript.getScriptRam(scriptPath);
+
+  let attackHosts: string[];
+  if (useMaxThreads) {
+    attackHosts = scanWideNetwork(netscript, includeHome, true, true);
+  } else {
+    attackHosts = findServersForRam(
       netscript,
-      WEAKEN_WORKER_SCRIPT,
-      WORKERS_PACKAGE,
-      useMaxThreads,
-      requiredThreads,
-      includeHomeAttacker,
-      getCmdFlag(CMD_FLAG_TARGETS_CSV),
-      hostDetails.hostname,
-      influenceStocks ? getCmdFlag(CMD_FLAG_INFLUENCE_STOCKS) : ''
+      requiredRam,
+      scriptRam,
+      includeHome
     );
-    await waitForScripts(netscript, scriptPids);
-
-    hostDetails = analyzeHost(netscript, hostDetails.hostname);
   }
 
-  return hostDetails;
+  const scriptPids = [];
+  for (const hostname of attackHosts) {
+    let hostThreads = Math.floor(
+      getAvailableRam(netscript, hostname) / netscript.getScriptRam(scriptPath)
+    );
+    if (hostThreads > requiredThreads) {
+      hostThreads = requiredThreads;
+    }
+    copyFiles(netscript, workerPackage, hostname);
+    const scriptPid = runScript(netscript, scriptPath, {
+      hostname: hostname,
+      threadCount: hostThreads,
+      useMaxThreads: useMaxThreads,
+      tempScript: true,
+      args: scriptArgs,
+    });
+    if (scriptPid) {
+      scriptPids.push(scriptPid);
+      requiredThreads -= hostThreads;
+    }
+  }
+
+  return scriptPids;
 }
 
-function growThreadsRequired(
+async function waitForScripts(
   netscript: NS,
-  hostDetails: ServerDetails,
-  targetMultiplier: number
+  scriptPids: Array<number>,
+  sleepTime = 500
 ) {
-  // growthAnalyze() is not accurate in its thread predictions... this will almost always require 2 cycles to fully grow the host
-  return netscript.growthAnalyze(hostDetails.hostname, targetMultiplier);
+  let scriptsRunning = true;
+  while (scriptsRunning) {
+    scriptsRunning = false;
+    for (const scriptPid of scriptPids) {
+      scriptsRunning = netscript.isRunning(scriptPid) || scriptsRunning;
+    }
+
+    if (scriptsRunning) {
+      await netscript.asleep(sleepTime);
+    }
+  }
 }
 
 async function growHost(
@@ -102,14 +134,6 @@ async function growHost(
   }
 
   return hostDetails;
-}
-
-function hackThreadsRequired(
-  netscript: NS,
-  hostname: string,
-  targetHackFunds: number
-) {
-  return netscript.hackAnalyzeThreads(hostname, targetHackFunds);
 }
 
 async function hackHost(
@@ -172,11 +196,9 @@ export {
   GROW_WORKER_SCRIPT,
   HACK_WORKER_SCRIPT,
   SHARE_RAM_WORKER_SCRIPT,
-  weakenThreadsRequired,
-  weakenHost,
-  growThreadsRequired,
+  runWorkerScript,
+  waitForScripts,
   growHost,
-  hackThreadsRequired,
   hackHost,
   killWorkerScripts,
 };

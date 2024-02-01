@@ -350,13 +350,13 @@ export async function main(netscript: NS) {
     await sendMessage(new ExitEvent(), SUBSCRIBER_NAME);
   });
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   terminalWriter.writeLine('Corporation Custom Smart Supply');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
   terminalWriter.writeLine('See script logs for on-going supply details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const taskPromises = [];
 
   officeProductionMap = new Map<string, number>();

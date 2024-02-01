@@ -150,6 +150,7 @@ export async function main(netscript: NS) {
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   terminalWriter.writeLine('Server Farm Manager');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
@@ -207,7 +208,6 @@ export async function main(netscript: NS) {
     }
   }
 
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const purchaseOrders = getServerOrders(
     nsPackage,
     scriptLogWriter,

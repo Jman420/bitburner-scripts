@@ -21,8 +21,6 @@ import {
   getRequiredRam,
   infiniteLoop,
   initializeScript,
-  runWorkerScript,
-  waitForScripts,
 } from '/scripts/workflows/execution';
 import {
   analyzeHost,
@@ -39,7 +37,8 @@ import {
   GROW_WORKER_SCRIPT,
   HACK_WORKER_SCRIPT,
   WEAKEN_WORKER_SCRIPT,
-  weakenThreadsRequired,
+  runWorkerScript,
+  waitForScripts,
 } from '/scripts/workflows/orchestration';
 import {openTail} from '/scripts/workflows/ui';
 import {WgwhAttackConfig} from '/scripts/workflows/attacks';
@@ -56,6 +55,8 @@ import {
   getLocatorPackage,
 } from '/scripts/netscript-services/netscript-locator';
 import {SCRIPTS_DIR} from '/scripts/common/shared';
+import {weakenThreadsRequired} from '/scripts/workflows/formulas';
+import {ExitEvent} from '/scripts/comms/events/exit-event';
 
 export const WGWH_BATCH_ATTACK_SCRIPT = `${SCRIPTS_DIR}/wgwh-batch.js`;
 export const CMD_FLAG_OPTIMAL_ONLY = 'optimalOnly';
@@ -85,6 +86,7 @@ const DEFAULT_SLEEP_FOR_RAM = 500;
 const BATCH_BUFFER_DELAY = 100;
 
 let managerConfig: WgwhAttackConfig;
+let workerPids: number[] | undefined;
 
 async function attackTargets(
   nsPackage: NetscriptPackage,
@@ -124,7 +126,7 @@ async function attackTargets(
   logWriter.writeLine(`Attacking ${targetsAnalysis.length} targets...`);
   logWriter.writeLine(SECTION_DIVIDER);
   let longestBatchTime = 0;
-  const workerPids = [];
+  workerPids = [];
   for (
     let targetCounter = 0;
     targetCounter < targetsAnalysis.length;
@@ -339,12 +341,20 @@ async function attackTargets(
     logWriter.writeLine(ENTRY_DIVIDER);
   }
 
-  // Wait for all batches to complete before scheduling the next set
-  logWriter.writeLine(
-    `Longest batch completion ~${convertMillisecToTime(longestBatchTime)}`
-  );
-  logWriter.writeLine('Waiting for all batches to complete...');
-  await waitForScripts(netscript, workerPids);
+  if (workerPids && workerPids.length > 0) {
+    // Wait for all batches to complete before scheduling the next set
+    logWriter.writeLine(
+      `Longest batch completion ~${convertMillisecToTime(longestBatchTime)}`
+    );
+    logWriter.writeLine('Waiting for all batches to complete...');
+    await waitForScripts(netscript, workerPids);
+    workerPids = undefined;
+  } else {
+    logWriter.writeLine(
+      'Failed to run any batches... waiting for more RAM to become available.'
+    );
+    await netscript.asleep(20000);
+  }
 }
 
 function handleUpdateConfigEvent(
@@ -392,12 +402,21 @@ function handleConfigRequest(
   sendMessage(new WgwhConfigResponse(managerConfig), requestData.sender);
 }
 
+function handleExit(eventData: ExitEvent, netscript: NS) {
+  if (workerPids) {
+    for (const pid of workerPids) {
+      netscript.kill(pid);
+    }
+  }
+}
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
   const nsPackage = getLocatorPackage(netscript);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   terminalWriter.writeLine('Weaken-Grow Weaken-Hack Batch Manager');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
@@ -434,8 +453,8 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('See script logs for on-going attack details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const eventListener = new EventListener(SUBSCRIBER_NAME);
+  eventListener.addListener(ExitEvent, handleExit, netscript);
   eventListener.addListener(
     WgwhManagerConfigEvent,
     handleUpdateConfigEvent,

@@ -142,6 +142,7 @@ export async function main(netscript: NS) {
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   terminalWriter.writeLine('Corporate Tea Party Automation');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
@@ -161,7 +162,6 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('See script logs for on-going party details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const eventListener = new EventListener(SUBSCRIBER_NAME);
   eventListener.addListener(
     TeaPartyConfigEvent,

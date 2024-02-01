@@ -41,6 +41,7 @@ export async function main(netscript: NS) {
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   terminalWriter.writeLine('Server Farm - Lambda Server Manager');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
@@ -86,7 +87,6 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('See script logs for on-going purchase details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   scriptLogWriter.writeLine('Pending purchase order :');
   scriptLogWriter.writeLine(`  Hostname : ${purchaseOrder.hostname}`);
   scriptLogWriter.writeLine(`  Ram Amount : ${purchaseOrder.ramAmount}`);

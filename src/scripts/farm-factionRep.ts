@@ -16,12 +16,14 @@ import {SCRIPTS_DIR} from '/scripts/common/shared';
 
 import {scanWideNetwork} from '/scripts/workflows/recon';
 import {WORKERS_PACKAGE} from '/scripts/workers/package';
-import {SHARE_RAM_WORKER_SCRIPT} from '/scripts/workflows/orchestration';
+import {
+  SHARE_RAM_WORKER_SCRIPT,
+  waitForScripts,
+} from '/scripts/workflows/orchestration';
 import {
   infiniteLoop,
   initializeScript,
   runScript,
-  waitForScripts,
 } from '/scripts/workflows/execution';
 
 import {FactionReputationFarmConfig} from '/scripts/workflows/farms';
@@ -29,6 +31,7 @@ import {EventListener, sendMessage} from '/scripts/comms/event-comms';
 import {FarmFactionRepConfigEvent} from '/scripts/comms/events/farm-factionRep-config-event';
 import {FarmFactionRepConfigRequest} from '/scripts/comms/requests/farm-factionRep-config-request';
 import {FarmFactionRepConfigResponse} from '/scripts/comms/responses/farm-factionRep-config-response';
+import {ExitEvent} from '/scripts/comms/events/exit-event';
 
 export const FARM_FACTION_REPUTATION_SCRIPT = `${SCRIPTS_DIR}/farm-factionRep.js`;
 export const CMD_FLAG_INCLUDE_HOME = 'includeHome';
@@ -44,6 +47,7 @@ const TAIL_WIDTH = 650;
 const TAIL_HEIGHT = 500;
 
 let managerConfig: FactionReputationFarmConfig;
+let workerPids: number[] | undefined;
 
 async function shareRam(netscript: NS, logWriter: Logger) {
   logWriter.writeLine('Identifying available targets...');
@@ -56,7 +60,7 @@ async function shareRam(netscript: NS, logWriter: Logger) {
   logWriter.writeLine(`Found ${targetHosts.length} target hosts.`);
 
   logWriter.writeLine('Sharing RAM to boost faction reputation gains...');
-  const workerPids = [];
+  workerPids = [];
   for (const hostname of targetHosts) {
     netscript.scp(WORKERS_PACKAGE, hostname);
     workerPids.push(
@@ -70,6 +74,7 @@ async function shareRam(netscript: NS, logWriter: Logger) {
 
   logWriter.writeLine('Waiting for all RAM sharing to complete...');
   await waitForScripts(netscript, workerPids);
+  workerPids = undefined;
   logWriter.writeLine('Faction reputation farm cycle complete!');
   logWriter.writeLine(SECTION_DIVIDER);
 }
@@ -103,10 +108,19 @@ function handleConfigRequest(
   );
 }
 
+function handleExit(eventData: ExitEvent, netscript: NS) {
+  if (workerPids) {
+    for (const pid of workerPids) {
+      netscript.kill(pid);
+    }
+  }
+}
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   terminalWriter.writeLine('Boost Faction Reputation Gain Farm');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
@@ -124,8 +138,8 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('See script logs for on-going farming details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const eventListener = new EventListener(SUBSCRIBER_NAME);
+  eventListener.addListener(ExitEvent, handleExit, netscript);
   eventListener.addListener(
     FarmFactionRepConfigEvent,
     handleUpdateConfigEvent,

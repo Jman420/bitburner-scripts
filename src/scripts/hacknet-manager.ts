@@ -30,7 +30,7 @@ const MODULE_NAME = 'hacknet-manager';
 const SUBSCRIBER_NAME = 'hacknet-manager';
 
 export const HACKNET_MANAGER_SCRIPT = 'scripts/hacknet-manager.js';
-const DEFAULT_MAX_NODES = 15;
+const DEFAULT_MAX_NODES = 12;
 export const CMD_FLAG_PURCHASE_NODES = 'purchaseNodes';
 export const CMD_FLAG_PURCHASE_UPGRADES = 'purchaseUpgrades';
 export const CMD_FLAG_FUNDS_LIMIT_PERCENT = 'fundsLimitPercent';
@@ -196,6 +196,7 @@ function handleHacknetConfigRequest(
 export async function main(netscript: NS) {
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   terminalWriter.writeLine('Hacknet Purchase Manager');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
@@ -242,7 +243,6 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('See script logs for on-going purchase details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   const eventListener = new EventListener(SUBSCRIBER_NAME);
   eventListener.addListener(
     HacknetManagerConfigEvent,

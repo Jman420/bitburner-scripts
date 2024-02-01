@@ -83,6 +83,7 @@ export async function main(netscript: NS) {
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
+  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   terminalWriter.writeLine('Automatically Solve Coding Contracts');
   terminalWriter.writeLine(SECTION_DIVIDER);
 
@@ -98,7 +99,6 @@ export async function main(netscript: NS) {
   );
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  const scriptLogWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);
   await delayedInfiniteLoop(
     netscript,
     UPDATE_DELAY,
