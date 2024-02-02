@@ -17,6 +17,7 @@ import {
   NetscriptExtended,
   NetscriptPackage,
 } from '/scripts/netscript-services/netscript-locator';
+import {getPlayerTotalValue} from '/scripts/workflows/player';
 
 const React = getReactModel().reactNS;
 const useState = React.useState;
@@ -26,8 +27,7 @@ async function updateStocksMetrics(
   nsPackage: NetscriptPackage,
   logWriter: Logger,
   setStocksValue: ReactSetStateFunction<string>,
-  setStocksProfit: ReactSetStateFunction<string>,
-  setPlayerTotalValue: ReactSetStateFunction<string>
+  setStocksProfit: ReactSetStateFunction<string>
 ) {
   if (
     !eventData.stockListings ||
@@ -44,11 +44,6 @@ async function updateStocksMetrics(
   logWriter.writeLine('Updating stock portfolio metrics...');
   setStocksValue(`$${netscript.formatNumber(portfolioMetrics.totalValue)}`);
   setStocksProfit(`$${netscript.formatNumber(portfolioMetrics.totalProfit)}`);
-
-  logWriter.writeLine('Updating Total Player Value...');
-  const playerInfo = netscript.getPlayer();
-  const totalPlayerValue = playerInfo.money + portfolioMetrics.totalValue;
-  setPlayerTotalValue(`$${netscript.formatNumber(totalPlayerValue)}`);
   logWriter.writeLine(ENTRY_DIVIDER);
 }
 
@@ -73,7 +68,8 @@ async function updatePolledMetrics(
   setScriptsExp: ReactSetStateFunction<string>,
   setScriptsIncome: ReactSetStateFunction<string>,
   setCorpIncome: ReactSetStateFunction<string>,
-  setKarmaLevel: ReactSetStateFunction<string>
+  setKarmaLevel: ReactSetStateFunction<string>,
+  setPlayerTotalValue: ReactSetStateFunction<string>
 ) {
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
@@ -115,6 +111,12 @@ async function updatePolledMetrics(
   const karmaLevel = netscriptExtended.heart.break();
   setCity(playerInfo.city);
   setKarmaLevel(netscript.formatNumber(karmaLevel));
+
+  logWriter.writeLine('Updating Total Player Value...');
+  setPlayerTotalValue(
+    `$${netscript.formatNumber(await getPlayerTotalValue(nsPackage))}`
+  );
+
   logWriter.writeLine(ENTRY_DIVIDER);
 }
 
@@ -162,7 +164,8 @@ function CustomHudValues({
       setScriptsExp,
       setScriptsIncome,
       setCorpIncome,
-      setKarmaLevel
+      setKarmaLevel,
+      setPlayerTotalValue
     );
   });
   useInterval(() => {
@@ -173,7 +176,8 @@ function CustomHudValues({
       setScriptsExp,
       setScriptsIncome,
       setCorpIncome,
-      setKarmaLevel
+      setKarmaLevel,
+      setPlayerTotalValue
     );
   }, updateDelay);
 
@@ -184,8 +188,7 @@ function CustomHudValues({
       nsPackage,
       logWriter,
       setStocksPortfolioValue,
-      setStocksProfit,
-      setPlayerTotalValue
+      setStocksProfit
     );
   });
   useEffectOnce(() => {

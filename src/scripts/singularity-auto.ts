@@ -15,11 +15,6 @@ import {
   getLocatorPackage,
 } from '/scripts/netscript-services/netscript-locator';
 
-import {
-  CMD_FLAG_PURCHASE_NODES,
-  CMD_FLAG_PURCHASE_UPGRADES,
-  HACKNET_MANAGER_SCRIPT,
-} from '/scripts/hacknet-manager';
 import {ROOT_HOSTS_SCRIPT} from '/scripts/hosts-root';
 import {
   CMD_FLAG_INCLUDE_HOME,
@@ -213,6 +208,7 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
       FARM_HACK_EXP_SCRIPT,
       netscript.getHostname()
     );
+    await killWorkerScripts(nsPackage);
     runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
   }
 
@@ -245,10 +241,12 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
         factionsNeedRep = await getFactionsNeedReputation(nsPackage);
       }
 
+      logWriter.writeLine(`${logPrefix} Killing faction reputation farm...`);
       await nsLocator['scriptKill'](
         FARM_FACTION_REPUTATION_SCRIPT,
         netscript.getHostname()
       );
+      await killWorkerScripts(nsPackage);
       runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
     } else if (homeServerInfo.maxRam < BATCH_ATTACK_RAM_NEEDED) {
       logWriter.writeLine(`${logPrefix} Running WGWH serial attack script...`);
@@ -282,6 +280,7 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
         WGWH_SERIAL_ATTACK_SCRIPT,
         netscript.getHostname()
       );
+      killWorkerScripts(nsPackage);
       runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
     } else {
       logWriter.writeLine(`${logPrefix} Running WGWH batch attack script...`);
@@ -312,6 +311,7 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
         WGWH_BATCH_ATTACK_SCRIPT,
         netscript.getHostname()
       );
+      await killWorkerScripts(nsPackage);
       runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
     }
 
@@ -345,6 +345,7 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
       WGWH_SERIAL_ATTACK_SCRIPT,
       netscript.getHostname()
     );
+    await killWorkerScripts(nsPackage);
     runScript(netscript, SCRIPTS_KILL_ALL_SCRIPT, {tempScript: true});
   }
 
@@ -431,7 +432,7 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
         logWriter.writeLine(
           `${logPrefix} Rooting all newly available hosts...`
         );
-        await killWorkerScripts(nsPackage, HOME_SERVER_NAME);
+        await killWorkerScripts(nsPackage);
         runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
       }
     }
@@ -619,7 +620,7 @@ async function handleTor(nsPackage: NetscriptPackage, logWriter: Logger) {
         });
 
         logWriter.writeLine(`${logPrefix} Rooting newly available servers...`);
-        await killWorkerScripts(nsPackage, HOME_SERVER_NAME);
+        await killWorkerScripts(nsPackage);
         runScript(netscript, ROOT_HOSTS_SCRIPT, {tempScript: true});
       }
     }
@@ -967,16 +968,6 @@ async function handleCorporation(
   while (investmentInfo.round < autoInvestmentRounds.length + 1) {
     const autoRoundInfo = autoInvestmentRounds[investmentInfo.round - 1];
 
-    logWriter.writeLine(
-      `${logPrefix} Running round ${autoRoundInfo.round} investment automation...`
-    );
-    await killWorkerScripts(nsPackage);
-    const autoRoundScriptPid = runScript(netscript, autoRoundInfo.scriptPath, {
-      args: corpRoundScriptArgs,
-      tempScript: true,
-    });
-    await waitForScripts(netscript, [autoRoundScriptPid]);
-
     if (
       autoRoundInfo.nextRoundFunds &&
       autoRoundInfo.waitForFunds &&
@@ -996,7 +987,15 @@ async function handleCorporation(
       }
     }
 
-    await netscript.asleep(WAIT_DELAY);
+    logWriter.writeLine(
+      `${logPrefix} Running round ${autoRoundInfo.round} investment automation...`
+    );
+    await killWorkerScripts(nsPackage);
+    const autoRoundScriptPid = runScript(netscript, autoRoundInfo.scriptPath, {
+      args: corpRoundScriptArgs,
+      tempScript: true,
+    });
+    await waitForScripts(netscript, [autoRoundScriptPid]);
     investmentInfo = await corpApi['getInvestmentOffer']();
   }
   logWriter.writeLine(`${logPrefix} Investment rounds complete!`);
@@ -1176,6 +1175,7 @@ async function handleSoftReset(nsPackage: NetscriptPackage, logWriter: Logger) {
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const singularityApi = nsLocator.singularity;
+  const stocksApi = nsLocator.stock;
 
   logWriter.writeLine(
     `${logPrefix} Waiting for faction to need reset for favor or The Red Pill or all available augmentations to be purchased...`
@@ -1186,7 +1186,7 @@ async function handleSoftReset(nsPackage: NetscriptPackage, logWriter: Logger) {
   while (
     !factionNeedsReset &&
     !purchasedAugs.includes(RED_PILL_AUGMENTATION_NAME) &&
-    eligibleAugmentations.length > 0
+    (eligibleAugmentations.length > 0 || purchasedAugs.length < 1)
   ) {
     await netscript.asleep(WAIT_DELAY);
     factionNeedsReset = await factionsNeedReset(nsPackage);
@@ -1194,11 +1194,43 @@ async function handleSoftReset(nsPackage: NetscriptPackage, logWriter: Logger) {
     eligibleAugmentations = await getEligibleAugmentations(nsPackage);
   }
 
+  logWriter.writeLine(`${logPrefix} Determining if soft reset is required...`);
+  const criticalPathFactions = Object.values(FactionData)
+    .filter(value => value.criticalPath)
+    .map(value => value.name);
+  const pendingAugmentations = await getEligibleAugmentations(
+    nsPackage,
+    true,
+    false,
+    false,
+    criticalPathFactions
+  );
+  if (
+    pendingAugmentations.length < 1 &&
+    !purchasedAugs.includes(RED_PILL_AUGMENTATION_NAME)
+  ) {
+    logWriter.writeLine(
+      `${logPrefix} All critical path augmentations installed.  Time to destroy the bitnode!`
+    );
+    logWriter.writeLine(`${logPrefix} Complete!`);
+    return;
+  }
+
   logWriter.writeLine(
     `${logPrefix} Disabling purchases and selling stock portfolio...`
   );
   await togglePurchases(false);
   await sellPortfolio(nsLocator);
+
+  logWriter.writeLine(
+    `${logPrefix} Purchasing any remaining stock market access upgrades...`
+  );
+  await stocksApi['purchaseWseAccount']();
+  await stocksApi['purchaseTixApi']();
+  await stocksApi['purchase4SMarketData']();
+  if (netscript.stock.hasWSEAccount() && netscript.stock.hasTIXAPIAccess()) {
+    await stocksApi['purchase4SMarketDataTixApi']();
+  }
 
   logWriter.writeLine(
     `${logPrefix} Purchasing any remaining eligible augmentations...`
@@ -1329,16 +1361,6 @@ export async function main(netscript: NS) {
       homeServer = await nsLocator['getServer'](HOME_SERVER_NAME);
     }
   }
-
-  scriptLogWriter.writeLine('Running hacknet manager script...');
-  const hacknetManagerArgs = [
-    getCmdFlag(CMD_FLAG_PURCHASE_NODES),
-    getCmdFlag(CMD_FLAG_PURCHASE_UPGRADES),
-  ];
-  runScript(netscript, HACKNET_MANAGER_SCRIPT, {
-    args: hacknetManagerArgs,
-    tempScript: true,
-  });
 
   const playerInfo = netscript.getPlayer();
   if (playerInfo.skills.hacking < 10) {

@@ -31,6 +31,7 @@ import {
   improveWarehouse,
   waitForMoraleAndEnergy,
   takeBestInvestmentOffer,
+  resetMultiplierMaterialPurchases,
 } from '/scripts/workflows/corporation-actions';
 import {
   generateOfficeAssignments,
@@ -48,9 +49,14 @@ import {
   ROUND1_ADVERT_LEVEL,
   SMART_SUPPLY_SCRIPT,
 } from '/scripts/workflows/corporation-shared';
-import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
+import {
+  NetscriptPackage,
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 import {REQUIRED_FUNDS as ROUND2_REQUIRED_FUNDS} from '/scripts/corp-round2';
 import {killWorkerScripts} from '/scripts/workflows/orchestration';
+import {ExitEvent} from '/scripts/comms/events/exit-event';
+import {EventListener} from '/scripts/comms/event-comms';
 
 export const CMD_FLAG_MATERIALS_RATIO = 'materialsRatio';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
@@ -69,6 +75,14 @@ const TAIL_WIDTH = 790;
 const TAIL_HEIGHT = 415;
 
 const REQUIRED_FUNDS = 150e9;
+
+async function handleExit(eventData: ExitEvent, nsPackage: NetscriptPackage) {
+  await resetMultiplierMaterialPurchases(
+    nsPackage,
+    DivisionNames.AGRICULTURE,
+    CITY_NAMES
+  );
+}
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
@@ -117,6 +131,9 @@ export async function main(netscript: NS) {
     'See script logs for on-going corporation upgrade details.'
   );
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
+
+  const eventListener = new EventListener(SUBSCRIBER_NAME);
+  eventListener.addListener(ExitEvent, handleExit, nsPackage);
 
   if (!corpInfo.divisions.includes(DivisionNames.AGRICULTURE)) {
     scriptLogWriter.writeLine('Creating Agriculture Division...');

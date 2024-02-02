@@ -37,6 +37,7 @@ import {
   buyResearchUpgrades,
   improveProductDivision,
   improveSupportDivision,
+  resetMultiplierMaterialPurchases,
   waitForState,
 } from '/scripts/workflows/corporation-actions';
 import {
@@ -48,6 +49,9 @@ import {
   getLocatorPackage,
 } from '/scripts/netscript-services/netscript-locator';
 import {killWorkerScripts} from '/scripts/workflows/orchestration';
+import {ExitEvent} from '/scripts/comms/events/exit-event';
+import {EventListener} from '/scripts/comms/event-comms';
+import {CITY_NAMES} from '/scripts/common/shared';
 
 const MODULE_NAME = 'corp-public';
 const SUBSCRIBER_NAME = 'corp-public';
@@ -292,6 +296,32 @@ async function manageDivisionImprovements(
   await waitForState(netscript, CorpState.START);
 }
 
+async function handleExit(eventData: ExitEvent, nsPackage: NetscriptPackage) {
+  const taskPromises = [];
+  taskPromises.push(
+    resetMultiplierMaterialPurchases(
+      nsPackage,
+      DivisionNames.AGRICULTURE,
+      CITY_NAMES
+    )
+  );
+  taskPromises.push(
+    resetMultiplierMaterialPurchases(
+      nsPackage,
+      DivisionNames.CHEMICAL,
+      CITY_NAMES
+    )
+  );
+  taskPromises.push(
+    resetMultiplierMaterialPurchases(
+      nsPackage,
+      DivisionNames.TOBACCO,
+      CITY_NAMES
+    )
+  );
+  await Promise.all(taskPromises);
+}
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
   const nsPackage = getLocatorPackage(netscript);
@@ -316,6 +346,9 @@ export async function main(netscript: NS) {
     'See script logs for on-going corporation upgrade details.'
   );
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
+
+  const eventListener = new EventListener(SUBSCRIBER_NAME);
+  eventListener.addListener(ExitEvent, handleExit, nsPackage);
 
   scriptLogWriter.writeLine('Running required support scripts...');
   const scriptArgs = [

@@ -189,6 +189,7 @@ async function killWorkerScripts(
   await nsLocator['scriptKill'](WEAKEN_WORKER_SCRIPT, hostname);
   await nsLocator['scriptKill'](GROW_WORKER_SCRIPT, hostname);
   await nsLocator['scriptKill'](HACK_WORKER_SCRIPT, hostname);
+  await nsLocator['scriptKill'](SHARE_RAM_WORKER_SCRIPT, hostname);
 }
 
 export {

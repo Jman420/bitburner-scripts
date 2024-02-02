@@ -75,58 +75,68 @@ async function getEligibleAugmentations(
   nsPackage: NetscriptPackage,
   includeGang = true,
   honorPrereq = true,
-  sortByCost = true
+  sortByCost = true,
+  includedFactions?: string[]
 ) {
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const singularityApi = nsLocator.singularity;
   const gangApi = nsLocator.gang;
 
-  const playerInfo = netscript.getPlayer();
-  let includedFactions = playerInfo.factions;
+  if (!includedFactions || includedFactions.length < 1) {
+    const playerInfo = netscript.getPlayer();
+    includedFactions = playerInfo.factions;
+  }
   if (!includeGang && (await gangApi['inGang']())) {
     const gangInfo = await gangApi['getGangInformation']();
     includedFactions = includedFactions.filter(
       value => value !== gangInfo.faction
     );
   }
+
   const ownedAugs = await singularityApi['getOwnedAugmentations'](true);
   const eligibleAugs = new Map<string, string>();
   for (const factionName of includedFactions) {
     const factionAugs =
       await singularityApi['getAugmentationsFromFaction'](factionName);
+    const factionRep = await singularityApi['getFactionRep'](factionName);
     for (const augName of factionAugs) {
       if (eligibleAugs.has(augName)) {
-        continue;
-      }
-
-      const augStats = await singularityApi['getAugmentationStats'](augName);
-      let eligible = false;
-      for (
-        let statCounter = 0;
-        statCounter < AUGMENTATION_STAT_PROPERTIES.length && !eligible;
-        statCounter++
-      ) {
-        const statKey = AUGMENTATION_STAT_PROPERTIES[statCounter];
-        const preRequisites =
-          await singularityApi['getAugmentationPrereq'](augName);
-        eligible =
-          !ownedAugs.includes(augName) &&
-          (augStats[statKey] !== 1 || augName === 'The Red Pill');
-        if (honorPrereq) {
-          eligible =
-            eligible &&
-            preRequisites
-              .map(preReqName => ownedAugs.includes(preReqName))
-              .reduce(
-                (aggregateValue, currentValue) =>
-                  aggregateValue && currentValue,
-                true
-              );
+        const storedFactionName = eligibleAugs.get(augName) ?? '';
+        const storedFactionRep =
+          await singularityApi['getFactionRep'](storedFactionName);
+        if (factionRep > storedFactionRep) {
+          eligibleAugs.set(augName, factionName);
         }
-      }
-      if (eligible) {
-        eligibleAugs.set(augName, factionName);
+      } else {
+        const augStats = await singularityApi['getAugmentationStats'](augName);
+        let eligible = false;
+        for (
+          let statCounter = 0;
+          statCounter < AUGMENTATION_STAT_PROPERTIES.length && !eligible;
+          statCounter++
+        ) {
+          const statKey = AUGMENTATION_STAT_PROPERTIES[statCounter];
+          const preRequisites =
+            await singularityApi['getAugmentationPrereq'](augName);
+          eligible =
+            !ownedAugs.includes(augName) &&
+            (augStats[statKey] !== 1 || augName === 'The Red Pill');
+          if (honorPrereq) {
+            eligible =
+              eligible &&
+              preRequisites
+                .map(preReqName => ownedAugs.includes(preReqName))
+                .reduce(
+                  (aggregateValue, currentValue) =>
+                    aggregateValue && currentValue,
+                  true
+                );
+          }
+        }
+        if (eligible) {
+          eligibleAugs.set(augName, factionName);
+        }
       }
     }
   }

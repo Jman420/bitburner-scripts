@@ -32,6 +32,7 @@ import {
   buyResearchUpgrades,
   improveProductDivision,
   improveSupportDivision,
+  resetMultiplierMaterialPurchases,
   takeBestInvestmentOffer,
   waitForState,
 } from '/scripts/workflows/corporation-actions';
@@ -51,8 +52,14 @@ import {
   CMD_FLAG_DESIGN_CITY_NAME,
   CMD_FLAG_DIVISION_NAME,
 } from '/scripts/corp-product';
-import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
+import {
+  NetscriptPackage,
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 import {killWorkerScripts} from '/scripts/workflows/orchestration';
+import {ExitEvent} from '/scripts/comms/events/exit-event';
+import {CITY_NAMES} from '/scripts/common/shared';
+import {EventListener} from '/scripts/comms/event-comms';
 
 const MODULE_NAME = 'corp-round4';
 const SUBSCRIBER_NAME = 'corp-round4';
@@ -73,6 +80,32 @@ const CHEMICAL_MATERIALS_SPACE_RATIO = 0.65;
 const TOBACCO_MATERIALS_SPACE_RATIO = 0.85;
 
 export const REQUIRED_FUNDS = 20e15; // 20q
+
+async function handleExit(eventData: ExitEvent, nsPackage: NetscriptPackage) {
+  const taskPromises = [];
+  taskPromises.push(
+    resetMultiplierMaterialPurchases(
+      nsPackage,
+      DivisionNames.AGRICULTURE,
+      CITY_NAMES
+    )
+  );
+  taskPromises.push(
+    resetMultiplierMaterialPurchases(
+      nsPackage,
+      DivisionNames.CHEMICAL,
+      CITY_NAMES
+    )
+  );
+  taskPromises.push(
+    resetMultiplierMaterialPurchases(
+      nsPackage,
+      DivisionNames.TOBACCO,
+      CITY_NAMES
+    )
+  );
+  await Promise.all(taskPromises);
+}
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
@@ -128,6 +161,9 @@ export async function main(netscript: NS) {
     'See script logs for on-going corporation upgrade details.'
   );
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
+
+  const eventListener = new EventListener(SUBSCRIBER_NAME);
+  eventListener.addListener(ExitEvent, handleExit, nsPackage);
 
   scriptLogWriter.writeLine('Running required support scripts...');
   await killWorkerScripts(nsPackage);

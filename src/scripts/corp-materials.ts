@@ -18,6 +18,7 @@ import {CITY_NAMES} from '/scripts/common/shared';
 import {initializeScript} from '/scripts/workflows/execution';
 import {
   purchaseMaterial,
+  resetMultiplierMaterialPurchases,
   saleMaterial,
 } from '/scripts/workflows/corporation-actions';
 import {getOptimalIndustryMaterials} from '/scripts/workflows/corporation-optimization';
@@ -25,6 +26,8 @@ import {
   NetscriptPackage,
   getLocatorPackage,
 } from '/scripts/netscript-services/netscript-locator';
+import {ExitEvent} from '/scripts/comms/events/exit-event';
+import {EventListener} from '/scripts/comms/event-comms';
 
 export const CMD_FLAG_DIVISION_NAME = 'division';
 export const CMD_FLAG_CITY_NAMES = 'cities';
@@ -142,6 +145,15 @@ async function purchaseMaterials(
   return transactionPromises;
 }
 
+async function handleExit(
+  eventData: ExitEvent,
+  nsPackage: NetscriptPackage,
+  divisionName: string,
+  cityNames: CityName[]
+) {
+  await resetMultiplierMaterialPurchases(nsPackage, divisionName, cityNames);
+}
+
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
   const nsPackage = getLocatorPackage(netscript);
@@ -186,6 +198,15 @@ export async function main(netscript: NS) {
 
   terminalWriter.writeLine('See script logs for on-going purchase details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
+
+  const eventListener = new EventListener(SUBSCRIBER_NAME);
+  eventListener.addListener(
+    ExitEvent,
+    handleExit,
+    nsPackage,
+    divisionName,
+    cityNames
+  );
 
   const purchasePromises = await purchaseMaterials(
     nsPackage,

@@ -46,7 +46,7 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const MODULE_NAME = 'ui-hud-extensions';
 const SUBSCRIBER_NAME = 'ui-hud-extensions';
-const HUD_REFRESH_DELAY = 3000;
+const HUD_REFRESH_DELAY = 1000;
 
 /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
 function handleShutdown(eventData: ExitEvent, hudHooks: HudHooks) {

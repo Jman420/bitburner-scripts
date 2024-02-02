@@ -24,6 +24,7 @@ import {
   BENCHMARK_OFFICE,
   EXPORT_FORMULA,
   FRAUD_DIVISION_NAME_PREFIX,
+  INDUSTRY_MULTIPLIER_MATERIALS,
 } from '/scripts/workflows/corporation-shared';
 import {
   OfficeAssignments,
@@ -840,6 +841,34 @@ async function takeBestInvestmentOffer(
   return currentOfferInfo;
 }
 
+async function resetMultiplierMaterialPurchases(
+  nsPackage: NetscriptPackage,
+  divisionName: string,
+  cityNames: CityName[]
+) {
+  const nsLocator = nsPackage.locator;
+  const corpApi = nsLocator.corporation;
+
+  const taskPromises = [];
+  for (const officeName of cityNames) {
+    for (const materialName of INDUSTRY_MULTIPLIER_MATERIALS) {
+      taskPromises.push(
+        corpApi['buyMaterial'](divisionName, officeName, materialName, 0)
+      );
+      taskPromises.push(
+        corpApi['sellMaterial'](
+          divisionName,
+          officeName,
+          materialName,
+          '0',
+          'MP'
+        )
+      );
+    }
+  }
+  await Promise.all(taskPromises);
+}
+
 export {
   DEFAULT_PRODUCT_DESIGN_OFFICE,
   DEFAULT_PRODUCT_RESEARCH_OFFICES,
@@ -865,4 +894,5 @@ export {
   improveSupportDivision,
   buyResearchUpgrades,
   takeBestInvestmentOffer,
+  resetMultiplierMaterialPurchases,
 };
