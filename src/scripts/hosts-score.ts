@@ -25,7 +25,7 @@ import {
   ServerDetailsExtended,
   getHackingExpGain,
   scoreHostForExperience,
-  scoreHostForWGWH,
+  scoreHostForAttack,
   sortOptimalTargetHosts,
 } from '/scripts/workflows/scoring';
 import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
@@ -76,7 +76,7 @@ export async function main(netscript: NS) {
     analyzeHost(netscript, hostname)
   );
   if (scoreFunc === CMD_FLAG_ARG_WGWH_SCORE_FUNCTION) {
-    sortOptimalTargetHosts(targetsAnalysis, undefined, scoreHostForWGWH);
+    sortOptimalTargetHosts(targetsAnalysis, undefined, scoreHostForAttack);
   } else if (scoreFunc === CMD_FLAG_ARG_EXP_FARM_FUNCTION) {
     targetsAnalysis = await Promise.all(
       targetsAnalysis.map(async value => {

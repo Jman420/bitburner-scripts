@@ -134,7 +134,7 @@ function getStandardValue(value: number, mean: number, deviation: number) {
   return (value - mean) / deviation;
 }
 
-function scoreHostForWGWH(
+function scoreHostForAttack(
   targetDetails: ServerDetails,
   meanScoreValues: MeanScoreValues,
   deviationScoreValues: DeviationScoreValues,
@@ -148,23 +148,11 @@ function scoreHostForWGWH(
   }
 ) {
   targetDetails.score =
-    weightScoreValues.hackTime *
+    weightScoreValues.weakenTime *
       getStandardValue(
-        targetDetails.hackTime,
-        meanScoreValues.hackTime,
-        deviationScoreValues.hackTime
-      ) +
-    weightScoreValues.maxFunds *
-      getStandardValue(
-        targetDetails.maxFunds,
-        meanScoreValues.maxFunds,
-        deviationScoreValues.maxFunds
-      ) +
-    weightScoreValues.growRate *
-      getStandardValue(
-        targetDetails.growRate,
-        meanScoreValues.growRate,
-        deviationScoreValues.growRate
+        targetDetails.weakenTime,
+        meanScoreValues.weakenTime,
+        deviationScoreValues.weakenTime
       ) +
     weightScoreValues.growTime *
       getStandardValue(
@@ -172,11 +160,23 @@ function scoreHostForWGWH(
         meanScoreValues.growTime,
         deviationScoreValues.growTime
       ) +
-    weightScoreValues.weakenTime *
+    weightScoreValues.hackTime *
       getStandardValue(
-        targetDetails.weakenTime,
-        meanScoreValues.weakenTime,
-        deviationScoreValues.weakenTime
+        targetDetails.hackTime,
+        meanScoreValues.hackTime,
+        deviationScoreValues.hackTime
+      ) -
+    weightScoreValues.growRate *
+      getStandardValue(
+        targetDetails.growRate,
+        meanScoreValues.growRate,
+        deviationScoreValues.growRate
+      ) -
+    weightScoreValues.maxFunds *
+      getStandardValue(
+        targetDetails.maxFunds,
+        meanScoreValues.maxFunds,
+        deviationScoreValues.maxFunds
       );
   return targetDetails.score;
 }
@@ -220,7 +220,7 @@ function sortOptimalTargetHosts(
     weakenTime: 1,
     expGain: 1,
   },
-  scoreFunc: ScoringFunction = scoreHostForWGWH
+  scoreFunc: ScoringFunction = scoreHostForAttack
 ) {
   const meanScoreValues = getMeanScoreValues(targetsAnalysis);
   const deviationScoreValues = getDeviationScoreValues(
@@ -269,7 +269,7 @@ async function getHackingExpGain(
 export {
   ServerDetailsExtended,
   WeightScoreValues,
-  scoreHostForWGWH,
+  scoreHostForAttack,
   scoreHostForExperience,
   sortOptimalTargetHosts,
   getHackingExpGain,

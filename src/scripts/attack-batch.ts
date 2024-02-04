@@ -12,9 +12,12 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
-import {initializeScript} from '/scripts/workflows/execution';
+import {infiniteLoop, initializeScript} from '/scripts/workflows/execution';
 import {SCRIPTS_DIR} from '/scripts/common/shared';
-import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
+import {
+  NetscriptPackage,
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 import {openTail} from '/scripts/workflows/ui';
 import {EventListener, sendMessage} from '/scripts/comms/event-comms';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
@@ -22,6 +25,7 @@ import {AttackBatchConfig} from '/scripts/workflows/attacks';
 import {AttackBatchConfigEvent} from '/scripts/comms/events/attack-batch-config-event';
 import {AttackBatchConfigRequest} from '/scripts/comms/requests/attack-batch-config-request';
 import {AttackBatchConfigResponse} from '/scripts/comms/responses/attack-batch-config-response';
+import {scanWideNetwork} from '/scripts/workflows/recon';
 
 export const ATTACK_BATCH_SCRIPT = `${SCRIPTS_DIR}/attack-batch.js`;
 
@@ -47,6 +51,15 @@ const TAIL_HEIGHT = 500;
 
 let scriptConfig: AttackBatchConfig;
 let workerPids: number[] | undefined;
+
+async function manageAttacks(nsPackage: NetscriptPackage, logWriter: Logger) {
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
+
+  const targetHosts = scanWideNetwork(netscript, false, false, false, true);
+}
+
+async function getOptimalTarget(nsPackage: NetscriptPackage) {}
 
 function handleUpdateConfigEvent(
   eventData: AttackBatchConfigEvent,
@@ -136,6 +149,14 @@ export async function main(netscript: NS) {
   eventListener.addListener(
     AttackBatchConfigRequest,
     handleConfigRequest,
+    scriptLogWriter
+  );
+
+  await infiniteLoop(
+    netscript,
+    manageAttacks,
+    undefined,
+    nsPackage,
     scriptLogWriter
   );
 }
