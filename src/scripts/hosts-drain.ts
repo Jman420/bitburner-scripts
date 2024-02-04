@@ -77,7 +77,10 @@ export async function main(netscript: NS) {
     scriptLogWriter.writeLine(
       'No target hosts provided.  Scanning wide network for targets...'
     );
-    targetHosts = scanWideNetwork(netscript, false, true, false, true);
+    targetHosts = scanWideNetwork(netscript, {
+      rootOnly: true,
+      requireFunds: true,
+    });
     targetHosts = filterHostsCanHack(netscript, targetHosts);
   }
 

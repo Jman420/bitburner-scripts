@@ -112,7 +112,10 @@ async function attackTargets(
     logWriter.writeLine(
       'No target hosts provided.  Getting all rooted host targets...'
     );
-    targetHosts = scanWideNetwork(netscript, false, true, false, true);
+    targetHosts = scanWideNetwork(netscript, {
+      rootOnly: true,
+      requireFunds: true,
+    });
     targetHosts = filterHostsCanHack(netscript, targetHosts);
   }
   logWriter.writeLine('Sorting target hosts by optimality...');
@@ -203,12 +206,11 @@ async function attackTargets(
     );
 
     // Determine if Total Ram can be satisfied by accessible servers (max ram) ; if not then skip
-    const attackHosts = scanWideNetwork(
-      netscript,
-      scriptConfig.includeHomeAttacker,
-      true,
-      true
-    );
+    const attackHosts = scanWideNetwork(netscript, {
+      includeHome: scriptConfig.includeHomeAttacker,
+      rootOnly: true,
+      requireRam: true,
+    });
     const totalAttackMaxRam = getTotalMaxRam(netscript, attackHosts);
     if (totalAttackMaxRam < totalRamRequired) {
       logWriter.writeLine(

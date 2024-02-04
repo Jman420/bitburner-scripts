@@ -99,7 +99,10 @@ async function attackTargets(
     logWriter.writeLine(
       'No target hosts provided.  Getting all rooted host targets...'
     );
-    targetHosts = scanWideNetwork(netscript, false, true, false, true);
+    targetHosts = scanWideNetwork(netscript, {
+      rootOnly: true,
+      requireFunds: true,
+    });
     targetHosts = filterHostsCanHack(netscript, targetHosts);
   }
   logWriter.writeLine('Sorting target hosts by optimality...');

@@ -44,7 +44,11 @@ function runWorkerScript(
 
   let attackHosts: string[];
   if (useMaxThreads) {
-    attackHosts = scanWideNetwork(netscript, includeHome, true, true);
+    attackHosts = scanWideNetwork(netscript, {
+      includeHome: includeHome,
+      rootOnly: true,
+      requireRam: true,
+    });
   } else {
     attackHosts = findServersForRam(
       netscript,

@@ -56,7 +56,7 @@ async function manageAttacks(nsPackage: NetscriptPackage, logWriter: Logger) {
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
-  const targetHosts = scanWideNetwork(netscript, false, false, false, true);
+  const targetHosts = scanWideNetwork(netscript, {requireFunds: true});
 }
 
 async function getOptimalTarget(nsPackage: NetscriptPackage) {}

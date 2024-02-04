@@ -181,7 +181,7 @@ async function getHostnamesFromSymbol(
 
   const results = [];
   const symbolChars = symbol.split('');
-  const allHosts = scanWideNetwork(netscript, false);
+  const allHosts = scanWideNetwork(netscript);
   for (const hostname of allHosts) {
     const hostDetails = await nsLocator['getServer'](hostname);
     let hostOrgName = hostDetails.organizationName.toUpperCase();

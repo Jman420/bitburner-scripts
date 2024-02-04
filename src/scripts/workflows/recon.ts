@@ -20,9 +20,14 @@ interface ServerDetails {
 function scanLocalNetwork(
   netscript: NS,
   hostname?: string,
-  includeHome = false,
-  rootOnly = false
+  args?: {
+    includeHome?: boolean;
+    rootOnly?: boolean;
+  }
 ) {
+  const rootOnly = args?.rootOnly;
+  const includeHome = args?.includeHome;
+
   const availableHosts = netscript
     .scan(hostname)
     .filter(host => !rootOnly || (rootOnly && netscript.hasRootAccess(host)));
@@ -36,12 +41,18 @@ function scanLocalNetwork(
 
 function scanWideNetwork(
   netscript: NS,
-  includeHome = false,
-  rootOnly = false,
-  requireRam = false,
-  requireFunds = false,
-  includeLambda = false
+  args?: {
+    includeHome?: boolean;
+    rootOnly?: boolean;
+    requireRam?: boolean;
+    requireFunds?: boolean;
+    includeLambda?: boolean;
+  }
 ) {
+  const rootOnly = args?.rootOnly;
+  const requireRam = args?.requireRam;
+  const requireFunds = args?.requireFunds;
+
   let availableHosts = [HOME_SERVER_NAME];
   for (const hostname of availableHosts) {
     netscript
@@ -57,10 +68,10 @@ function scanWideNetwork(
       (!requireRam || (requireRam && netscript.getServerMaxRam(host) > 0)) &&
       (!requireFunds || (requireFunds && netscript.getServerMaxMoney(host) > 0))
   );
-  if (includeHome) {
+  if (args?.includeHome) {
     availableHosts.unshift(HOME_SERVER_NAME);
   }
-  if (!includeLambda) {
+  if (!args?.includeLambda) {
     availableHosts = availableHosts.filter(
       value => value !== NETSCRIPT_SERVER_NAME
     );
@@ -95,7 +106,7 @@ function findHostPath(
   }
 
   traversedHosts.push(hostname);
-  const localHosts = scanLocalNetwork(netscript, hostname, false, false).filter(
+  const localHosts = scanLocalNetwork(netscript, hostname).filter(
     value => !traversedHosts.includes(value)
   );
   for (const nextHost of localHosts) {
@@ -119,7 +130,11 @@ function findServersForRam(
   }
 
   if (!targetHosts) {
-    targetHosts = scanWideNetwork(netscript, includeHome, true, true);
+    targetHosts = scanWideNetwork(netscript, {
+      includeHome: includeHome,
+      rootOnly: true,
+      requireRam: true,
+    });
   }
 
   let satisfiedRam = 0;
@@ -142,7 +157,11 @@ function findServersForRam(
 
 function getTotalMaxRam(netscript: NS, targetHosts: string[]) {
   if (targetHosts.length < 1) {
-    targetHosts = scanWideNetwork(netscript, true, true, true, false);
+    targetHosts = scanWideNetwork(netscript, {
+      includeHome: true,
+      rootOnly: true,
+      requireRam: true,
+    });
   }
 
   let result = 0;

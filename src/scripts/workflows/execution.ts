@@ -83,7 +83,11 @@ function ensureRunning(
 function getPid(netscript: NS, scriptPath: string, targetHosts?: string[]) {
   targetHosts = targetHosts
     ? targetHosts
-    : scanWideNetwork(netscript, true, true, true);
+    : scanWideNetwork(netscript, {
+        includeHome: true,
+        rootOnly: true,
+        requireRam: true,
+      });
   for (const hostname of targetHosts) {
     const hostProcesses = netscript.ps(hostname);
     for (const process of hostProcesses) {

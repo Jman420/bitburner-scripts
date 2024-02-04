@@ -78,7 +78,11 @@ async function updatePolledMetrics(
   logWriter.writeLine('Calculating script metrics...');
   let totalScriptIncome = 0;
   let totalScriptExp = 0;
-  const rootedHosts = scanWideNetwork(netscript, true, true, true);
+  const rootedHosts = scanWideNetwork(netscript, {
+    includeHome: true,
+    rootOnly: true,
+    requireRam: true,
+  });
   for (const hostname of rootedHosts) {
     const procInfos = await nsLocator['ps'](hostname);
     for (const scriptProc of procInfos) {

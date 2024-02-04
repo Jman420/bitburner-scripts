@@ -51,12 +51,11 @@ let workerPids: number[] | undefined;
 
 async function shareRam(netscript: NS, logWriter: Logger) {
   logWriter.writeLine('Identifying available targets...');
-  const targetHosts = scanWideNetwork(
-    netscript,
-    scriptConfig.includeHome,
-    true,
-    true
-  );
+  const targetHosts = scanWideNetwork(netscript, {
+    includeHome: scriptConfig.includeHome,
+    rootOnly: true,
+    requireRam: true,
+  });
   logWriter.writeLine(`Found ${targetHosts.length} target hosts.`);
 
   logWriter.writeLine('Sharing RAM to boost faction reputation gains...');

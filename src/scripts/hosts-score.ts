@@ -70,7 +70,10 @@ export async function main(netscript: NS) {
   logWriter.writeLine(`Score Function : ${scoreFunc}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
-  let targetHosts = scanWideNetwork(netscript, false, true, false, true);
+  let targetHosts = scanWideNetwork(netscript, {
+    rootOnly: true,
+    requireFunds: true,
+  });
   targetHosts = filterHostsCanHack(netscript, targetHosts);
   let targetsAnalysis = targetHosts.map(hostname =>
     analyzeHost(netscript, hostname)

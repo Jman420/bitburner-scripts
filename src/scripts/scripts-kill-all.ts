@@ -37,7 +37,7 @@ export async function main(netscript: NS) {
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Scanning wide network for all hosts...');
-  const availableHosts = scanWideNetwork(netscript, includeHome);
+  const availableHosts = scanWideNetwork(netscript, {includeHome: includeHome});
   logWriter.writeLine(`Found ${availableHosts.length} available hosts`);
 
   for (const hostname of availableHosts) {

@@ -43,7 +43,7 @@ export async function main(netscript: NS) {
     logWriter.writeLine(
       'No target hosts provided.  Getting all rootable hosts...'
     );
-    const availableHosts = scanWideNetwork(netscript, false, false);
+    const availableHosts = scanWideNetwork(netscript);
     const rootTools = getRootTools(netscript);
     targetHosts = availableHosts.filter(
       host =>

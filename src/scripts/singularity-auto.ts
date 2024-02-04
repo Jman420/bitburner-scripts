@@ -179,7 +179,7 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
 
   let attackTargets = filterHostsCanHack(
     netscript,
-    scanWideNetwork(netscript, false, true, false, true)
+    scanWideNetwork(netscript, {rootOnly: true, requireFunds: true})
   );
   if (attackTargets.length < ATTACK_TARGETS_NEED) {
     logWriter.writeLine(`${logPrefix} Running hack exp farm script...`);
@@ -199,7 +199,7 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
       await netscript.asleep(WAIT_DELAY);
       attackTargets = filterHostsCanHack(
         netscript,
-        scanWideNetwork(netscript, false, true, false, true)
+        scanWideNetwork(netscript, {rootOnly: true, requireFunds: true})
       );
     }
 

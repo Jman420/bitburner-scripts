@@ -42,14 +42,10 @@ export async function main(netscript: NS) {
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine('Scanning wide network for all hosts...');
-  const availableHosts = scanWideNetwork(
-    netscript,
-    includeHome,
-    false,
-    false,
-    false,
-    includeLambda
-  );
+  const availableHosts = scanWideNetwork(netscript, {
+    includeHome: includeHome,
+    includeLambda: includeLambda,
+  });
   logWriter.writeLine(`Found ${availableHosts.length} available hosts`);
 
   for (const hostname of availableHosts) {

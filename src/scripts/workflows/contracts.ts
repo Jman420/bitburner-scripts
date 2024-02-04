@@ -143,7 +143,7 @@ async function findContracts(
 
   const availableContracts = [];
   if (!targetHosts || targetHosts.length < 1) {
-    targetHosts = scanWideNetwork(netscript, includeHome);
+    targetHosts = scanWideNetwork(netscript, {includeHome: includeHome});
   }
   for (const hostname of targetHosts) {
     const challengeFiles = netscript.ls(hostname, CONTRACT_FILE_EXTENSION);

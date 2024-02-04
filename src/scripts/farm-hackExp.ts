@@ -69,7 +69,7 @@ async function attackTargets(nsPackage: NetscriptPackage, logWriter: Logger) {
   const netscript = nsPackage.netscript;
 
   logWriter.writeLine('Identifying available targets...');
-  let targetHosts = scanWideNetwork(netscript, false, true, false, false);
+  let targetHosts = scanWideNetwork(netscript, {rootOnly: true});
   targetHosts = filterHostsCanHack(netscript, targetHosts);
 
   logWriter.writeLine('Sorting target hosts by optimality...');
@@ -98,12 +98,11 @@ async function attackTargets(nsPackage: NetscriptPackage, logWriter: Logger) {
   }
 
   logWriter.writeLine('Getting all rooted hosts...');
-  const rootedHosts = scanWideNetwork(
-    netscript,
-    scriptConfig.includeHomeAttacker,
-    true,
-    true
-  );
+  const rootedHosts = scanWideNetwork(netscript, {
+    includeHome: scriptConfig.includeHomeAttacker,
+    rootOnly: true,
+    requireRam: true,
+  });
   logWriter.writeLine(`Found ${rootedHosts.length} rooted hosts.`);
 
   logWriter.writeLine(

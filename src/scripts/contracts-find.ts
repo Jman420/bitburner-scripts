@@ -21,7 +21,7 @@ export async function main(netscript: NS) {
   logWriter.writeLine('Find Coding Contracts');
   logWriter.writeLine(SECTION_DIVIDER);
 
-  const availableHosts = scanWideNetwork(netscript, false);
+  const availableHosts = scanWideNetwork(netscript);
   for (const hostname of availableHosts) {
     const challengeFiles = await nsLocator['ls'](hostname, '.cct');
     for (const challengePath of challengeFiles) {
