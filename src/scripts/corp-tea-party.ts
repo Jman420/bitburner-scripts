@@ -13,10 +13,7 @@ import {
 
 import {openTail} from '/scripts/workflows/ui';
 
-import {
-  delayedInfiniteLoop,
-  initializeScript,
-} from '/scripts/workflows/execution';
+import {infiniteLoop, initializeScript} from '/scripts/workflows/execution';
 import {waitForState} from '/scripts/workflows/corporation-actions';
 import {TeaPartyConfig} from '/scripts/workflows/corporation-shared';
 
@@ -52,9 +49,7 @@ const TAIL_Y_POS = 1035;
 const TAIL_WIDTH = 855;
 const TAIL_HEIGHT = 310;
 
-const UPDATE_DELAY = 0;
-
-let managerConfig: TeaPartyConfig;
+let scriptConfig: TeaPartyConfig;
 
 async function manageTeaParty(nsPackage: NetscriptPackage, logWriter: Logger) {
   const nsLocator = nsPackage.locator;
@@ -69,7 +64,7 @@ async function manageTeaParty(nsPackage: NetscriptPackage, logWriter: Logger) {
       const officeHasEmployees = officeInfo.numEmployees > 0;
       if (
         officeHasEmployees &&
-        officeInfo.avgEnergy <= managerConfig.energyLimit
+        officeInfo.avgEnergy <= scriptConfig.energyLimit
       ) {
         const teaPurchased = await corpApi['buyTea'](divisionName, cityName);
         logWriter.writeLine(
@@ -78,14 +73,14 @@ async function manageTeaParty(nsPackage: NetscriptPackage, logWriter: Logger) {
       }
       if (
         officeHasEmployees &&
-        officeInfo.avgMorale <= managerConfig.moraleLimit
+        officeInfo.avgMorale <= scriptConfig.moraleLimit
       ) {
         await corpApi['throwParty'](
           divisionName,
           cityName,
-          managerConfig.partyFunds
+          scriptConfig.partyFunds
         );
-        const partyCost = managerConfig.partyFunds * officeInfo.numEmployees;
+        const partyCost = scriptConfig.partyFunds * officeInfo.numEmployees;
         logWriter.writeLine(
           `Threw party for ${divisionName} office in ${cityName} : $${netscript.formatNumber(
             partyCost
@@ -108,21 +103,21 @@ function handleUpdateConfigEvent(
   }
 
   logWriter.writeLine('Update settings event received...');
-  managerConfig = eventData.config;
-  if (managerConfig.moraleLimit < 0) {
-    managerConfig.moraleLimit = DEFAULT_MORALE_LIMIT;
+  scriptConfig = eventData.config;
+  if (scriptConfig.moraleLimit < 0) {
+    scriptConfig.moraleLimit = DEFAULT_MORALE_LIMIT;
   }
-  if (managerConfig.energyLimit < 0) {
-    managerConfig.energyLimit = DEFAULT_ENERGY_LIMIT;
+  if (scriptConfig.energyLimit < 0) {
+    scriptConfig.energyLimit = DEFAULT_ENERGY_LIMIT;
   }
-  if (managerConfig.partyFunds < 0) {
-    managerConfig.partyFunds = DEFAULT_PARTY_FUNDS;
+  if (scriptConfig.partyFunds < 0) {
+    scriptConfig.partyFunds = DEFAULT_PARTY_FUNDS;
   }
 
-  logWriter.writeLine(`  Morale Limit : ${managerConfig.moraleLimit}`);
-  logWriter.writeLine(`  Energy Limit : ${managerConfig.energyLimit}`);
+  logWriter.writeLine(`  Morale Limit : ${scriptConfig.moraleLimit}`);
+  logWriter.writeLine(`  Energy Limit : ${scriptConfig.energyLimit}`);
   logWriter.writeLine(
-    `  Party Funds : ${netscript.formatNumber(managerConfig.partyFunds)}`
+    `  Party Funds : ${netscript.formatNumber(scriptConfig.partyFunds)}`
   );
 }
 
@@ -133,7 +128,7 @@ function handleTeaPartyConfigRequest(
   logWriter.writeLine(
     `Sending tea party config response to ${requestData.sender}`
   );
-  sendMessage(new TeaPartyConfigResponse(managerConfig), requestData.sender);
+  sendMessage(new TeaPartyConfigResponse(scriptConfig), requestData.sender);
 }
 
 /** @param {NS} netscript */
@@ -184,16 +179,16 @@ export async function main(netscript: NS) {
   );
   scriptLogWriter.writeLine(SECTION_DIVIDER);
 
-  managerConfig = {
+  scriptConfig = {
     energyLimit: energyLimit,
     moraleLimit: moraleLimit,
     partyFunds: partyFunds,
   };
 
-  await delayedInfiniteLoop(
+  await infiniteLoop(
     netscript,
-    UPDATE_DELAY,
     manageTeaParty,
+    undefined,
     nsPackage,
     scriptLogWriter
   );

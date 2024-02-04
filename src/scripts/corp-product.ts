@@ -17,10 +17,7 @@ import {openTail} from '/scripts/workflows/ui';
 import {CITY_NAMES} from '/scripts/common/shared';
 
 import {parseNumber} from '/scripts/workflows/parsing';
-import {
-  delayedInfiniteLoop,
-  initializeScript,
-} from '/scripts/workflows/execution';
+import {infiniteLoop, initializeScript} from '/scripts/workflows/execution';
 import {waitForState} from '/scripts/workflows/corporation-actions';
 import {
   FRAUD_DIVISION_NAME_PREFIX,
@@ -252,10 +249,10 @@ export async function main(netscript: NS) {
     budgetPercent: budgetPercent,
   };
 
-  await delayedInfiniteLoop(
+  await infiniteLoop(
     netscript,
-    UPDATE_DELAY,
     manageProductLifecycle,
+    UPDATE_DELAY,
     nsPackage,
     scriptLogWriter
   );

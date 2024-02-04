@@ -3,10 +3,7 @@ import {NS} from '@ns';
 import {getLogger, Logger, LoggerMode} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
-import {
-  delayedInfiniteLoop,
-  initializeScript,
-} from '/scripts/workflows/execution';
+import {infiniteLoop, initializeScript} from '/scripts/workflows/execution';
 
 import {
   FIFTY_PERCENT,
@@ -27,7 +24,6 @@ import {
 const MODULE_NAME = 'stocks-ticker-4sigma';
 const SUBSCRIBER_NAME = 'stocks-ticker-4sigma';
 
-const UPDATE_DELAY = 0;
 const STOCK_LISTINGS_MAP = new Map<string, StockListing>();
 
 async function updateStockListings(
@@ -121,10 +117,10 @@ export async function main(netscript: NS) {
   const eventListener = new EventListener(SUBSCRIBER_NAME);
   eventListener.addListener(StockListingsRequest, sendListings);
 
-  await delayedInfiniteLoop(
+  await infiniteLoop(
     netscript,
-    UPDATE_DELAY,
     updateStockListings,
+    undefined,
     nsPackage,
     logWriter
   );

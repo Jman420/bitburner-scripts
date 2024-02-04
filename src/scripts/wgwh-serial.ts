@@ -48,6 +48,10 @@ import {WORKERS_PACKAGE} from '/scripts/workers/package';
 import {CMD_FLAG_TARGETS_CSV} from '/scripts/workers/shared';
 import {hackThreadsRequired} from '/scripts/workflows/formulas';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
+import {
+  NetscriptPackage,
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 export const WGWH_SERIAL_ATTACK_SCRIPT = `${SCRIPTS_DIR}/wgwh-serial.js`;
 export const CMD_FLAG_INCLUDE_HOME = 'includeHome';
@@ -73,11 +77,11 @@ const TAIL_Y_POS = 105;
 const TAIL_WIDTH = 780;
 const TAIL_HEIGHT = 500;
 
-let managerConfig: WgwhAttackConfig;
+let scriptConfig: WgwhAttackConfig;
 let scriptPids: number[] | undefined;
 
 async function attackTargets(
-  netscript: NS,
+  nsPackage: NetscriptPackage,
   logWriter: Logger,
   weightScoreValues: WeightScoreValues = {
     hackTime: 1,
@@ -88,7 +92,9 @@ async function attackTargets(
     expGain: 1,
   }
 ) {
-  let targetHosts = [...managerConfig.targetHosts];
+  const netscript = nsPackage.netscript;
+
+  let targetHosts = [...scriptConfig.targetHosts];
   if (targetHosts.length < 1) {
     logWriter.writeLine(
       'No target hosts provided.  Getting all rooted host targets...'
@@ -101,11 +107,11 @@ async function attackTargets(
   sortOptimalTargetHosts(targetsAnalysis, weightScoreValues);
   logWriter.writeLine(`Sorted ${targetsAnalysis.length} target hosts.`);
 
-  if (managerConfig.optimalOnlyCount > 0) {
+  if (scriptConfig.optimalOnlyCount > 0) {
     logWriter.writeLine(
-      `Isolating top ${managerConfig.optimalOnlyCount} most optimal targets...`
+      `Isolating top ${scriptConfig.optimalOnlyCount} most optimal targets...`
     );
-    targetsAnalysis = targetsAnalysis.slice(0, managerConfig.optimalOnlyCount);
+    targetsAnalysis = targetsAnalysis.slice(0, scriptConfig.optimalOnlyCount);
   }
 
   logWriter.writeLine(`Attacking ${targetsAnalysis.length} targets...`);
@@ -128,7 +134,7 @@ async function attackTargets(
         WORKERS_PACKAGE,
         true,
         1,
-        managerConfig.includeHomeAttacker,
+        scriptConfig.includeHomeAttacker,
         ...scriptArgs
       );
       await waitForScripts(netscript, scriptPids);
@@ -136,7 +142,7 @@ async function attackTargets(
     }
 
     const maxFundsLimit =
-      managerConfig.targetFundsLimitPercent * hostDetails.maxFunds;
+      scriptConfig.targetFundsLimitPercent * hostDetails.maxFunds;
     while (hostDetails.availableFunds < maxFundsLimit) {
       hostDetails = analyzeHost(netscript, hostDetails.hostname); // Re-analyze host since Player may have leveled up since previous analysis
       logWriter.writeLine(
@@ -150,7 +156,7 @@ async function attackTargets(
         WORKERS_PACKAGE,
         true,
         1,
-        managerConfig.includeHomeAttacker,
+        scriptConfig.includeHomeAttacker,
         ...scriptArgs
       );
       await waitForScripts(netscript, scriptPids);
@@ -172,7 +178,7 @@ async function attackTargets(
         WORKERS_PACKAGE,
         true,
         1,
-        managerConfig.includeHomeAttacker,
+        scriptConfig.includeHomeAttacker,
         ...scriptArgs
       );
       await waitForScripts(netscript, scriptPids);
@@ -186,11 +192,10 @@ async function attackTargets(
       )})...`
     );
     const prehackFunds = hostDetails.availableFunds;
-    const targetHackFunds = prehackFunds * managerConfig.hackFundsPercent;
-    const requiredThreads = hackThreadsRequired(
-      netscript,
+    const requiredThreads = await hackThreadsRequired(
+      nsPackage,
       hostDetails.hostname,
-      targetHackFunds
+      scriptConfig.hackFundsPercent
     );
     scriptPids = runWorkerScript(
       netscript,
@@ -198,7 +203,7 @@ async function attackTargets(
       WORKERS_PACKAGE,
       false,
       requiredThreads,
-      managerConfig.includeHomeAttacker,
+      scriptConfig.includeHomeAttacker,
       getCmdFlag(CMD_FLAG_TARGETS_CSV),
       hostDetails.hostname
     );
@@ -225,29 +230,28 @@ function handleUpdateConfigEvent(
 
   logWriter.writeLine('Update settings event received...');
   const newConfig = eventData.config;
-  managerConfig.attackerHosts =
-    newConfig.attackerHosts ?? managerConfig.attackerHosts;
-  managerConfig.hackFundsPercent =
-    newConfig.hackFundsPercent ?? managerConfig.hackFundsPercent;
-  managerConfig.includeHomeAttacker =
-    newConfig.includeHomeAttacker ?? managerConfig.includeHomeAttacker;
-  managerConfig.optimalOnlyCount =
-    newConfig.optimalOnlyCount ?? managerConfig.optimalOnlyCount;
-  managerConfig.targetFundsLimitPercent =
-    newConfig.targetFundsLimitPercent ?? managerConfig.targetFundsLimitPercent;
-  managerConfig.targetHosts =
-    newConfig.targetHosts ?? managerConfig.targetHosts;
+  scriptConfig.attackerHosts =
+    newConfig.attackerHosts ?? scriptConfig.attackerHosts;
+  scriptConfig.hackFundsPercent =
+    newConfig.hackFundsPercent ?? scriptConfig.hackFundsPercent;
+  scriptConfig.includeHomeAttacker =
+    newConfig.includeHomeAttacker ?? scriptConfig.includeHomeAttacker;
+  scriptConfig.optimalOnlyCount =
+    newConfig.optimalOnlyCount ?? scriptConfig.optimalOnlyCount;
+  scriptConfig.targetFundsLimitPercent =
+    newConfig.targetFundsLimitPercent ?? scriptConfig.targetFundsLimitPercent;
+  scriptConfig.targetHosts = newConfig.targetHosts ?? scriptConfig.targetHosts;
 
-  logWriter.writeLine(`  Optimal Only : ${managerConfig.optimalOnlyCount}`);
-  logWriter.writeLine(`  Hack Percent : ${managerConfig.hackFundsPercent}`);
+  logWriter.writeLine(`  Optimal Only : ${scriptConfig.optimalOnlyCount}`);
+  logWriter.writeLine(`  Hack Percent : ${scriptConfig.hackFundsPercent}`);
   logWriter.writeLine(
-    `  Funds Limit Percent : ${managerConfig.targetFundsLimitPercent}`
+    `  Funds Limit Percent : ${scriptConfig.targetFundsLimitPercent}`
   );
-  logWriter.writeLine(`  Target Hosts : ${managerConfig.targetHosts}`);
+  logWriter.writeLine(`  Target Hosts : ${scriptConfig.targetHosts}`);
   logWriter.writeLine(
-    `  Include Home Attacker : ${managerConfig.includeHomeAttacker}`
+    `  Include Home Attacker : ${scriptConfig.includeHomeAttacker}`
   );
-  logWriter.writeLine(`  Attacker Hosts : ${managerConfig.attackerHosts}`);
+  logWriter.writeLine(`  Attacker Hosts : ${scriptConfig.attackerHosts}`);
 }
 
 function handleConfigRequest(
@@ -257,7 +261,7 @@ function handleConfigRequest(
   logWriter.writeLine(
     `Sending serial wgwh attack manager config response to ${requestData.sender}`
   );
-  sendMessage(new WgwhConfigResponse(managerConfig), requestData.sender);
+  sendMessage(new WgwhConfigResponse(scriptConfig), requestData.sender);
 }
 
 function handleExit(eventData: ExitEvent, netscript: NS) {
@@ -270,6 +274,8 @@ function handleExit(eventData: ExitEvent, netscript: NS) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   const netscriptEnabledLogging = DEFAULT_NETSCRIPT_ENABLED_LOGGING.filter(
@@ -305,7 +311,7 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine(`Attacker Hosts : ${attackerHosts}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
-  managerConfig = {
+  scriptConfig = {
     includeHomeAttacker: includeHomeAttacker,
     optimalOnlyCount: optimalOnlyCount,
     hackFundsPercent: hackFundsPercent,
@@ -330,7 +336,13 @@ export async function main(netscript: NS) {
     scriptLogWriter
   );
 
-  await infiniteLoop(netscript, attackTargets, netscript, scriptLogWriter);
+  await infiniteLoop(
+    netscript,
+    attackTargets,
+    undefined,
+    nsPackage,
+    scriptLogWriter
+  );
 }
 
 export function autocomplete(data: AutocompleteData, args: string[]) {

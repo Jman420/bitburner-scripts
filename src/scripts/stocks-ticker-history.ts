@@ -3,10 +3,7 @@ import {NS} from '@ns';
 import {getLogger, Logger, LoggerMode} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
-import {
-  delayedInfiniteLoop,
-  initializeScript,
-} from '/scripts/workflows/execution';
+import {infiniteLoop, initializeScript} from '/scripts/workflows/execution';
 import {
   FIFTY_PERCENT,
   getStockPosition,
@@ -51,7 +48,6 @@ class HistoricalStockDetails {
 const MODULE_NAME = 'stocks-ticker-history';
 const SUBSCRIBER_NAME = 'stocks-ticker-history';
 
-const UPDATE_DELAY = 0;
 const HISTORICAL_RECORD_DEPTH = 20;
 const MIN_RECORDS_FOR_FORECAST = 10;
 const HISTORICAL_DETAILS_MAP = new Map<string, HistoricalStockDetails>();
@@ -167,10 +163,10 @@ export async function main(netscript: NS) {
   eventListener.addListener(StockListingsRequest, sendListings);
 
   HISTORICAL_DETAILS_MAP.clear();
-  await delayedInfiniteLoop(
+  await infiniteLoop(
     netscript,
-    UPDATE_DELAY,
     updateStockListings,
+    undefined,
     nsPackage,
     logWriter
   );

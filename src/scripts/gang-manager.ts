@@ -84,7 +84,7 @@ const WARTIME_CHANCE_LIMIT = 0.85;
 const WAR_PARTY_SIZE = 6;
 const WANTED_PENALTY_LIMIT = 0.15;
 
-let managerConfig: GangManagerConfig;
+let scriptConfig: GangManagerConfig;
 let formWarParty = false;
 let engageWarfare = false;
 let reduceWantedPenalty = false;
@@ -130,10 +130,10 @@ async function manageGang(
     (taskA, taskB) => {
       let scoreA = 0;
       let scoreB = 0;
-      if (managerConfig.taskFocus === TaskFocus.RESPECT) {
+      if (scriptConfig.taskFocus === TaskFocus.RESPECT) {
         scoreA = taskA.baseRespect;
         scoreB = taskB.baseRespect;
-      } else if (managerConfig.taskFocus === TaskFocus.MONEY) {
+      } else if (scriptConfig.taskFocus === TaskFocus.MONEY) {
         scoreA = taskA.baseMoney;
         scoreB = taskB.baseMoney;
       }
@@ -179,7 +179,7 @@ async function manageGang(
       value => !memberDetails.augmentations.includes(value.name)
     );
     while (
-      managerConfig.buyAugmentations &&
+      scriptConfig.buyAugmentations &&
       remainingAugmentations.length > 0 &&
       remainingAugmentations[0].cost <= netscript.getPlayer().money
     ) {
@@ -204,7 +204,7 @@ async function manageGang(
       value => !memberDetails.upgrades.includes(value.name)
     );
     while (
-      managerConfig.buyEquipment &&
+      scriptConfig.buyEquipment &&
       remainingEquipment.length > 0 &&
       remainingEquipment[0].cost <= netscript.getPlayer().money &&
       memberStatsSatisfyLimit(
@@ -405,17 +405,17 @@ function handleUpdateConfigEvent(
 
   logWriter.writeLine('Update settings event received...');
   const newConfig = eventData.config;
-  managerConfig.buyAugmentations =
-    newConfig.buyAugmentations ?? managerConfig.buyAugmentations;
-  managerConfig.buyEquipment =
-    newConfig.buyEquipment ?? managerConfig.buyEquipment;
-  managerConfig.taskFocus = newConfig.taskFocus ?? managerConfig.taskFocus;
+  scriptConfig.buyAugmentations =
+    newConfig.buyAugmentations ?? scriptConfig.buyAugmentations;
+  scriptConfig.buyEquipment =
+    newConfig.buyEquipment ?? scriptConfig.buyEquipment;
+  scriptConfig.taskFocus = newConfig.taskFocus ?? scriptConfig.taskFocus;
 
   logWriter.writeLine(
-    `  Purchase Augmentations : ${managerConfig.buyAugmentations}`
+    `  Purchase Augmentations : ${scriptConfig.buyAugmentations}`
   );
-  logWriter.writeLine(`  Purchase Equipment : ${managerConfig.buyEquipment}`);
-  logWriter.writeLine(`  Task Focus : ${managerConfig.taskFocus}`);
+  logWriter.writeLine(`  Purchase Equipment : ${scriptConfig.buyEquipment}`);
+  logWriter.writeLine(`  Task Focus : ${scriptConfig.taskFocus}`);
 }
 
 function handleConfigRequest(
@@ -425,7 +425,7 @@ function handleConfigRequest(
   logWriter.writeLine(
     `Sending gang manager config response to ${requestData.sender}`
   );
-  sendMessage(new GangConfigResponse(managerConfig), requestData.sender);
+  sendMessage(new GangConfigResponse(scriptConfig), requestData.sender);
 }
 
 /** @param {NS} netscript */
@@ -478,7 +478,7 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine('See script logs for on-going gang details.');
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  managerConfig = {
+  scriptConfig = {
     buyAugmentations: buyAugmentations,
     buyEquipment: buyEquipment,
     taskFocus: taskFocus,

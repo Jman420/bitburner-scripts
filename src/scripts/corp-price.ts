@@ -5,10 +5,7 @@ import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {openTail} from '/scripts/workflows/ui';
 
-import {
-  delayedInfiniteLoop,
-  initializeScript,
-} from '/scripts/workflows/execution';
+import {infiniteLoop, initializeScript} from '/scripts/workflows/execution';
 
 import {CorpState} from '/scripts/data/corporation-enums';
 import {FRAUD_DIVISION_NAME_PREFIX} from '/scripts/workflows/corporation-shared';
@@ -176,21 +173,16 @@ export async function main(netscript: NS) {
   productMarkupCache = new Map<string, number>();
   const taskPromises = [];
   taskPromises.push(
-    delayedInfiniteLoop(
+    infiniteLoop(
       netscript,
-      UPDATE_DELAY,
       manageOutputPricing,
+      UPDATE_DELAY,
       nsPackage,
       scriptLogWriter
     )
   );
   taskPromises.push(
-    delayedInfiniteLoop(
-      netscript,
-      UPDATE_DELAY,
-      purgeProductMarkupCache,
-      nsPackage
-    )
+    infiniteLoop(netscript, purgeProductMarkupCache, UPDATE_DELAY, nsPackage)
   );
   await Promise.allSettled(taskPromises);
 }

@@ -5,7 +5,7 @@ import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {openTail} from '/scripts/workflows/ui';
 import {
-  delayedInfiniteLoop,
+  infiniteLoop,
   initializeScript,
   runScript,
 } from '/scripts/workflows/execution';
@@ -62,8 +62,6 @@ const TAIL_WIDTH = 790;
 const TAIL_HEIGHT = 415;
 
 const MATERIALS_SPACE_RATIO = 0.1;
-
-const UPDATE_DELAY = 0;
 
 let cycleCount: number;
 
@@ -365,10 +363,10 @@ export async function main(netscript: NS) {
 
   scriptLogWriter.writeLine('Running corporate improvement loop...');
   cycleCount = 0;
-  await delayedInfiniteLoop(
+  await infiniteLoop(
     netscript,
-    UPDATE_DELAY,
     manageDivisionImprovements,
+    undefined,
     nsPackage,
     scriptLogWriter
   );

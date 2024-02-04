@@ -98,22 +98,23 @@ async function waitForScripts(
 }
 
 async function growHost(
-  netscript: NS,
+  nsPackage: NetscriptPackage,
   hostDetails: ServerDetails,
   useMaxThreads = true,
   includeHomeAttacker = false,
   maxFundsPercent = 1,
   influenceStocks = false
 ) {
+  const netscript = nsPackage.netscript;
+
   const maxFundsLimit = maxFundsPercent * hostDetails.maxFunds;
   while (hostDetails.availableFunds < maxFundsLimit) {
-    const requiredFundsMultiplier = maxFundsLimit / hostDetails.availableFunds;
     let requiredThreads = 0;
     if (!useMaxThreads) {
-      requiredThreads = growThreadsRequired(
-        netscript,
-        hostDetails,
-        requiredFundsMultiplier
+      requiredThreads = await growThreadsRequired(
+        nsPackage,
+        hostDetails.hostname,
+        maxFundsLimit
       );
     }
 
@@ -137,21 +138,22 @@ async function growHost(
 }
 
 async function hackHost(
-  netscript: NS,
+  nsPackage: NetscriptPackage,
   hostDetails: ServerDetails,
   useMaxThreads = false,
   includeHomeAttacker = false,
   hackFundsPercent = 0.75,
   influenceStocks = false
 ) {
+  const netscript = nsPackage.netscript;
+
   const prehackFunds = hostDetails.availableFunds;
-  const targetHackFunds = prehackFunds * hackFundsPercent;
   let requiredThreads = 0;
   if (!useMaxThreads) {
-    requiredThreads = hackThreadsRequired(
-      netscript,
+    requiredThreads = await hackThreadsRequired(
+      nsPackage,
       hostDetails.hostname,
-      targetHackFunds
+      hackFundsPercent
     );
   }
 

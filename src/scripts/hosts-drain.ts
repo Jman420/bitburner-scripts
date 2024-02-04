@@ -27,6 +27,7 @@ import {
 import {hackHost} from '/scripts/workflows/orchestration';
 import {DEFAULT_NETSCRIPT_ENABLED_LOGGING} from '/scripts/logging/scriptLogger';
 import {openTail} from '/scripts/workflows/ui';
+import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_TARGETS, []],
@@ -44,6 +45,8 @@ const TAIL_HEIGHT = 510;
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
+  const nsPackage = getLocatorPackage(netscript);
+
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
   const netscriptEnabledLogging = DEFAULT_NETSCRIPT_ENABLED_LOGGING.filter(
@@ -91,7 +94,7 @@ export async function main(netscript: NS) {
       )})...`
     );
     const hackResults = await hackHost(
-      netscript,
+      nsPackage,
       hostDetails,
       true,
       includeHome,

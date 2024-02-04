@@ -5,7 +5,6 @@ import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {openTail} from '/scripts/workflows/ui';
 
-import {delayedInfiniteLoop} from '/scripts/workflows/execution';
 import {waitForState} from '/scripts/workflows/corporation-actions';
 import {getOfficeLimitedProduction} from '/scripts/workflows/corporation-formulas';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
@@ -15,6 +14,7 @@ import {
   NetscriptPackage,
   getLocatorPackage,
 } from '/scripts/netscript-services/netscript-locator';
+import {infiniteLoop} from '/scripts/workflows/execution';
 
 const MODULE_NAME = 'corp-supply';
 const SUBSCRIBER_NAME = 'corp-supply';
@@ -24,7 +24,6 @@ export const TAIL_Y_POS = 965;
 export const TAIL_WIDTH = 805;
 export const TAIL_HEIGHT = 380;
 
-const UPDATE_DELAY = 0;
 const MAX_CONGESTION_COUNT = 5;
 
 let officeProductionMap: Map<string, number>;
@@ -361,10 +360,10 @@ export async function main(netscript: NS) {
 
   officeProductionMap = new Map<string, number>();
   taskPromises.push(
-    delayedInfiniteLoop(
+    infiniteLoop(
       netscript,
-      UPDATE_DELAY,
       monitorOfficeProduction,
+      undefined,
       nsPackage,
       scriptLogWriter
     )
@@ -372,20 +371,20 @@ export async function main(netscript: NS) {
 
   warehouseCongestionMap = new Map<string, number>();
   taskPromises.push(
-    delayedInfiniteLoop(
+    infiniteLoop(
       netscript,
-      UPDATE_DELAY,
       monitorWarehouseCongestion,
+      undefined,
       nsPackage,
       scriptLogWriter
     )
   );
 
   taskPromises.push(
-    delayedInfiniteLoop(
+    infiniteLoop(
       netscript,
-      UPDATE_DELAY,
       manageWarehouse,
+      undefined,
       nsPackage,
       scriptLogWriter
     )

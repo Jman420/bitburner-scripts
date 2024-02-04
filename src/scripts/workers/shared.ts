@@ -49,6 +49,7 @@ async function runWorker(
     await infiniteLoop(
       netscript,
       runGWH,
+      undefined,
       netscript,
       gwhFunc,
       targetHosts,

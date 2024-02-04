@@ -1,6 +1,7 @@
 export const FactionData: {
   [FactionName: string]: {
     name: string;
+    city?: string;
     server?: string;
     gangEligible?: boolean;
     criticalPath?: boolean;
@@ -31,10 +32,12 @@ export const FactionData: {
   // Crime
   'Slum Snakes': {
     name: 'Slum Snakes',
+    city: 'Sector-12',
     gangEligible: true,
   },
   Tetrads: {
     name: 'Tetrads',
+    city: 'New Tokyo',
     gangEligible: true,
   },
 
@@ -56,6 +59,7 @@ export const FactionData: {
   },
   'Tian Di Hui': {
     name: 'Tian Di Hui',
+    city: 'New Tokyo',
   },
   'Shadows of Anarchy': {
     name: 'Shadows of Anarchy',

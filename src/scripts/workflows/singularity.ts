@@ -30,6 +30,9 @@ const AUGMENTATION_STAT_PROPERTIES = [
   'hacknet_node_money',
   'hacknet_node_purchase_cost',
   'hacknet_node_ram_cost',
+
+  'crime_money',
+  'crime_success',
 ] as (keyof Multipliers)[];
 
 async function attendCourse(

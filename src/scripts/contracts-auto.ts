@@ -16,10 +16,7 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
-import {
-  delayedInfiniteLoop,
-  initializeScript,
-} from '/scripts/workflows/execution';
+import {infiniteLoop, initializeScript} from '/scripts/workflows/execution';
 
 import {openTail} from '/scripts/workflows/ui';
 import {SCRIPTS_DIR} from '/scripts/common/shared';
@@ -99,10 +96,10 @@ export async function main(netscript: NS) {
   );
   openTail(netscript, TAIL_X_POS, TAIL_Y_POS, TAIL_WIDTH, TAIL_HEIGHT);
 
-  await delayedInfiniteLoop(
+  await infiniteLoop(
     netscript,
-    UPDATE_DELAY,
     solveContracts,
+    UPDATE_DELAY,
     nsPackage,
     includeHome,
     scriptLogWriter

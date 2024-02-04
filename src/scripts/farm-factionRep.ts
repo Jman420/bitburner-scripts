@@ -46,14 +46,14 @@ const TAIL_Y_POS = 105;
 const TAIL_WIDTH = 650;
 const TAIL_HEIGHT = 500;
 
-let managerConfig: FactionReputationFarmConfig;
+let scriptConfig: FactionReputationFarmConfig;
 let workerPids: number[] | undefined;
 
 async function shareRam(netscript: NS, logWriter: Logger) {
   logWriter.writeLine('Identifying available targets...');
   const targetHosts = scanWideNetwork(
     netscript,
-    managerConfig.includeHome,
+    scriptConfig.includeHome,
     true,
     true
   );
@@ -89,10 +89,9 @@ function handleUpdateConfigEvent(
 
   logWriter.writeLine('Update settings event received...');
   const newConfig = eventData.config;
-  managerConfig.includeHome =
-    newConfig.includeHome ?? managerConfig.includeHome;
+  scriptConfig.includeHome = newConfig.includeHome ?? scriptConfig.includeHome;
 
-  logWriter.writeLine(`  Include Home : ${managerConfig.includeHome}`);
+  logWriter.writeLine(`  Include Home : ${scriptConfig.includeHome}`);
 }
 
 function handleConfigRequest(
@@ -103,7 +102,7 @@ function handleConfigRequest(
     `Sending farm faction reputation manager config response to ${requestData.sender}`
   );
   sendMessage(
-    new FarmFactionRepConfigResponse(managerConfig),
+    new FarmFactionRepConfigResponse(scriptConfig),
     requestData.sender
   );
 }
@@ -131,7 +130,7 @@ export async function main(netscript: NS) {
   terminalWriter.writeLine(`Include Home : ${includeHome}`);
   terminalWriter.writeLine(SECTION_DIVIDER);
 
-  managerConfig = {
+  scriptConfig = {
     includeHome: includeHome,
   };
 
@@ -151,7 +150,13 @@ export async function main(netscript: NS) {
     scriptLogWriter
   );
 
-  await infiniteLoop(netscript, shareRam, netscript, scriptLogWriter);
+  await infiniteLoop(
+    netscript,
+    shareRam,
+    undefined,
+    netscript,
+    scriptLogWriter
+  );
 }
 
 export function autocomplete(data: AutocompleteData, args: string[]) {

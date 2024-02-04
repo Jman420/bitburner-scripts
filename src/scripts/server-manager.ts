@@ -12,10 +12,7 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
-import {
-  delayedInfiniteLoop,
-  initializeScript,
-} from '/scripts/workflows/execution';
+import {infiniteLoop, initializeScript} from '/scripts/workflows/execution';
 
 import {
   CMD_FLAG_NAME_PREFIX,
@@ -39,7 +36,8 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 
 const MODULE_NAME = 'server-manager';
 const SUBSCRIBER_NAME = 'server-manager';
-const LOOP_DELAY_MILLISEC = 5000;
+
+const UPDATE_DELAY = 5000;
 
 function sortUpgradeOrders(upgradeOrders: Array<ServerFarmOrder>) {
   upgradeOrders.sort((order1, order2) => order1.cost - order2.cost);
@@ -162,10 +160,10 @@ export async function main(netscript: NS) {
   logWriter.writeLine('See script logs for on-going purchase details.');
   netscript.tail();
 
-  await delayedInfiniteLoop(
+  await infiniteLoop(
     netscript,
-    LOOP_DELAY_MILLISEC,
     manageOrdersAndPurchases,
+    UPDATE_DELAY,
     nsPackage,
     scriptLogWriter,
     upgradeOrders,

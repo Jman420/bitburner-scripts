@@ -171,14 +171,14 @@ async function runAttacks(
             hostDetails.growTime
           )}))...`
         );
-        await growHost(netscript, hostDetails, true, includeHome, 1, true);
+        await growHost(nsPackage, hostDetails, true, includeHome, 1, true);
       } else if (transaction.position === TransactionPosition.SHORT) {
         logWriter.writeLine(
           `    Hacking ${hostname} for 95% of funds (~${convertMillisecToTime(
             hostDetails.hackTime
           )})...`
         );
-        await hackHost(netscript, hostDetails, false, includeHome, 0.95, true);
+        await hackHost(nsPackage, hostDetails, false, includeHome, 0.95, true);
       }
     }
   }
@@ -229,6 +229,7 @@ export async function main(netscript: NS) {
   await infiniteLoop(
     netscript,
     runAttacks,
+    undefined,
     nsPackage,
     scriptLogWriter,
     attackHosts,

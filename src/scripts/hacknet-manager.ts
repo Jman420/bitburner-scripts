@@ -12,7 +12,7 @@ import {
   parseCmdFlags,
 } from '/scripts/workflows/cmd-args';
 
-import {initializeScript} from '/scripts/workflows/execution';
+import {infiniteLoop, initializeScript} from '/scripts/workflows/execution';
 import {
   HacknetManagerConfig,
   HacknetOrder,
@@ -50,8 +50,8 @@ const TAIL_HEIGHT = 515;
 
 const UPDATE_DELAY = 5000;
 
+let scriptConfig: HacknetManagerConfig;
 let fundsLimitPercent: number;
-let managerConfig: HacknetManagerConfig;
 
 function sortUpgradeOrders(upgradeOrders: Array<HacknetOrder>) {
   upgradeOrders.sort((entry1, entry2) => entry1.cost - entry2.cost);
@@ -80,15 +80,15 @@ async function manageOrdersAndPurchases(
   const hacknetApi = netscript.hacknet;
 
   while (
-    hacknetApi.numNodes() < managerConfig.maxNodes ||
+    hacknetApi.numNodes() < scriptConfig.maxNodes ||
     upgradeOrders.length > 0
   ) {
     const nodeCost = hacknetApi.getPurchaseNodeCost();
-    let availableFunds = netscript.getPlayer().money - managerConfig.fundsLimit;
+    let availableFunds = netscript.getPlayer().money - scriptConfig.fundsLimit;
     let orderPurchased = false;
     if (
-      managerConfig.purchaseNodes &&
-      hacknetApi.numNodes() < managerConfig.maxNodes &&
+      scriptConfig.purchaseNodes &&
+      hacknetApi.numNodes() < scriptConfig.maxNodes &&
       nodeCost <= availableFunds
     ) {
       logWriter.writeLine(
@@ -107,9 +107,9 @@ async function manageOrdersAndPurchases(
       orderPurchased = true;
     }
 
-    availableFunds = netscript.getPlayer().money - managerConfig.fundsLimit;
+    availableFunds = netscript.getPlayer().money - scriptConfig.fundsLimit;
     while (
-      managerConfig.purchaseUpgrades &&
+      scriptConfig.purchaseUpgrades &&
       upgradeOrders.length > 0 &&
       upgradeOrders[0].cost <= availableFunds
     ) {
@@ -124,7 +124,7 @@ async function manageOrdersAndPurchases(
         } for $${netscript.formatNumber(orderDetails.cost)}...`
       );
       orderDetails.purchaseFunc(orderDetails.nodeIndex);
-      availableFunds = netscript.getPlayer().money - managerConfig.fundsLimit;
+      availableFunds = netscript.getPlayer().money - scriptConfig.fundsLimit;
 
       logWriter.writeLine(
         `Updating upgrade cost for ${orderDetails.resource} on node ${orderDetails.nodeIndex}...`
@@ -143,8 +143,6 @@ async function manageOrdersAndPurchases(
     if (orderPurchased) {
       logWriter.writeLine(ENTRY_DIVIDER);
     }
-
-    await netscript.asleep(UPDATE_DELAY);
   }
 }
 
@@ -159,27 +157,25 @@ function handleUpdateConfigEvent(
 
   logWriter.writeLine('Update settings event received...');
   const newConfig = eventData.config;
-  managerConfig.purchaseNodes =
-    newConfig.purchaseNodes ?? managerConfig.purchaseNodes;
-  managerConfig.purchaseUpgrades =
-    newConfig.purchaseUpgrades ?? managerConfig.purchaseUpgrades;
-  managerConfig.fundsLimit = newConfig.fundsLimit ?? managerConfig.fundsLimit;
-  if (managerConfig.fundsLimit < 0) {
-    managerConfig.fundsLimit = netscript.getPlayer().money * fundsLimitPercent;
+  scriptConfig.purchaseNodes =
+    newConfig.purchaseNodes ?? scriptConfig.purchaseNodes;
+  scriptConfig.purchaseUpgrades =
+    newConfig.purchaseUpgrades ?? scriptConfig.purchaseUpgrades;
+  scriptConfig.fundsLimit = newConfig.fundsLimit ?? scriptConfig.fundsLimit;
+  if (scriptConfig.fundsLimit < 0) {
+    scriptConfig.fundsLimit = netscript.getPlayer().money * fundsLimitPercent;
   }
-  managerConfig.maxNodes = newConfig.maxNodes ?? managerConfig.maxNodes;
-  if (managerConfig.maxNodes < 0) {
-    managerConfig.maxNodes = DEFAULT_MAX_NODES;
+  scriptConfig.maxNodes = newConfig.maxNodes ?? scriptConfig.maxNodes;
+  if (scriptConfig.maxNodes < 0) {
+    scriptConfig.maxNodes = DEFAULT_MAX_NODES;
   }
 
-  logWriter.writeLine(`  Purchase Nodes : ${managerConfig.purchaseNodes}`);
+  logWriter.writeLine(`  Purchase Nodes : ${scriptConfig.purchaseNodes}`);
+  logWriter.writeLine(`  Purchase Upgrades : ${scriptConfig.purchaseUpgrades}`);
   logWriter.writeLine(
-    `  Purchase Upgrades : ${managerConfig.purchaseUpgrades}`
+    `  Funds Limit : $${netscript.formatNumber(scriptConfig.fundsLimit)}`
   );
-  logWriter.writeLine(
-    `  Funds Limit : $${netscript.formatNumber(managerConfig.fundsLimit)}`
-  );
-  logWriter.writeLine(`  Max Nodes : ${managerConfig.maxNodes}`);
+  logWriter.writeLine(`  Max Nodes : ${scriptConfig.maxNodes}`);
 }
 
 function handleHacknetConfigRequest(
@@ -189,7 +185,7 @@ function handleHacknetConfigRequest(
   logWriter.writeLine(
     `Sending hacknet manager config response to ${requestData.sender}`
   );
-  sendMessage(new HacknetConfigResponse(managerConfig), requestData.sender);
+  sendMessage(new HacknetConfigResponse(scriptConfig), requestData.sender);
 }
 
 /** @param {NS} netscript */
@@ -233,7 +229,7 @@ export async function main(netscript: NS) {
     return;
   }
 
-  managerConfig = {
+  scriptConfig = {
     purchaseNodes: purchaseNodes,
     purchaseUpgrades: purchaseUpgrades,
     fundsLimit: fundsLimit,
@@ -256,7 +252,14 @@ export async function main(netscript: NS) {
     scriptLogWriter
   );
 
-  await manageOrdersAndPurchases(netscript, upgradeOrders, scriptLogWriter);
+  await infiniteLoop(
+    netscript,
+    manageOrdersAndPurchases,
+    UPDATE_DELAY,
+    netscript,
+    upgradeOrders,
+    scriptLogWriter
+  );
 }
 
 export function autocomplete(data: AutocompleteData, args: string[]) {

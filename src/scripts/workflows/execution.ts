@@ -1,7 +1,5 @@
 import {BasicHGWOptions, NS} from '@ns';
 
-import {randomIntWithinRange} from '/scripts/common/shared';
-
 import {
   canRunScript,
   maxScriptThreads,
@@ -117,31 +115,19 @@ function initializeScript(netscript: NS, subscriberName: string) {
   );
 }
 
-async function delayedInfiniteLoop<FuncType extends LoopableFunction>(
+async function infiniteLoop<FuncType extends LoopableFunction>(
   netscript: NS,
-  delay: number,
   loopFunction: FuncType,
+  delay?: number,
   ...funcArgs: Parameters<FuncType>
 ) {
   /* eslint-disable-next-line no-constant-condition */
   while (true) {
     await loopFunction(...funcArgs);
-    if (delay > 0) {
+    if (delay && delay > 0) {
       await netscript.asleep(delay);
     }
   }
-}
-
-async function infiniteLoop<FuncType extends LoopableFunction>(
-  netscript: NS,
-  loopFunction: FuncType,
-  ...funcArgs: Parameters<FuncType>
-) {
-  const delay = randomIntWithinRange(
-    MIN_LOOP_DELAY_MILLISEC,
-    MAX_LOOP_DELAY_MILLISEC
-  );
-  await delayedInfiniteLoop(netscript, delay, loopFunction, ...funcArgs);
 }
 
 async function eventLoop(netscript: NS, eventListener: EventListener) {
@@ -167,7 +153,6 @@ export {
   getPid,
   runGWH,
   initializeScript,
-  delayedInfiniteLoop,
   infiniteLoop,
   eventLoop,
 };

@@ -68,8 +68,8 @@ const TAIL_HEIGHT = 485;
 
 const PURCHASE_FORECAST_MARGIN = 0.1;
 
+let scriptConfig: StocksTraderConfig;
 let fundsLimitPercent: number;
-let managerConfig: StocksTraderConfig;
 
 async function tradeStocks(
   eventData: StocksTickerEvent,
@@ -154,12 +154,12 @@ async function tradeStocks(
   const purchasedStocks = [];
   for (
     let stockCounter = 0;
-    managerConfig.purchaseStocks &&
+    scriptConfig.purchaseStocks &&
     stockCounter < stockListings.length &&
-    playerMoney > managerConfig.fundsLimit + COMMISSION;
+    playerMoney > scriptConfig.fundsLimit + COMMISSION;
     stockCounter++
   ) {
-    const availableFunds = playerMoney - managerConfig.fundsLimit;
+    const availableFunds = playerMoney - scriptConfig.fundsLimit;
     const stockDetails = stockListings[stockCounter];
     if (
       stockDetails.forecast > FIFTY_PERCENT + PURCHASE_FORECAST_MARGIN &&
@@ -188,7 +188,7 @@ async function tradeStocks(
         purchasedStocks.push(purchaseTransaction);
       }
     } else if (
-      managerConfig.shortSales &&
+      scriptConfig.shortSales &&
       stockDetails.forecast < FIFTY_PERCENT - PURCHASE_FORECAST_MARGIN &&
       stockDetails.bidPrice + COMMISSION < availableFunds
     ) {
@@ -273,11 +273,11 @@ async function setupStockTrader(
     )} profit`
   );
 
-  managerConfig.fundsLimit =
+  scriptConfig.fundsLimit =
     netscript.getServerMoneyAvailable(HOME_SERVER_NAME) * fundsLimitPercent;
 
   const successMsg = `Stock trader setup successfully with funds limit $${netscript.formatNumber(
-    managerConfig.fundsLimit
+    scriptConfig.fundsLimit
   )}`;
   scriptLogWriter.writeLine(successMsg);
   scriptLogWriter.writeLine('Waiting for Stock Ticker Event...');
@@ -305,18 +305,18 @@ function handleUpdateConfigEvent(
 
   logWriter.writeLine('Update settings event received...');
   const newConfig = eventData.config;
-  managerConfig.fundsLimit = newConfig.fundsLimit ?? managerConfig.fundsLimit;
-  if (managerConfig.fundsLimit < 0) {
-    managerConfig.fundsLimit = netscript.getPlayer().money * fundsLimitPercent;
+  scriptConfig.fundsLimit = newConfig.fundsLimit ?? scriptConfig.fundsLimit;
+  if (scriptConfig.fundsLimit < 0) {
+    scriptConfig.fundsLimit = netscript.getPlayer().money * fundsLimitPercent;
   }
-  managerConfig.purchaseStocks =
-    newConfig.purchaseStocks ?? managerConfig.purchaseStocks;
-  managerConfig.shortSales = newConfig.shortSales ?? managerConfig.shortSales;
+  scriptConfig.purchaseStocks =
+    newConfig.purchaseStocks ?? scriptConfig.purchaseStocks;
+  scriptConfig.shortSales = newConfig.shortSales ?? scriptConfig.shortSales;
 
-  logWriter.writeLine(`  Short Sales Enabled : ${managerConfig.shortSales}`);
-  logWriter.writeLine(`  Purchase Stocks : ${managerConfig.purchaseStocks}`);
+  logWriter.writeLine(`  Short Sales Enabled : ${scriptConfig.shortSales}`);
+  logWriter.writeLine(`  Purchase Stocks : ${scriptConfig.purchaseStocks}`);
   logWriter.writeLine(
-    `  Funds Limit : $${netscript.formatNumber(managerConfig.fundsLimit)}`
+    `  Funds Limit : $${netscript.formatNumber(scriptConfig.fundsLimit)}`
   );
 }
 
@@ -327,10 +327,7 @@ function handleConfigRequest(
   logWriter.writeLine(
     `Sending stocks trader config response to ${requestData.sender}`
   );
-  sendMessage(
-    new StocksTraderConfigResponse(managerConfig),
-    requestData.sender
-  );
+  sendMessage(new StocksTraderConfigResponse(scriptConfig), requestData.sender);
 }
 
 /** @param {NS} netscript */
@@ -370,7 +367,7 @@ export async function main(netscript: NS) {
     return;
   }
 
-  managerConfig = {
+  scriptConfig = {
     shortSales: shortEnabled,
     purchaseStocks: true,
     fundsLimit: 0,

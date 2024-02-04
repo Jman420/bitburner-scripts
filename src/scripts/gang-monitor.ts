@@ -3,10 +3,7 @@ import {GangGenInfo, GangOtherInfo, GangOtherInfoObject, NS} from '@ns';
 import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {ENTRY_DIVIDER, SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
-import {
-  delayedInfiniteLoop,
-  initializeScript,
-} from '/scripts/workflows/execution';
+import {infiniteLoop, initializeScript} from '/scripts/workflows/execution';
 
 import {sendMessage} from '/scripts/comms/event-comms';
 import {GangInfoChangedEvent} from '/scripts/comms/events/gang-info-changed-event';
@@ -25,8 +22,6 @@ import {
 
 const MODULE_NAME = 'gangs-monitor';
 const SUBSCRIBER_NAME = 'gangs-monitor';
-
-const UPDATE_DELAY = 0;
 
 const MONITORED_GANG_INFO_PROPERTIES: Array<keyof GangGenInfo> = [
   'faction',
@@ -166,10 +161,10 @@ export async function main(netscript: NS) {
   );
   logWriter.writeLine(SECTION_DIVIDER);
 
-  await delayedInfiniteLoop(
+  await infiniteLoop(
     netscript,
-    UPDATE_DELAY,
     updateGangDetails,
+    undefined,
     nsPackage,
     logWriter
   );
