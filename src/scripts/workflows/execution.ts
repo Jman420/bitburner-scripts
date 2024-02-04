@@ -100,19 +100,6 @@ function getPid(netscript: NS, scriptPath: string, targetHosts?: string[]) {
   return 0;
 }
 
-async function runGWH(
-  netscript: NS,
-  gwhFunc: GrowWeakenHackFunction,
-  targetHosts: string[],
-  delay = 0,
-  influenceStocks = false
-) {
-  await netscript.asleep(delay);
-  for (const hostname of targetHosts) {
-    await gwhFunc(hostname, {stock: influenceStocks});
-  }
-}
-
 function initializeScript(netscript: NS, subscriberName: string) {
   netscript.atExit(
     async () => await sendMessage(new ExitEvent(), subscriberName)
@@ -155,7 +142,6 @@ export {
   runScript,
   ensureRunning,
   getPid,
-  runGWH,
   initializeScript,
   infiniteLoop,
   eventLoop,

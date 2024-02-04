@@ -27,10 +27,8 @@ import {
   COMBAT_TRAINING_TASK,
   HACKING_TRAINING_TASK,
   WAR_PARTY_TASK,
-  ASCENSION_SCORE_PROPERTIES,
   AUGMENTATIONS_UPGRADES_TYPE,
   recruitAvailableMembers,
-  memberStatsSatisfyLimit,
   ascendEligible,
   ascendGangMember,
   getUpgradeCosts,
@@ -43,6 +41,8 @@ import {
   getWantedLevelGainIncrease,
   GangManagerConfig,
   GANGS_MONITOR_SCRIPT,
+  memberMultipliersSatisfyLimit,
+  MEMBER_STAT_CHECKS,
 } from '/scripts/workflows/gangs';
 
 import {openTail} from '/scripts/workflows/ui';
@@ -166,7 +166,8 @@ async function manageGang(
       await ascendEligible(
         nsLocator,
         memberDetails.name,
-        ASCENSION_FACTOR_INCREASE
+        ASCENSION_FACTOR_INCREASE,
+        TRAINING_ASCENSION_LIMIT
       )
     ) {
       memberDetails = await ascendGangMember(nsPackage, memberDetails.name);
@@ -207,9 +208,9 @@ async function manageGang(
       scriptConfig.buyEquipment &&
       remainingEquipment.length > 0 &&
       remainingEquipment[0].cost <= netscript.getPlayer().money &&
-      memberStatsSatisfyLimit(
+      memberMultipliersSatisfyLimit(
         memberDetails,
-        ASCENSION_SCORE_PROPERTIES,
+        MEMBER_STAT_CHECKS,
         TRAINING_ASCENSION_LIMIT
       )
     ) {
@@ -251,6 +252,7 @@ async function manageGang(
   gangMembers.sort(
     (memberA, memberB) => memberB.skillScore - memberA.skillScore
   );
+  const bitNodeModifiers = await nsLocator['getBitNodeMultipliers']();
   for (const memberDetails of gangMembers) {
     const ascensionResult = await nsLocator.gang['getAscensionResult'](
       memberDetails.name
@@ -322,8 +324,12 @@ async function manageGang(
     else {
       const eligibleTasks = criminalTaskDetails.filter(
         value =>
-          getRespectGainIncrease(gangInfo, memberDetails, value) >
-          getWantedLevelGainIncrease(gangInfo, memberDetails, value)
+          getRespectGainIncrease(
+            gangInfo,
+            memberDetails,
+            value,
+            bitNodeModifiers
+          ) > getWantedLevelGainIncrease(gangInfo, memberDetails, value)
       );
       let crimeTask: GangTaskStats | undefined = undefined;
       let taskAssigned = false;

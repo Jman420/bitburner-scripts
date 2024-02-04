@@ -33,7 +33,7 @@ import {
   HACK_WORKER_SCRIPT,
   WEAKEN_WORKER_SCRIPT,
   runWorkerScript,
-  waitForScripts,
+  waitForWorkers,
 } from '/scripts/workflows/orchestration';
 import {WgwhAttackConfig} from '/scripts/workflows/attacks';
 
@@ -140,7 +140,7 @@ async function attackTargets(
         scriptConfig.includeHomeAttacker,
         ...scriptArgs
       );
-      await waitForScripts(netscript, scriptPids);
+      await waitForWorkers(netscript, scriptPids);
       scriptPids = undefined;
     }
 
@@ -162,7 +162,7 @@ async function attackTargets(
         scriptConfig.includeHomeAttacker,
         ...scriptArgs
       );
-      await waitForScripts(netscript, scriptPids);
+      await waitForWorkers(netscript, scriptPids);
       scriptPids = undefined;
     }
 
@@ -184,7 +184,7 @@ async function attackTargets(
         scriptConfig.includeHomeAttacker,
         ...scriptArgs
       );
-      await waitForScripts(netscript, scriptPids);
+      await waitForWorkers(netscript, scriptPids);
       scriptPids = undefined;
     }
 
@@ -210,7 +210,7 @@ async function attackTargets(
       getCmdFlag(CMD_FLAG_TARGETS_CSV),
       hostDetails.hostname
     );
-    await waitForScripts(netscript, scriptPids);
+    await waitForWorkers(netscript, scriptPids);
     scriptPids = undefined;
 
     hostDetails = analyzeHost(netscript, hostDetails.hostname);

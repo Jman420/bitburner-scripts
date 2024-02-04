@@ -25,6 +25,7 @@ import {
   NetscriptPackage,
   getLocatorPackage,
 } from '/scripts/netscript-services/netscript-locator';
+import {CorpState} from '/scripts/data/corporation-enums';
 
 const DEFAULT_MORALE_LIMIT = 95;
 const DEFAULT_ENERGY_LIMIT = 98;
@@ -90,7 +91,7 @@ async function manageTeaParty(nsPackage: NetscriptPackage, logWriter: Logger) {
     }
   }
 
-  await waitForState(netscript, 'START');
+  await waitForState(netscript, CorpState.START);
 }
 
 function handleUpdateConfigEvent(

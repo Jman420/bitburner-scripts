@@ -1,4 +1,5 @@
 import {
+  BitNodeMultipliers,
   GangGenInfo,
   GangMemberAscension,
   GangMemberInfo,
@@ -11,6 +12,10 @@ import {
 } from '/scripts/netscript-services/netscript-locator';
 
 import {SCRIPTS_DIR} from '/scripts/common/shared';
+
+type AscentionProperties<T> = {
+  [K in keyof T as K extends `${infer Prefix}_asc_mult` ? K : never]: T[K];
+};
 
 enum TaskFocus {
   RESPECT = 'respect',
@@ -47,51 +52,28 @@ interface TrainingStatus {
   charismaSkillLimitReached: boolean;
 }
 
+interface MemberStatCheck {
+  ascentionMultiplier: keyof AscentionProperties<GangMemberInfo>;
+  skillProperty: keyof GangMemberInfo & keyof GangMemberAscension;
+}
+
 const GANGS_MONITOR_SCRIPT = `${SCRIPTS_DIR}/gang-monitor.js`;
 const GANG_MANAGER_SCRIPT = `${SCRIPTS_DIR}/gang-manager.js`;
 
-const ASCENSION_COMBAT_PROPERTIES: Array<keyof GangMemberInfo> = [
-  'agi_asc_mult',
-  'def_asc_mult',
-  'dex_asc_mult',
-  'str_asc_mult',
+const COMBAT_STAT_CHECKS: MemberStatCheck[] = [
+  {ascentionMultiplier: 'agi_asc_mult', skillProperty: 'agi'},
+  {ascentionMultiplier: 'def_asc_mult', skillProperty: 'def'},
+  {ascentionMultiplier: 'dex_asc_mult', skillProperty: 'dex'},
+  {ascentionMultiplier: 'str_asc_mult', skillProperty: 'str'},
 ];
-const ASCENSION_HACKING_PROPERTIES: Array<keyof GangMemberInfo> = [
-  'hack_asc_mult',
+const HACKING_STAT_CHECKS: MemberStatCheck[] = [
+  {ascentionMultiplier: 'hack_asc_mult', skillProperty: 'hack'},
 ];
-const ASCENSION_CHARISMA_PROPERTIES: Array<keyof GangMemberInfo> = [
-  'cha_asc_mult',
+const CHARISMA_STAT_CHECKS: MemberStatCheck[] = [
+  {ascentionMultiplier: 'cha_asc_mult', skillProperty: 'cha'},
 ];
-const ASCENSION_SCORE_PROPERTIES: Array<keyof GangMemberInfo> =
-  ASCENSION_COMBAT_PROPERTIES.concat(ASCENSION_HACKING_PROPERTIES).concat(
-    ASCENSION_CHARISMA_PROPERTIES
-  );
-
-const SKILL_COMBAT_PROPERTIES: Array<keyof GangMemberInfo> = [
-  'agi',
-  'def',
-  'dex',
-  'str',
-];
-const SKILL_HACKING_PROPERTIES: Array<keyof GangMemberInfo> = ['hack'];
-const SKILL_CHARISMA_PROPERTIES: Array<keyof GangMemberInfo> = ['cha'];
-const SKILL_SCORE_PROPERTIES: Array<keyof GangMemberInfo> =
-  SKILL_COMBAT_PROPERTIES.concat(SKILL_HACKING_PROPERTIES).concat(
-    SKILL_CHARISMA_PROPERTIES
-  );
-
-const ASCENSION_COMBAT_CHECKS: Array<keyof GangMemberAscension> = [
-  'agi',
-  'def',
-  'dex',
-  'str',
-];
-const ASCENSION_HACKING_CHECKS: Array<keyof GangMemberAscension> = ['hack'];
-const ASCENSION_CHARISMA_CHECKS: Array<keyof GangMemberAscension> = ['cha'];
-const ASCENSION_CHECKS: Array<keyof GangMemberAscension> =
-  ASCENSION_COMBAT_CHECKS.concat(ASCENSION_HACKING_CHECKS).concat(
-    ASCENSION_CHARISMA_CHECKS
-  );
+const MEMBER_STAT_CHECKS =
+  COMBAT_STAT_CHECKS.concat(HACKING_STAT_CHECKS).concat(CHARISMA_STAT_CHECKS);
 
 const AUGMENTATIONS_UPGRADES_TYPE = 'Augmentation';
 
@@ -153,13 +135,10 @@ async function getMemberDetails(
   for (const name of memberNames) {
     const memberInfo = await gangApi['getMemberInformation'](name);
     let ascensionScore = 0;
-    for (const ascensionProperty of ASCENSION_SCORE_PROPERTIES) {
-      ascensionScore += memberInfo[ascensionProperty] as number;
-    }
-
     let skillScore = 0;
-    for (const skillProperty of SKILL_SCORE_PROPERTIES) {
-      skillScore += memberInfo[skillProperty] as number;
+    for (const statCheck of MEMBER_STAT_CHECKS) {
+      ascensionScore += memberInfo[statCheck.ascentionMultiplier];
+      skillScore += memberInfo[statCheck.skillProperty];
     }
 
     const memberDetails: MemberDetails = {
@@ -172,36 +151,54 @@ async function getMemberDetails(
   return results;
 }
 
-function memberStatsSatisfyLimit(
+function memberMultipliersSatisfyLimit(
   memberDetails: MemberDetails,
-  statsProperties: Array<keyof MemberDetails>,
+  statChecks: MemberStatCheck[],
   statsLimit: number
 ) {
   let result = true;
   for (
-    let propertyCounter = 0;
-    propertyCounter < statsProperties.length && result;
-    propertyCounter++
+    let checkCounter = 0;
+    checkCounter < statChecks.length && result;
+    checkCounter++
   ) {
-    const propertyName = statsProperties[propertyCounter];
+    const propertyName = statChecks[checkCounter].ascentionMultiplier;
     const propertyValue = memberDetails[propertyName] as number;
     result = result && propertyValue >= statsLimit;
   }
   return result;
 }
 
-function ascensionStatsSatisfyLimit(
+function memberSkillsSatisfyLimit(
+  memberDetails: MemberDetails,
+  statChecks: MemberStatCheck[],
+  statsLimit: number
+) {
+  let result = true;
+  for (
+    let checkCounter = 0;
+    checkCounter < statChecks.length && result;
+    checkCounter++
+  ) {
+    const propertyName = statChecks[checkCounter].skillProperty;
+    const propertyValue = memberDetails[propertyName] as number;
+    result = result && propertyValue >= statsLimit;
+  }
+  return result;
+}
+
+function ascensionIncreasesSatisfyLimit(
   ascensionDetails: GangMemberAscension,
-  statsProperties: Array<keyof GangMemberAscension>,
+  statChecks: MemberStatCheck[],
   statsLimit: number
 ) {
   let result = true;
   for (
     let propertyCounter = 0;
-    propertyCounter < statsProperties.length && result;
+    propertyCounter < statChecks.length && result;
     propertyCounter++
   ) {
-    const propertyName = statsProperties[propertyCounter];
+    const propertyName = statChecks[propertyCounter].skillProperty;
     const propertyValue = ascensionDetails[propertyName] as number;
     result = result && propertyValue >= statsLimit;
   }
@@ -211,26 +208,42 @@ function ascensionStatsSatisfyLimit(
 async function ascendEligible(
   nsLocator: NetscriptLocator,
   memberName: string,
-  statFactorIncreaseLimit: number
+  ascentionFactorIncreaseLimit: number,
+  trainingAscensionLimit: number
 ) {
-  const ascentionResults =
-    await nsLocator.gang['getAscensionResult'](memberName);
+  const gangApi = nsLocator.gang;
+
+  const ascentionResults = await gangApi['getAscensionResult'](memberName);
   if (!ascentionResults) {
     return false;
   }
 
-  let checksPassed = 0;
+  const memberInfo = await gangApi['getMemberInformation'](memberName);
+  let ascentionIncreaseChecksPassed = 0;
+  let correctionAscentionNeeded = false;
   for (
-    let propertyCounter = 0;
-    propertyCounter < ASCENSION_CHECKS.length;
-    propertyCounter++
+    let statCounter = 0;
+    statCounter < MEMBER_STAT_CHECKS.length &&
+    ascentionIncreaseChecksPassed < 2 &&
+    !correctionAscentionNeeded;
+    statCounter++
   ) {
-    const ascentionProperty = ASCENSION_CHECKS[propertyCounter];
-    if (ascentionResults[ascentionProperty] >= statFactorIncreaseLimit) {
-      checksPassed++;
+    const statCheck = MEMBER_STAT_CHECKS[statCounter];
+    const ascentionIncrease = ascentionResults[statCheck.skillProperty];
+    if (ascentionIncrease >= ascentionFactorIncreaseLimit) {
+      ascentionIncreaseChecksPassed++;
+    }
+
+    const currentStatMultiplier = memberInfo[statCheck.ascentionMultiplier];
+    if (
+      currentStatMultiplier < trainingAscensionLimit &&
+      currentStatMultiplier * ascentionIncrease >= trainingAscensionLimit
+    ) {
+      correctionAscentionNeeded = true;
     }
   }
-  return checksPassed >= 2;
+
+  return ascentionIncreaseChecksPassed > 1 || correctionAscentionNeeded;
 }
 
 async function ascendGangMember(
@@ -270,54 +283,54 @@ function getTrainingStatus(
   const result: TrainingStatus = {
     memberName: memberDetails.name,
     combatAscensionReady: ascensionResults
-      ? ascensionStatsSatisfyLimit(
+      ? ascensionIncreasesSatisfyLimit(
           ascensionResults,
-          ASCENSION_COMBAT_CHECKS,
+          COMBAT_STAT_CHECKS,
           ascensionFactorIncreaseLimit
         )
       : false,
-    combatAscensionLimitReached: memberStatsSatisfyLimit(
+    combatAscensionLimitReached: memberSkillsSatisfyLimit(
       memberDetails,
-      ASCENSION_COMBAT_PROPERTIES,
+      COMBAT_STAT_CHECKS,
       trainingAscensionLimit
     ),
-    combatSkillLimitReached: memberStatsSatisfyLimit(
+    combatSkillLimitReached: memberSkillsSatisfyLimit(
       memberDetails,
-      SKILL_COMBAT_PROPERTIES,
+      COMBAT_STAT_CHECKS,
       trainingSkillLimit
     ),
     hackingAscensionReady: ascensionResults
-      ? ascensionStatsSatisfyLimit(
+      ? ascensionIncreasesSatisfyLimit(
           ascensionResults,
-          ASCENSION_HACKING_CHECKS,
+          HACKING_STAT_CHECKS,
           ascensionFactorIncreaseLimit
         )
       : false,
-    hackingAscensionLimitReached: memberStatsSatisfyLimit(
+    hackingAscensionLimitReached: memberSkillsSatisfyLimit(
       memberDetails,
-      ASCENSION_HACKING_PROPERTIES,
+      HACKING_STAT_CHECKS,
       trainingAscensionLimit
     ),
-    hackingSkillLimitReached: memberStatsSatisfyLimit(
+    hackingSkillLimitReached: memberSkillsSatisfyLimit(
       memberDetails,
-      SKILL_HACKING_PROPERTIES,
+      HACKING_STAT_CHECKS,
       trainingSkillLimit
     ),
     charismaAscensionReady: ascensionResults
-      ? ascensionStatsSatisfyLimit(
+      ? ascensionIncreasesSatisfyLimit(
           ascensionResults,
-          ASCENSION_CHARISMA_CHECKS,
+          CHARISMA_STAT_CHECKS,
           ascensionFactorIncreaseLimit
         )
       : false,
-    charismaAscensionLimitReached: memberStatsSatisfyLimit(
+    charismaAscensionLimitReached: memberSkillsSatisfyLimit(
       memberDetails,
-      ASCENSION_CHARISMA_PROPERTIES,
+      CHARISMA_STAT_CHECKS,
       trainingAscensionLimit
     ),
-    charismaSkillLimitReached: memberStatsSatisfyLimit(
+    charismaSkillLimitReached: memberSkillsSatisfyLimit(
       memberDetails,
-      SKILL_CHARISMA_PROPERTIES,
+      CHARISMA_STAT_CHECKS,
       trainingSkillLimit
     ),
   };
@@ -339,11 +352,11 @@ async function getVigilanteTaskDetails(nsLocator: NetscriptLocator) {
 }
 
 // Adapted from game source code to bypass Formulas.exe requirement (https://github.com/bitburner-official/bitburner-src/blob/6a76e1a9ab58d9b6f103c90793307c61a668334f/src/Gang/formulas/formulas.ts#L15)
-//   NOTE : Eliminated calculations related to territory penalty because it uses a BitNode based modifier and scales all tasks similarly (i dont think it will impact the decision logic)
 function getRespectGainIncrease(
   gangInfo: GangGenInfo,
   memberDetails: MemberDetails,
-  taskDetails: GangTaskStats
+  taskDetails: GangTaskStats,
+  bitNodeModifiers: BitNodeMultipliers
 ) {
   if (taskDetails.baseRespect === 0) {
     return 0;
@@ -365,10 +378,17 @@ function getRespectGainIncrease(
     0.005,
     Math.pow(gangInfo.territory * 100, taskDetails.territory.respect) / 100
   );
+  const territoryPenalty =
+    (0.2 * gangInfo.territory + 0.8) * bitNodeModifiers.GangSoftcap;
   const respectWeight =
     gangInfo.respect / (gangInfo.respect + gangInfo.wantedLevel);
-  return (
-    11 * taskDetails.baseRespect * statsWeight * territoryWeight * respectWeight
+  return Math.pow(
+    11 *
+      taskDetails.baseRespect *
+      statsWeight *
+      territoryWeight *
+      respectWeight,
+    territoryPenalty
   );
 }
 
@@ -453,14 +473,7 @@ export {
   MemberDetails,
   GANGS_MONITOR_SCRIPT,
   GANG_MANAGER_SCRIPT,
-  ASCENSION_COMBAT_PROPERTIES,
-  ASCENSION_HACKING_PROPERTIES,
-  ASCENSION_CHARISMA_PROPERTIES,
-  ASCENSION_SCORE_PROPERTIES,
-  SKILL_COMBAT_PROPERTIES,
-  SKILL_HACKING_PROPERTIES,
-  SKILL_CHARISMA_PROPERTIES,
-  SKILL_SCORE_PROPERTIES,
+  MEMBER_STAT_CHECKS,
   AUGMENTATIONS_UPGRADES_TYPE,
   COMBAT_TRAINING_TASK,
   HACKING_TRAINING_TASK,
@@ -471,8 +484,9 @@ export {
   SPECIAL_CASE_TASKS,
   recruitAvailableMembers,
   getMemberDetails,
-  memberStatsSatisfyLimit,
-  ascensionStatsSatisfyLimit,
+  memberMultipliersSatisfyLimit,
+  memberSkillsSatisfyLimit,
+  ascensionIncreasesSatisfyLimit,
   ascendEligible,
   ascendGangMember,
   getUpgradeCosts,

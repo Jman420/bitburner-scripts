@@ -101,19 +101,21 @@ async function getPortfolioValue(nsPackage: NetscriptPackage) {
   const allSymbols = await stockApi['getSymbols']();
   for (const stockSymbol of allSymbols) {
     const stockPosition = await getStockPosition(nsLocator, stockSymbol);
-    const askPrice = await stockApi['getAskPrice'](stockSymbol);
-    const bidPrice = await stockApi['getBidPrice'](stockSymbol);
 
-    const longValue = stockPosition.longShares * bidPrice;
-    const shortValue = stockPosition.shortShares * askPrice;
-
-    result.totalValue += longValue - COMMISSION;
-    result.totalValue += shortValue - COMMISSION;
-
-    result.totalProfit +=
-      longValue - stockPosition.longShares * stockPosition.longPrice;
-    result.totalProfit +=
-      shortValue - stockPosition.shortShares * stockPosition.shortPrice;
+    if (stockPosition.longShares > 0) {
+      const bidPrice = await stockApi['getBidPrice'](stockSymbol);
+      const longValue = stockPosition.longShares * bidPrice;
+      result.totalValue += longValue - COMMISSION;
+      result.totalProfit +=
+        longValue - stockPosition.longShares * stockPosition.longPrice;
+    }
+    if (stockPosition.shortShares > 0) {
+      const askPrice = await stockApi['getAskPrice'](stockSymbol);
+      const shortValue = stockPosition.shortShares * askPrice;
+      result.totalValue += shortValue - COMMISSION;
+      result.totalProfit +=
+        shortValue - stockPosition.shortShares * stockPosition.shortPrice;
+    }
   }
 
   return result;

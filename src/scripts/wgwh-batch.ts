@@ -38,7 +38,7 @@ import {
   HACK_WORKER_SCRIPT,
   WEAKEN_WORKER_SCRIPT,
   runWorkerScript,
-  waitForScripts,
+  waitForWorkers,
 } from '/scripts/workflows/orchestration';
 import {openTail} from '/scripts/workflows/ui';
 import {WgwhAttackConfig} from '/scripts/workflows/attacks';
@@ -346,7 +346,7 @@ async function attackTargets(
       `Longest batch completion ~${convertMillisecToTime(longestBatchTime)}`
     );
     logWriter.writeLine('Waiting for all batches to complete...');
-    await waitForScripts(netscript, workerPids);
+    await waitForWorkers(netscript, workerPids);
     workerPids = undefined;
   } else {
     logWriter.writeLine(

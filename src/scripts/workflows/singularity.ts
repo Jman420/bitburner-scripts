@@ -219,7 +219,7 @@ async function getFactionsNeedFavor(nsPackage: NetscriptPackage) {
   return factionsNeedFavor;
 }
 
-async function factionsNeedReset(nsPackage: NetscriptPackage) {
+async function getFactionsNeedReset(nsPackage: NetscriptPackage) {
   const nsLocator = nsPackage.locator;
   const singularityApi = nsLocator.singularity;
   const gangApi = nsLocator.gang;
@@ -246,19 +246,13 @@ async function factionsNeedReset(nsPackage: NetscriptPackage) {
       value => value.name !== gangInfo.faction
     );
   }
-  const factionsNeedReset = factionsInfo
-    .map(
-      value =>
-        (value.favor < 66 &&
-          value.favor + repToFavor(value.reputation) >= 66) ||
-        (value.favor >= 66 &&
-          value.favor < 150 &&
-          value.favor + repToFavor(value.reputation) >= 150)
-    )
-    .reduce(
-      (aggregateValue, currentValue) => aggregateValue || currentValue,
-      false
-    );
+  const factionsNeedReset = factionsInfo.filter(
+    value =>
+      (value.favor < 66 && value.favor + repToFavor(value.reputation) >= 66) ||
+      (value.favor >= 66 &&
+        value.favor < 150 &&
+        value.favor + repToFavor(value.reputation) >= 150)
+  );
 
   return factionsNeedReset;
 }
@@ -281,6 +275,6 @@ export {
   getEligibleAugmentations,
   getFactionsNeedReputation,
   getFactionsNeedFavor,
-  factionsNeedReset,
+  getFactionsNeedReset,
   getPurchasedAugmentations,
 };

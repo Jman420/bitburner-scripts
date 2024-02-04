@@ -74,31 +74,13 @@ function runWorkerScript(
       tempScript: true,
       args: scriptArgs,
     });
-    if (scriptPid) {
+    if (scriptPid > 0) {
       scriptPids.push(scriptPid);
       requiredThreads -= hostThreads;
     }
   }
 
   return scriptPids;
-}
-
-async function waitForScripts(
-  netscript: NS,
-  scriptPids: Array<number>,
-  sleepTime = 500
-) {
-  let scriptsRunning = true;
-  while (scriptsRunning) {
-    scriptsRunning = false;
-    for (const scriptPid of scriptPids) {
-      scriptsRunning = netscript.isRunning(scriptPid) || scriptsRunning;
-    }
-
-    if (scriptsRunning) {
-      await netscript.asleep(sleepTime);
-    }
-  }
 }
 
 async function growHost(
@@ -181,6 +163,31 @@ async function hackHost(
   };
 }
 
+async function waitForScripts(
+  netscript: NS,
+  scriptPids: number[],
+  sleepTime = 500
+) {
+  let scriptsRunning = true;
+  while (scriptsRunning) {
+    scriptsRunning = false;
+    for (const scriptPid of scriptPids) {
+      scriptsRunning = netscript.isRunning(scriptPid) || scriptsRunning;
+    }
+
+    if (scriptsRunning) {
+      await netscript.asleep(sleepTime);
+    }
+  }
+}
+
+async function waitForWorkers(netscript: NS, scriptPids: number[]) {
+  const scriptPromises = scriptPids.map(value =>
+    netscript.getPortHandle(value).nextWrite()
+  );
+  await Promise.all(scriptPromises);
+}
+
 async function killWorkerScripts(
   nsPackage: NetscriptPackage,
   hostname?: string
@@ -204,8 +211,9 @@ export {
   HACK_WORKER_SCRIPT,
   SHARE_RAM_WORKER_SCRIPT,
   runWorkerScript,
-  waitForScripts,
   growHost,
   hackHost,
+  waitForScripts,
+  waitForWorkers,
   killWorkerScripts,
 };

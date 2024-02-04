@@ -28,7 +28,7 @@ import {WORKERS_PACKAGE} from '/scripts/workers/package';
 import {
   WEAKEN_WORKER_SCRIPT,
   runWorkerScript,
-  waitForScripts,
+  waitForWorkers,
 } from '/scripts/workflows/orchestration';
 import {infiniteLoop, initializeScript} from '/scripts/workflows/execution';
 import {
@@ -120,7 +120,7 @@ async function attackTargets(nsPackage: NetscriptPackage, logWriter: Logger) {
   );
 
   logWriter.writeLine('Waiting for all attacks to complete...');
-  await waitForScripts(netscript, workerPids);
+  await waitForWorkers(netscript, workerPids);
   workerPids = undefined;
   logWriter.writeLine('Hack experience farm cycle complete!');
   logWriter.writeLine(SECTION_DIVIDER);

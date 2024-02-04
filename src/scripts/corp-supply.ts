@@ -15,6 +15,7 @@ import {
   getLocatorPackage,
 } from '/scripts/netscript-services/netscript-locator';
 import {infiniteLoop} from '/scripts/workflows/execution';
+import {CorpState} from '/scripts/data/corporation-enums';
 
 const MODULE_NAME = 'corp-supply';
 const SUBSCRIBER_NAME = 'corp-supply';
@@ -71,7 +72,7 @@ async function monitorOfficeProduction(
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
-  await waitForState(netscript, 'PURCHASE');
+  await waitForState(netscript, CorpState.PURCHASE);
 
   logWriter.writeLine(SECTION_DIVIDER);
   logWriter.writeLine('Monitoring Office Production');
@@ -134,7 +135,7 @@ async function monitorWarehouseCongestion(
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
-  await waitForState(netscript, 'PRODUCTION');
+  await waitForState(netscript, CorpState.PRODUCTION);
 
   logWriter.writeLine(SECTION_DIVIDER);
   logWriter.writeLine('Monitoring Warehouse Congestion');
@@ -200,7 +201,7 @@ async function manageWarehouse(nsPackage: NetscriptPackage, logWriter: Logger) {
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
-  await waitForState(netscript, 'START');
+  await waitForState(netscript, CorpState.START);
 
   logWriter.writeLine(SECTION_DIVIDER);
   logWriter.writeLine('Managing Warehouse Storage');

@@ -10,9 +10,8 @@ import {GangInfoChangedEvent} from '/scripts/comms/events/gang-info-changed-even
 import {GangEnemiesChangedEvent} from '/scripts/comms/events/gang-enemies-changed-event';
 
 import {
-  ASCENSION_SCORE_PROPERTIES,
+  MEMBER_STAT_CHECKS,
   MemberDetails,
-  SKILL_SCORE_PROPERTIES,
   getMemberDetails,
 } from '/scripts/workflows/gangs';
 import {
@@ -30,6 +29,12 @@ const MONITORED_GANG_INFO_PROPERTIES: Array<keyof GangGenInfo> = [
   'wantedPenalty',
   'moneyGainRate',
 ];
+const ASCENSION_SCORE_PROPERTIES = MEMBER_STAT_CHECKS.map(
+  value => value.ascentionMultiplier
+);
+const SKILL_SCORE_PROPERTIES = MEMBER_STAT_CHECKS.map(
+  value => value.skillProperty
+);
 const MONITORED_GANG_MEMBER_PROPERTIES: Array<keyof MemberDetails> = (
   ASCENSION_SCORE_PROPERTIES as Array<keyof MemberDetails>
 )

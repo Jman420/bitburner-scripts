@@ -18,7 +18,7 @@ import {scanWideNetwork} from '/scripts/workflows/recon';
 import {WORKERS_PACKAGE} from '/scripts/workers/package';
 import {
   SHARE_RAM_WORKER_SCRIPT,
-  waitForScripts,
+  waitForWorkers,
 } from '/scripts/workflows/orchestration';
 import {
   infiniteLoop,
@@ -72,7 +72,7 @@ async function shareRam(netscript: NS, logWriter: Logger) {
   }
 
   logWriter.writeLine('Waiting for all RAM sharing to complete...');
-  await waitForScripts(netscript, workerPids);
+  await waitForWorkers(netscript, workerPids);
   workerPids = undefined;
   logWriter.writeLine('Faction reputation farm cycle complete!');
   logWriter.writeLine(SECTION_DIVIDER);

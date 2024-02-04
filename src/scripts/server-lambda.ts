@@ -19,7 +19,7 @@ import {ServerFarmOrder, nearestPowerOf2} from '/scripts/workflows/server-farm';
 import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
 export const SERVER_LAMBDA_SCRIPT = `${SCRIPTS_DIR}/server-lambda.js`;
-const DEFAULT_RAM_AMOUNT = 1024;
+export const DEFAULT_RAM_AMOUNT = 1024;
 export const CMD_FLAG_RAM_AMOUNT = 'ramAmount';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_RAM_AMOUNT, DEFAULT_RAM_AMOUNT],
@@ -29,7 +29,7 @@ const CMD_FLAGS = getSchemaFlags(CMD_FLAGS_SCHEMA);
 const MODULE_NAME = 'server-lambda';
 const SUBSCRIBER_NAME = 'server-lambda';
 
-const TAIL_X_POS = 1015;
+const TAIL_X_POS = 1025;
 const TAIL_Y_POS = 105;
 const TAIL_WIDTH = 820;
 const TAIL_HEIGHT = 380;

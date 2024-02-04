@@ -33,6 +33,7 @@ import {
   NetscriptPackage,
   getLocatorPackage,
 } from '/scripts/netscript-services/netscript-locator';
+import {CorpState} from '/scripts/data/corporation-enums';
 
 const DEFAULT_DESIGN_CITY = 'Sector-12';
 const DEFAULT_PRODUCT_NAME = 'Product';
@@ -83,7 +84,7 @@ async function manageProductLifecycle(
       productName
     );
     if (productInfo.developmentProgress < 100) {
-      await waitForState(netscript, 'START');
+      await waitForState(netscript, CorpState.START);
       return;
     }
 
@@ -128,7 +129,7 @@ async function manageProductLifecycle(
     budget
   );
 
-  await waitForState(netscript, 'START');
+  await waitForState(netscript, CorpState.START);
 }
 
 function handleUpdateConfigEvent(

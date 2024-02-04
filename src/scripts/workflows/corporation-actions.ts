@@ -129,7 +129,7 @@ async function waitForMoraleAndEnergy(
         officesMaxedOut.add(cityName);
       }
     }
-    await waitForState(netscript, 'START');
+    await waitForState(netscript, CorpState.START);
   }
 }
 
@@ -146,7 +146,7 @@ async function purchaseMaterial(
   const corpApi = nsLocator.corporation;
   const buyAmount = amount / 10;
   await corpApi['buyMaterial'](divisionName, cityName, materialName, buyAmount);
-  await waitForState(netscript, 'PURCHASE');
+  await waitForState(netscript, CorpState.PURCHASE);
   await corpApi['buyMaterial'](divisionName, cityName, materialName, 0);
 }
 
@@ -176,7 +176,7 @@ async function saleMaterial(
       `${sellAmount}`,
       'MP'
     );
-    await waitForState(netscript, 'PURCHASE');
+    await waitForState(netscript, CorpState.PURCHASE);
     await corpApi['sellMaterial'](
       divisionName,
       cityName,

@@ -21,7 +21,7 @@ import {
   CMD_FLAG_OPTIMAL_ONLY,
   FARM_HACK_EXP_SCRIPT,
 } from '/scripts/farm-hackExp';
-import {SERVER_LAMBDA_SCRIPT} from '/scripts/server-lambda';
+import {DEFAULT_RAM_AMOUNT as LAMBDA_RAM_AMOUNT} from '/scripts/server-lambda';
 import {SCRIPTS_KILL_ALL_SCRIPT} from '/scripts/scripts-kill-all';
 import {WGWH_SERIAL_ATTACK_SCRIPT} from '/scripts/wgwh-serial';
 import {WGWH_BATCH_ATTACK_SCRIPT} from '/scripts/wgwh-batch';
@@ -84,7 +84,7 @@ import {
   RED_PILL_AUGMENTATION_NAME,
   attendCourse,
   backdoorHost,
-  factionsNeedReset,
+  getFactionsNeedReset,
   getEligibleAugmentations,
   getFactionsNeedFavor,
   getFactionsNeedReputation,
@@ -367,16 +367,32 @@ async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
  *   - Include home server in currently active hacking attacks
  *   - Complete
  */
-async function handleLambdaServer(netscript: NS, logWriter: Logger) {
+async function handleLambdaServer(
+  nsPackage: NetscriptPackage,
+  logWriter: Logger
+) {
   const logPrefix = 'Lambda -';
+
+  const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
 
   if (!netscript.serverExists(NETSCRIPT_SERVER_NAME)) {
     logWriter.writeLine(
       `${logPrefix} Waiting for Lambda Server to be purchased...`
     );
-    while (!netscript.serverExists(NETSCRIPT_SERVER_NAME)) {
+    const serverCost = netscript.getPurchasedServerCost(LAMBDA_RAM_AMOUNT);
+    while (
+      !netscript.serverExists(NETSCRIPT_SERVER_NAME) &&
+      (await getPlayerTotalValue(nsPackage)) < serverCost
+    ) {
       await netscript.asleep(WAIT_DELAY);
     }
+    handlePurchase(nsLocator, async () => {
+      await nsLocator['purchaseServer'](
+        NETSCRIPT_SERVER_NAME,
+        LAMBDA_RAM_AMOUNT
+      );
+    });
   }
 
   logWriter.writeLine(
@@ -1180,16 +1196,16 @@ async function handleSoftReset(nsPackage: NetscriptPackage, logWriter: Logger) {
   logWriter.writeLine(
     `${logPrefix} Waiting for faction to need reset for favor or The Red Pill or all available augmentations to be purchased...`
   );
-  let factionNeedsReset = await factionsNeedReset(nsPackage);
+  let factionsNeedReset = await getFactionsNeedReset(nsPackage);
   let purchasedAugs = await getPurchasedAugmentations(nsPackage);
   let eligibleAugmentations = await getEligibleAugmentations(nsPackage);
   while (
-    !factionNeedsReset &&
+    factionsNeedReset.length < 1 &&
     !purchasedAugs.includes(RED_PILL_AUGMENTATION_NAME) &&
     (eligibleAugmentations.length > 0 || purchasedAugs.length < 1)
   ) {
     await netscript.asleep(WAIT_DELAY);
-    factionNeedsReset = await factionsNeedReset(nsPackage);
+    factionsNeedReset = await getFactionsNeedReset(nsPackage);
     purchasedAugs = await getPurchasedAugmentations(nsPackage);
     eligibleAugmentations = await getEligibleAugmentations(nsPackage);
   }
@@ -1334,8 +1350,7 @@ export async function main(netscript: NS) {
   runScript(netscript, CONTRACTS_AUTO_SCRIPT, {tempScript: true});
 
   if (!netscript.serverExists(NETSCRIPT_SERVER_NAME)) {
-    scriptLogWriter.writeLine('Running lambda server manager script...');
-    runScript(netscript, SERVER_LAMBDA_SCRIPT, {tempScript: true});
+    handleLambdaServer(nsPackage, scriptLogWriter);
 
     scriptLogWriter.writeLine(
       'Committing crime while waiting for lambda server to be purchased...'
@@ -1385,7 +1400,6 @@ export async function main(netscript: NS) {
   scriptLogWriter.writeLine('Running concurrent tasks...');
   const concurrentTasks = [];
   concurrentTasks.push(handleHacking(nsPackage, scriptLogWriter));
-  concurrentTasks.push(handleLambdaServer(netscript, scriptLogWriter));
   concurrentTasks.push(handleWorkTasks(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleFactions(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleHomeServer(nsPackage, scriptLogWriter));
