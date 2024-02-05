@@ -31,8 +31,8 @@ import {ProductLifecycleConfigRequest} from '/scripts/comms/requests/product-lif
 import {ProductLifecycleConfigResponse} from '/scripts/comms/responses/product-lifecycle-config-response';
 import {
   NetscriptPackage,
-  getGhostPackage,
-} from '/scripts/netscript-services/netscript-ghost';
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 import {CorpState} from '/scripts/data/corporation-enums';
 
 const DEFAULT_DESIGN_CITY = 'Sector-12';
@@ -70,7 +70,7 @@ async function manageProductLifecycle(
   nsPackage: NetscriptPackage,
   logWriter: Logger
 ) {
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
   let productVersion = 0;
@@ -173,8 +173,8 @@ function handleProductLifecycleConfigRequest(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getGhostPackage(netscript);
-  const nsLocator = nsPackage.ghost;
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

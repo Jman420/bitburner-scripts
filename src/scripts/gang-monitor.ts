@@ -16,8 +16,8 @@ import {
 } from '/scripts/workflows/gangs';
 import {
   NetscriptPackage,
-  getGhostPackage,
-} from '/scripts/netscript-services/netscript-ghost';
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 const MODULE_NAME = 'gangs-monitor';
 const SUBSCRIBER_NAME = 'gangs-monitor';
@@ -54,7 +54,7 @@ async function updateGangDetails(
   nsPackage: NetscriptPackage,
   logWriter: Logger
 ) {
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
   logWriter.writeLine('Checking for gang metrics changes...');
@@ -146,8 +146,8 @@ async function updateGangDetails(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getGhostPackage(netscript);
-  const nsLocator = nsPackage.ghost;
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);

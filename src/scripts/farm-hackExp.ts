@@ -2,8 +2,8 @@ import {AutocompleteData, NS} from '@ns';
 
 import {
   NetscriptPackage,
-  getGhostPackage,
-} from '/scripts/netscript-services/netscript-ghost';
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
@@ -165,7 +165,7 @@ function handleExit(eventData: ExitEvent, netscript: NS) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getGhostPackage(netscript);
+  const nsPackage = getLocatorPackage(netscript);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

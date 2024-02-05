@@ -23,7 +23,7 @@ import {
   CMD_FLAG_STORAGE_SIZE,
 } from '/scripts/corp-materials';
 import {FRAUD_DIVISION_NAME_PREFIX} from '/scripts/workflows/corporation-shared';
-import {NetscriptPackage} from '/scripts/netscript-services/netscript-ghost';
+import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
 import {useEffectOnce} from '/scripts/controls/hooks/use-effect-once';
 
 interface InterfaceControls {
@@ -82,7 +82,7 @@ function runManagerScript(netscript: NS) {
 }
 
 function CorpMaterialsUI({nsPackage}: {nsPackage: NetscriptPackage}) {
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
   const uiStyle = netscript.ui.getStyles();

@@ -52,8 +52,8 @@ import {CMD_FLAG_DELAY, CMD_FLAG_TARGETS_CSV} from '/scripts/workers/shared';
 import {WORKERS_PACKAGE} from '/scripts/workers/package';
 import {
   NetscriptPackage,
-  getGhostPackage,
-} from '/scripts/netscript-services/netscript-ghost';
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 import {SCRIPTS_DIR} from '/scripts/common/shared';
 import {
   growThreadsRequired,
@@ -104,7 +104,7 @@ async function attackTargets(
     expGain: 1,
   }
 ) {
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
   let targetHosts = [...scriptConfig.targetHosts];
@@ -410,7 +410,7 @@ function handleExit(eventData: ExitEvent, netscript: NS) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getGhostPackage(netscript);
+  const nsPackage = getLocatorPackage(netscript);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

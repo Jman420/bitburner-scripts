@@ -23,7 +23,7 @@ import {CustomHudValues} from '/scripts/controls/custom-hud-values';
 
 import {EventListener} from '/scripts/comms/event-comms';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
-import {getGhostPackage} from '/scripts/netscript-services/netscript-ghost';
+import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
 const reactModel = getReactModel();
 const React = reactModel.reactNS;
@@ -60,7 +60,7 @@ function handleShutdown(eventData: ExitEvent, hudHooks: HudHooks) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getGhostPackage(netscript);
+  const nsPackage = getLocatorPackage(netscript);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

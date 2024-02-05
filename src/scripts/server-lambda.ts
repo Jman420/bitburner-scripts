@@ -16,7 +16,7 @@ import {openTail} from '/scripts/workflows/ui';
 import {initializeScript} from '/scripts/workflows/execution';
 import {NETSCRIPT_SERVER_NAME, SCRIPTS_DIR} from '/scripts/common/shared';
 import {ServerFarmOrder, nearestPowerOf2} from '/scripts/workflows/server-farm';
-import {getGhostPackage} from '/scripts/netscript-services/netscript-ghost';
+import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
 export const SERVER_LAMBDA_SCRIPT = `${SCRIPTS_DIR}/server-lambda.js`;
 export const DEFAULT_RAM_AMOUNT = 1024;
@@ -36,8 +36,8 @@ const TAIL_HEIGHT = 380;
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getGhostPackage(netscript);
-  const nsLocator = nsPackage.ghost;
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

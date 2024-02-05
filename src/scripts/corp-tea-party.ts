@@ -23,8 +23,8 @@ import {TeaPartyConfigRequest} from '/scripts/comms/requests/tea-party-config-re
 import {TeaPartyConfigResponse} from '/scripts/comms/responses/tea-party-config-response';
 import {
   NetscriptPackage,
-  getGhostPackage,
-} from '/scripts/netscript-services/netscript-ghost';
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 import {CorpState} from '/scripts/data/corporation-enums';
 
 const DEFAULT_MORALE_LIMIT = 95;
@@ -53,7 +53,7 @@ const TAIL_HEIGHT = 310;
 let scriptConfig: TeaPartyConfig;
 
 async function manageTeaParty(nsPackage: NetscriptPackage, logWriter: Logger) {
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
   const corpApi = nsLocator.corporation;
@@ -134,7 +134,7 @@ function handleTeaPartyConfigRequest(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getGhostPackage(netscript);
+  const nsPackage = getLocatorPackage(netscript);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

@@ -6,23 +6,13 @@ import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 import {GrowWeakenHackFunction} from '/scripts/workflows/execution';
 import {CmdArgsSchema, parseCmdFlags} from '/scripts/workflows/cmd-args';
 
-interface WorkerJobDetails {
-  delay: number;
-  targets: string[];
-  endTime: number;
-  jobLength: number;
-  completePort: number;
-}
-
 const CMD_FLAG_DELAY = 'delay';
 const CMD_FLAG_TARGETS_CSV = 'targetsCsv';
 const CMD_FLAG_INFLUENCE_STOCKS = 'influenceStocks';
-const CMD_FLAG_REPORT_DELAY = 'reportDelay';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_DELAY, 0],
   [CMD_FLAG_TARGETS_CSV, ''],
   [CMD_FLAG_INFLUENCE_STOCKS, false],
-  [CMD_FLAG_REPORT_DELAY, false],
 ];
 
 async function runWorker(
@@ -38,12 +28,10 @@ async function runWorker(
   const influenceStocks = cmdArgs[
     CMD_FLAG_INFLUENCE_STOCKS
   ].valueOf() as boolean;
-  const reportDelay = cmdArgs[CMD_FLAG_REPORT_DELAY].valueOf() as boolean;
 
   logWriter.writeLine(`Target Hosts : ${targetHosts}`);
   logWriter.writeLine(`Delay : ${delay}`);
   logWriter.writeLine(`Influence Stocks : ${influenceStocks}`);
-  logWriter.writeLine(`Report Delay : ${reportDelay}`);
   logWriter.writeLine(SECTION_DIVIDER);
 
   logWriter.writeLine(`Performing worker activity : ${gwhFunc.name}`);
@@ -67,7 +55,6 @@ export {
   CMD_FLAG_DELAY,
   CMD_FLAG_TARGETS_CSV,
   CMD_FLAG_INFLUENCE_STOCKS,
-  CMD_FLAG_REPORT_DELAY,
   CMD_FLAGS_SCHEMA,
   runWorker,
 };

@@ -27,7 +27,7 @@ import {
 import {hackHost} from '/scripts/workflows/orchestration';
 import {DEFAULT_NETSCRIPT_ENABLED_LOGGING} from '/scripts/logging/scriptLogger';
 import {openTail} from '/scripts/workflows/ui';
-import {getGhostPackage} from '/scripts/netscript-services/netscript-ghost';
+import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
   [CMD_FLAG_TARGETS, []],
@@ -45,7 +45,7 @@ const TAIL_HEIGHT = 510;
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getGhostPackage(netscript);
+  const nsPackage = getLocatorPackage(netscript);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

@@ -15,7 +15,7 @@ import {
   CMD_FLAG_INFLUENCE_STOCKS,
   CMD_FLAG_TARGETS_CSV,
 } from '/scripts/workers/shared';
-import {NetscriptPackage} from '/scripts/netscript-services/netscript-ghost';
+import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
 import {
   growThreadsRequired,
   hackThreadsRequired,
@@ -192,7 +192,7 @@ async function killWorkerScripts(
   nsPackage: NetscriptPackage,
   hostname?: string
 ) {
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
   if (!hostname) {

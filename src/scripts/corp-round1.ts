@@ -51,8 +51,8 @@ import {
 } from '/scripts/workflows/corporation-shared';
 import {
   NetscriptPackage,
-  getGhostPackage,
-} from '/scripts/netscript-services/netscript-ghost';
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 import {REQUIRED_FUNDS as ROUND2_REQUIRED_FUNDS} from '/scripts/corp-round2';
 import {killWorkerScripts} from '/scripts/workflows/orchestration';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
@@ -86,8 +86,8 @@ async function handleExit(eventData: ExitEvent, nsPackage: NetscriptPackage) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getGhostPackage(netscript);
-  const nsLocator = nsPackage.ghost;
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

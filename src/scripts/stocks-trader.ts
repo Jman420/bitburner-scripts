@@ -46,8 +46,8 @@ import {StocksTraderConfigRequest} from '/scripts/comms/requests/stocks-trader-c
 import {StocksTraderConfigResponse} from '/scripts/comms/responses/stocks-trader-config-response';
 import {
   NetscriptPackage,
-  getGhostPackage,
-} from '/scripts/netscript-services/netscript-ghost';
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 export const STOCKS_TRADER_SCRIPT = `${SCRIPTS_DIR}/stocks-trader.js`;
 export const CMD_FLAG_FUNDS_LIMIT_PERCENT = 'fundsLimitPercent';
@@ -84,7 +84,7 @@ async function tradeStocks(
     (listingA, listingB) => listingB.forecastScore - listingA.forecastScore
   );
 
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
   // Handle Sales Transactions
@@ -242,7 +242,7 @@ async function setupStockTrader(
 ) {
   eventListener.removeListeners(StockListingsResponse, setupStockTrader);
 
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
   terminalWriter.writeLine(
@@ -332,7 +332,7 @@ function handleConfigRequest(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getGhostPackage(netscript);
+  const nsPackage = getLocatorPackage(netscript);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

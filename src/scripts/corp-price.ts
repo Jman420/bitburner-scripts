@@ -16,8 +16,8 @@ import {
 } from '/scripts/workflows/corporation-optimization';
 import {
   NetscriptPackage,
-  getGhostPackage,
-} from '/scripts/netscript-services/netscript-ghost';
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 const MODULE_NAME = 'corp-price';
 const SUBSCRIBER_NAME = 'corp-price';
@@ -32,7 +32,7 @@ const UPDATE_DELAY = 0;
 let productMarkupCache: Map<string, number>;
 
 async function purgeProductMarkupCache(nsPackage: NetscriptPackage) {
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
   await waitForState(netscript, CorpState.START);
@@ -54,7 +54,7 @@ async function manageOutputPricing(
   nsPackage: NetscriptPackage,
   logWriter: Logger
 ) {
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
   await waitForState(netscript, CorpState.EXPORT);
@@ -159,7 +159,7 @@ async function manageOutputPricing(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getGhostPackage(netscript);
+  const nsPackage = getLocatorPackage(netscript);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

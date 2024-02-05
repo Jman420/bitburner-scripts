@@ -10,10 +10,10 @@ import {openTail} from '/scripts/workflows/ui';
 
 import {
   NetscriptExtended,
-  NetscriptGhost,
+  NetscriptLocator,
   NetscriptPackage,
-  getGhostPackage,
-} from '/scripts/netscript-services/netscript-ghost';
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 import {ROOT_HOSTS_SCRIPT} from '/scripts/hosts-root';
 import {
@@ -152,7 +152,7 @@ async function togglePurchases(enablePurchases: boolean) {
 }
 
 async function handlePurchase(
-  nsLocator: NetscriptGhost,
+  nsLocator: NetscriptLocator,
   purchaseFunc: () => void | Promise<void>
 ) {
   await togglePurchases(false);
@@ -174,7 +174,7 @@ async function handlePurchase(
 async function handleHacking(nsPackage: NetscriptPackage, logWriter: Logger) {
   const logPrefix = 'Hacking -';
 
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
   let attackTargets = filterHostsCanHack(
@@ -373,7 +373,7 @@ async function handleLambdaServer(
 ) {
   const logPrefix = 'Lambda -';
 
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
   if (!netscript.serverExists(NETSCRIPT_SERVER_NAME)) {
@@ -418,7 +418,7 @@ async function handleLambdaServer(
 async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
   const logPrefix = 'Work -';
 
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const singularityApi = nsLocator.singularity;
   const netscriptExtended = netscript as NetscriptExtended;
@@ -529,7 +529,7 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
 async function handleFactions(nsPackage: NetscriptPackage, logWriter: Logger) {
   const logPrefix = 'Faction -';
 
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const singularityApi = nsLocator.singularity;
 
@@ -604,7 +604,7 @@ async function handleFactions(nsPackage: NetscriptPackage, logWriter: Logger) {
 async function handleTor(nsPackage: NetscriptPackage, logWriter: Logger) {
   const logPrefix = 'Tor -';
 
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const singularityApi = nsLocator.singularity;
 
@@ -658,7 +658,7 @@ async function handleHomeServer(
 ) {
   const logPrefix = 'Home -';
 
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const singularityApi = nsLocator.singularity;
 
@@ -724,7 +724,7 @@ async function handleStockMarket(
 ) {
   const logPrefix = 'Stocks -';
 
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const stocksApi = nsLocator.stock;
 
@@ -828,7 +828,7 @@ async function handleStockMarket(
 async function handleGang(nsPackage: NetscriptPackage, logWriter: Logger) {
   const logPrefix = 'Gang -';
 
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const netscriptExtended = netscript as NetscriptExtended;
   const gangApi = nsLocator.gang;
@@ -932,7 +932,7 @@ async function handleCorporation(
 ) {
   const logPrefix = 'Corp -';
 
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const corpApi = nsLocator.corporation;
 
@@ -1047,7 +1047,7 @@ async function handleCorporation(
 async function handleBribes(nsPackage: NetscriptPackage, logWriter: Logger) {
   const logPrefix = 'Bribes -';
 
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const singularityApi = nsLocator.singularity;
   const corpApi = nsLocator.corporation;
@@ -1120,7 +1120,7 @@ async function handleAugmentations(
 ) {
   const logPrefix = 'Augments -';
 
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const singularityApi = nsLocator.singularity;
 
@@ -1188,7 +1188,7 @@ async function handleAugmentations(
 async function handleSoftReset(nsPackage: NetscriptPackage, logWriter: Logger) {
   const logPrefix = 'SoftReset -';
 
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const singularityApi = nsLocator.singularity;
   const stocksApi = nsLocator.stock;
@@ -1333,8 +1333,8 @@ async function handleSoftReset(nsPackage: NetscriptPackage, logWriter: Logger) {
 export async function main(netscript: NS) {
   purchasesEnabled = true;
 
-  const nsPackage = getGhostPackage(netscript);
-  const nsLocator = nsPackage.ghost;
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
   const singularityApi = nsLocator.singularity;
 
   initializeScript(netscript, SUBSCRIBER_NAME);

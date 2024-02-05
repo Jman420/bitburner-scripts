@@ -49,10 +49,10 @@ import {openTail} from '/scripts/workflows/ui';
 import {GangConfigRequest} from '/scripts/comms/requests/gang-config-request';
 import {GangConfigResponse} from '/scripts/comms/responses/gang-config-response';
 import {
-  NetscriptGhost,
+  NetscriptLocator,
   NetscriptPackage,
-  getGhostPackage,
-} from '/scripts/netscript-services/netscript-ghost';
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 export const CMD_FLAG_MEMBER_NAME_PREFIX = 'memberNamePrefix';
 export const CMD_FLAG_PURCHASE_AUGMENTATIONS = 'purchaseAugmentations';
@@ -99,7 +99,7 @@ async function manageGang(
     return;
   }
 
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
   const gangInfo = eventData.gangInfo;
@@ -375,7 +375,7 @@ async function manageGang(
 
 async function handleEnemiesChangedEvent(
   eventData: GangEnemiesChangedEvent,
-  nsLocator: NetscriptGhost
+  nsLocator: NetscriptLocator
 ) {
   if (!eventData.enemiesInfo || !eventData.enemyNames) {
     return;
@@ -436,8 +436,8 @@ function handleConfigRequest(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getGhostPackage(netscript);
-  const nsLocator = nsPackage.ghost;
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

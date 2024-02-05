@@ -1,4 +1,4 @@
-import {NetscriptPackage} from '/scripts/netscript-services/netscript-ghost';
+import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
 
 import {ServerDetails} from '/scripts/workflows/recon';
 
@@ -249,7 +249,7 @@ async function getHackingExpGain(
   nsPackage: NetscriptPackage,
   hostname: string
 ) {
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
   const serverDetails = await nsLocator['getServer'](hostname);

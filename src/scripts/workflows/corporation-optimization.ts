@@ -33,7 +33,7 @@ import {
   getWarehouseCost,
   getWarehouseSize,
 } from '/scripts/workflows/corporation-formulas';
-import {NetscriptGhost} from '/scripts/netscript-services/netscript-ghost';
+import {NetscriptLocator} from '/scripts/netscript-services/netscript-locator';
 
 interface OptimalDivisionFactoryAndStorageInfo {
   production: number;
@@ -100,7 +100,7 @@ function calculateOptimalIndustryMaterials(
 }
 
 async function getOptimalIndustryMaterials(
-  nsLocator: NetscriptGhost,
+  nsLocator: NetscriptLocator,
   industryType: CorpIndustryName,
   storageSize: number,
   wholeNumResults = true
@@ -134,7 +134,7 @@ async function getOptimalIndustryMaterials(
 }
 
 async function getOptimalDivisionFactoryAndStorage(
-  nsLocator: NetscriptGhost,
+  nsLocator: NetscriptLocator,
   divisionName: string,
   budget: number,
   industryMaterialsRatio = 0.8
@@ -269,7 +269,7 @@ async function getOptimalDivisionFactoryAndStorage(
 }
 
 async function getOptimalAdvert(
-  nsLocator: NetscriptGhost,
+  nsLocator: NetscriptLocator,
   divisionName: string,
   budget: number
 ) {
@@ -365,7 +365,7 @@ async function getOptimalAdvert(
 }
 
 async function getOptimalProductMarkup(
-  nsLocator: NetscriptGhost,
+  nsLocator: NetscriptLocator,
   divisionName: string,
   cityName: CityName,
   productInfo: Product
@@ -542,7 +542,7 @@ function isProduct(item: Material | Product): item is Product {
   return 'rating' in item;
 }
 async function getOptimalSellingPrice(
-  nsLocator: NetscriptGhost,
+  nsLocator: NetscriptLocator,
   divisionName: string,
   cityName: CityName,
   itemInfo: Material | Product,

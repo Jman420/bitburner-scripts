@@ -16,7 +16,7 @@ import {openTail} from '/scripts/workflows/ui';
 import {initializeScript} from '/scripts/workflows/execution';
 import {EXPORT_FORMULA} from '/scripts/workflows/corporation-shared';
 import {FRAUD_DIVISION_NAME_PREFIX} from '/scripts/workflows/corporation-shared';
-import {getGhostPackage} from '/scripts/netscript-services/netscript-ghost';
+import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
 export const CMD_FLAG_DIVISION_NAME = 'division';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [[CMD_FLAG_DIVISION_NAME, '']];
@@ -34,8 +34,8 @@ let DIVISION_NAMES: string[];
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getGhostPackage(netscript);
-  const nsLocator = nsPackage.ghost;
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
   const corpApi = nsLocator.corporation;
 
   initializeScript(netscript, SUBSCRIBER_NAME);

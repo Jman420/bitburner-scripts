@@ -1,7 +1,7 @@
 import {CityName, CorpMaterialName} from '@ns';
 
 import {ResearchName} from '/scripts/data/corporation-enums';
-import {NetscriptGhost} from '/scripts/netscript-services/netscript-ghost';
+import {NetscriptLocator} from '/scripts/netscript-services/netscript-locator';
 
 interface TeaPartyConfig {
   energyLimit: number;
@@ -52,7 +52,7 @@ const RAW_MAX_DIVISIONS = 20;
 
 const ROUND1_ADVERT_LEVEL = 2;
 
-async function corpHasIncome(nsLocator: NetscriptGhost) {
+async function corpHasIncome(nsLocator: NetscriptLocator) {
   const corpApi = nsLocator.corporation;
 
   const corpInfo = (await corpApi['hasCorporation']())

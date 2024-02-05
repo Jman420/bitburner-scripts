@@ -1,4 +1,4 @@
-import {NetscriptPackage} from '/scripts/netscript-services/netscript-ghost';
+import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
 
 async function scoreHostForAttack(
   nsPackage: NetscriptPackage,
@@ -6,7 +6,7 @@ async function scoreHostForAttack(
   hackFundsPercent: number,
   batchCount: number
 ) {
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const hackFormulas = netscript.formulas.hacking;
 

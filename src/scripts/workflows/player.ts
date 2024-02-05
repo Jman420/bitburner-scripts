@@ -1,4 +1,4 @@
-import {NetscriptPackage} from '/scripts/netscript-services/netscript-ghost';
+import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
 
 import {getPortfolioValue} from '/scripts/workflows/stocks';
 

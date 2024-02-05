@@ -1,4 +1,4 @@
-import {NetscriptPackage} from '/scripts/netscript-services/netscript-ghost';
+import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
 import {getRequiredRam} from '/scripts/workflows/execution';
 import {
   growThreadsRequired,
@@ -38,7 +38,7 @@ async function getBatchDetails(
   targetMaxFundsPercent: number,
   hackFundsPercent: number
 ) {
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
 
   const hackThreads = await hackThreadsRequired(

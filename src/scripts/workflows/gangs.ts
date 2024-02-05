@@ -7,14 +7,13 @@ import {
 } from '@ns';
 
 import {
-  NetscriptGhost,
+  NetscriptLocator,
   NetscriptPackage,
-} from '/scripts/netscript-services/netscript-ghost';
+} from '/scripts/netscript-services/netscript-locator';
 
 import {SCRIPTS_DIR} from '/scripts/common/shared';
 
 type AscentionProperties<T> = {
-  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   [K in keyof T as K extends `${infer Prefix}_asc_mult` ? K : never]: T[K];
 };
 
@@ -102,7 +101,7 @@ async function recruitAvailableMembers(
   memberNamePrefix: string,
   memberCount: number
 ) {
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
 
   const membersRecruited = [];
   let counter = 0;
@@ -124,7 +123,7 @@ async function getMemberDetails(
   nsPackage: NetscriptPackage,
   memberName?: string
 ) {
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const gangApi = nsLocator.gang;
 
   let memberNames = await gangApi['getMemberNames']();
@@ -207,7 +206,7 @@ function ascensionIncreasesSatisfyLimit(
 }
 
 async function ascendEligible(
-  nsLocator: NetscriptGhost,
+  nsLocator: NetscriptLocator,
   memberName: string,
   ascentionFactorIncreaseLimit: number,
   trainingAscensionLimit: number
@@ -251,13 +250,13 @@ async function ascendGangMember(
   nsPackage: NetscriptPackage,
   memberName: string
 ) {
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   await nsLocator.gang['ascendMember'](memberName);
   return (await getMemberDetails(nsPackage, memberName))[0];
 }
 
 async function getUpgradeCosts(nsPackage: NetscriptPackage) {
-  const nsLocator = nsPackage.ghost;
+  const nsLocator = nsPackage.locator;
   const gangApi = nsLocator.gang;
 
   const equipmentList = await gangApi['getEquipmentNames']();
@@ -338,7 +337,7 @@ function getTrainingStatus(
   return result;
 }
 
-async function getVigilanteTaskDetails(nsLocator: NetscriptGhost) {
+async function getVigilanteTaskDetails(nsLocator: NetscriptLocator) {
   const gangApi = nsLocator.gang;
   const taskNames = await gangApi['getTaskNames']();
 
@@ -435,7 +434,7 @@ function getWantedLevelGainIncrease(
 }
 
 async function getCriminalTaskDetails(
-  nsLocator: NetscriptGhost,
+  nsLocator: NetscriptLocator,
   taskName?: string
 ) {
   const gangApi = nsLocator.gang;
@@ -458,7 +457,7 @@ async function getCriminalTaskDetails(
   return result;
 }
 
-async function gangHasIncome(nsLocator: NetscriptGhost) {
+async function gangHasIncome(nsLocator: NetscriptLocator) {
   const gangApi = nsLocator.gang;
 
   const gangInfo = (await gangApi['inGang']())

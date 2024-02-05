@@ -50,8 +50,8 @@ import {hackThreadsRequired} from '/scripts/workflows/formulas';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
 import {
   NetscriptPackage,
-  getGhostPackage,
-} from '/scripts/netscript-services/netscript-ghost';
+  getLocatorPackage,
+} from '/scripts/netscript-services/netscript-locator';
 
 export const WGWH_SERIAL_ATTACK_SCRIPT = `${SCRIPTS_DIR}/wgwh-serial.js`;
 export const CMD_FLAG_INCLUDE_HOME = 'includeHome';
@@ -277,7 +277,7 @@ function handleExit(eventData: ExitEvent, netscript: NS) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getGhostPackage(netscript);
+  const nsPackage = getLocatorPackage(netscript);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

@@ -1,5 +1,5 @@
 import {NS} from '@ns';
-import {NetscriptGhost} from '/scripts/netscript-services/netscript-ghost';
+import {NetscriptLocator} from '/scripts/netscript-services/netscript-locator';
 
 type PurchaseFunction = (
   hostname: string,
@@ -32,7 +32,7 @@ function nearestPowerOf2(value: number) {
   return Math.pow(2, power + 1);
 }
 
-async function getNodeCount(nsLocator: NetscriptGhost) {
+async function getNodeCount(nsLocator: NetscriptLocator) {
   return (await nsLocator['getPurchasedServers']()).length;
 }
 

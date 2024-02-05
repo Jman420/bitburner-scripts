@@ -6,15 +6,15 @@ import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 import {initializeScript} from '/scripts/workflows/execution';
 
 import {getAvailableRam} from '/scripts/workflows/recon';
-import {getGhostPackage} from '/scripts/netscript-services/netscript-ghost';
+import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
 
 const MODULE_NAME = 'farm-monitor';
 const SUBSCRIBER_NAME = 'farm-monitor';
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getGhostPackage(netscript);
-  const nsLocator = nsPackage.ghost;
+  const nsPackage = getLocatorPackage(netscript);
+  const nsLocator = nsPackage.locator;
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);
