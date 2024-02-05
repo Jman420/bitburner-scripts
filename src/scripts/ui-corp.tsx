@@ -9,7 +9,7 @@ import {getReactModel, openTail} from '/scripts/workflows/ui';
 
 import {EventListener} from '/scripts/comms/event-comms';
 import {CorporationUI} from '/scripts/controls/corporation-ui';
-import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
+import {getGhostPackage} from '/scripts/netscript-services/netscript-ghost';
 
 const React = getReactModel().reactNS;
 
@@ -23,7 +23,7 @@ const TAIL_HEIGHT = 710;
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getLocatorPackage(netscript);
+  const nsPackage = getGhostPackage(netscript);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

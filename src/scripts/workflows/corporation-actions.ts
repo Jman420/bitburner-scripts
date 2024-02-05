@@ -41,9 +41,9 @@ import {
   getOptimalIndustryMaterials,
 } from '/scripts/workflows/corporation-optimization';
 import {
-  NetscriptLocator,
+  NetscriptGhost,
   NetscriptPackage,
-} from '/scripts/netscript-services/netscript-locator';
+} from '/scripts/netscript-services/netscript-ghost';
 
 const BUDGET_RATIO_PRODUCT_DIVISION = {
   rawProduction: 0.17,
@@ -97,7 +97,7 @@ async function waitForResearch(
   divisionName: string,
   targetResearchPoints: number
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
 
   const corpApi = nsLocator.corporation;
@@ -114,7 +114,7 @@ async function waitForMoraleAndEnergy(
   targetMorale = 100,
   targetEnergy = 100
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
 
   const corpApi = nsLocator.corporation;
@@ -140,7 +140,7 @@ async function purchaseMaterial(
   materialName: CorpMaterialName,
   amount: number
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
 
   const corpApi = nsLocator.corporation;
@@ -157,7 +157,7 @@ async function saleMaterial(
   materialName: CorpMaterialName,
   amount: number
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
 
   const corpApi = nsLocator.corporation;
@@ -199,7 +199,7 @@ async function manageIndustryMaterials(
   cities: CityName[],
   industryMaterials: Map<CorpMaterialName, number>
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
 
   const corpApi = nsLocator.corporation;
   const divisionInfo = await corpApi['getDivision'](divisionName);
@@ -253,7 +253,7 @@ async function buyIndustryMaterials(
   divisionName: DivisionNames,
   spaceRatio: number
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
 
   const corpApi = nsLocator.corporation;
   const divisionInfo = await corpApi['getDivision'](divisionName);
@@ -281,7 +281,7 @@ async function buyIndustryMaterials(
 }
 
 async function hireEmployees(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   divisionName: string,
   cityName: CityName
 ) {
@@ -295,7 +295,7 @@ async function hireEmployees(
 }
 
 async function createDivision(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   divisionName: string,
   industryType: CorpIndustryName
 ) {
@@ -320,7 +320,7 @@ async function createDivision(
 }
 
 async function createFraudDivisions(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   totalDivisions: number
 ) {
   const corpApi = nsLocator.corporation;
@@ -340,7 +340,7 @@ async function createFraudDivisions(
 }
 
 async function buyCorpUpgrade(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   upgradeName: UpgradeName,
   targetLevel: number
 ) {
@@ -356,7 +356,7 @@ async function buyCorpUpgrade(
 }
 
 async function buyAdvert(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   divisionName: string,
   targetLevel: number
 ) {
@@ -372,7 +372,7 @@ async function buyAdvert(
 }
 
 async function buyMaxAdvert(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   divisionName: string,
   divisionBudget: number
 ) {
@@ -384,7 +384,7 @@ async function buyMaxAdvert(
 }
 
 async function improveWarehouse(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   divisionName: string,
   cityName: CityName,
   targetLevel: number
@@ -398,7 +398,7 @@ async function improveWarehouse(
 }
 
 async function upgradeOffices(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   divisionName: string,
   cities: CityName[],
   officeSize: number
@@ -418,7 +418,7 @@ async function upgradeOffices(
 }
 
 async function assignEmployees(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   divisionName: string,
   officeAssignments: OfficeAssignments[]
 ) {
@@ -448,7 +448,7 @@ async function assignEmployees(
 }
 
 async function setupExport(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   sourceDivisionName: string,
   sourceCityName: CityName,
   targetDivisionName: string,
@@ -474,7 +474,7 @@ async function setupExport(
 }
 
 async function removeAllExports(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   sourceDivisionName: string,
   sourceCityName: CityName,
   materialName: MaterialName
@@ -497,7 +497,7 @@ async function removeAllExports(
 }
 
 async function improveProductDivision(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   divisionName: string,
   budget: number,
   upgradeAdvert = true
@@ -664,7 +664,7 @@ async function improveProductDivision(
 }
 
 async function improveProductDivisionOffices(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   divisionName: string,
   budget: number
 ) {
@@ -673,7 +673,7 @@ async function improveProductDivisionOffices(
 }
 
 async function improveProductMainOffice(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   divisionName: string,
   budget: number
 ) {
@@ -712,7 +712,7 @@ async function improveProductMainOffice(
 }
 
 async function improveProductSupportOffices(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   divisionName: string,
   budget: number
 ) {
@@ -747,7 +747,7 @@ async function improveProductSupportOffices(
 }
 
 async function improveSupportDivision(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   divisionName: string,
   budget: number
 ) {
@@ -802,7 +802,7 @@ async function improveSupportDivision(
 }
 
 async function buyResearchUpgrades(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   divisionName: string,
   researchUpgrades: ResearchName[]
 ) {
@@ -818,7 +818,7 @@ async function takeBestInvestmentOffer(
   nsPackage: NetscriptPackage,
   decreasesBeforeAccept = 2
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
   const corpApi = nsLocator.corporation;
 
@@ -846,7 +846,7 @@ async function resetMultiplierMaterialPurchases(
   divisionName: string,
   cityNames: CityName[]
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const corpApi = nsLocator.corporation;
 
   const taskPromises = [];

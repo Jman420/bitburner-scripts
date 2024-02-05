@@ -6,9 +6,9 @@ import {UniversityName} from '/scripts/data/university-enums';
 import {UniversityData} from '/scripts/data/university-data';
 
 import {
-  NetscriptLocator,
+  NetscriptGhost,
   NetscriptPackage,
-} from '/scripts/netscript-services/netscript-locator';
+} from '/scripts/netscript-services/netscript-ghost';
 import {ProgramName} from '/scripts/data/program-enums';
 import {ProgramData} from '/scripts/data/program-data';
 import {favorToRep, repToFavor} from '/scripts/workflows/formulas';
@@ -41,7 +41,7 @@ async function attendCourse(
   courseType: UniversityClassType,
   waitDelay = 500
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
 
   const singularityApi = nsLocator.singularity;
@@ -56,7 +56,7 @@ async function attendCourse(
   await singularityApi['universityCourse'](universityData.name, courseType);
 }
 
-async function backdoorHost(nsLocator: NetscriptLocator, hostPath: string[]) {
+async function backdoorHost(nsLocator: NetscriptGhost, hostPath: string[]) {
   const singularityApi = nsLocator.singularity;
   for (const hostname of hostPath) {
     await singularityApi['connect'](hostname);
@@ -81,7 +81,7 @@ async function getEligibleAugmentations(
   sortByCost = true,
   includedFactions?: string[]
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
   const singularityApi = nsLocator.singularity;
   const gangApi = nsLocator.gang;
@@ -167,7 +167,7 @@ async function getEligibleAugmentations(
 }
 
 async function getFactionsNeedReputation(nsPackage: NetscriptPackage) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const singularityApi = nsLocator.singularity;
 
   const eligibleAugs = await getEligibleAugmentations(nsPackage, false, false);
@@ -192,7 +192,7 @@ async function getFactionsNeedReputation(nsPackage: NetscriptPackage) {
 }
 
 async function getFactionsNeedFavor(nsPackage: NetscriptPackage) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
   const singularityApi = nsLocator.singularity;
 
@@ -220,7 +220,7 @@ async function getFactionsNeedFavor(nsPackage: NetscriptPackage) {
 }
 
 async function getFactionsNeedReset(nsPackage: NetscriptPackage) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const singularityApi = nsLocator.singularity;
   const gangApi = nsLocator.gang;
 
@@ -258,7 +258,7 @@ async function getFactionsNeedReset(nsPackage: NetscriptPackage) {
 }
 
 async function getPurchasedAugmentations(nsPackage: NetscriptPackage) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const singularityApi = nsLocator.singularity;
 
   const allAugs = await singularityApi['getOwnedAugmentations'](true);

@@ -38,8 +38,8 @@ import {analyzeHost} from '/scripts/workflows/recon';
 import {growHost, hackHost} from '/scripts/workflows/orchestration';
 import {
   NetscriptPackage,
-  getLocatorPackage,
-} from '/scripts/netscript-services/netscript-locator';
+  getGhostPackage,
+} from '/scripts/netscript-services/netscript-ghost';
 import {STOCKS_TRADER_SCRIPT} from '/scripts/stocks-trader';
 
 const CMD_FLAG_ATTACK_HOSTS = 'attackHosts';
@@ -187,7 +187,7 @@ async function runAttacks(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getLocatorPackage(netscript);
+  const nsPackage = getGhostPackage(netscript);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

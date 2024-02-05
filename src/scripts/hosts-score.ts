@@ -28,7 +28,7 @@ import {
   scoreHostForAttack,
   sortOptimalTargetHosts,
 } from '/scripts/workflows/scoring';
-import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
+import {getGhostPackage} from '/scripts/netscript-services/netscript-ghost';
 
 const CMD_FLAG_ARG_WGWH_SCORE_FUNCTION = 'wgwh';
 const CMD_FLAG_ARG_EXP_FARM_FUNCTION = 'expFarm';
@@ -52,7 +52,7 @@ const SUBSCRIBER_NAME = 'hosts-score';
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getLocatorPackage(netscript);
+  const nsPackage = getGhostPackage(netscript);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

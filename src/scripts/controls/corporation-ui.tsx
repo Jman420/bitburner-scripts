@@ -12,7 +12,7 @@ import {CorpExportUI} from '/scripts/controls/corp-export-ui';
 import {CorpPricingUI} from '/scripts/controls/corp-pricing-ui';
 import {CorpSupplyUI} from '/scripts/controls/corp-supply-ui';
 import {CorpRoundsUI} from '/scripts/controls/corp-rounds-ui';
-import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
+import {NetscriptPackage} from '/scripts/netscript-services/netscript-ghost';
 
 const React = getReactModel().reactNS;
 

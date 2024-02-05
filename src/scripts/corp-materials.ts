@@ -24,8 +24,8 @@ import {
 import {getOptimalIndustryMaterials} from '/scripts/workflows/corporation-optimization';
 import {
   NetscriptPackage,
-  getLocatorPackage,
-} from '/scripts/netscript-services/netscript-locator';
+  getGhostPackage,
+} from '/scripts/netscript-services/netscript-ghost';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
 import {EventListener} from '/scripts/comms/event-comms';
 
@@ -56,7 +56,7 @@ async function purchaseMaterials(
   cityNames: CityName[],
   storageSize: number
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
   const corpApi = nsLocator.corporation;
 
@@ -156,8 +156,8 @@ async function handleExit(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getLocatorPackage(netscript);
-  const nsLocator = nsPackage.locator;
+  const nsPackage = getGhostPackage(netscript);
+  const nsLocator = nsPackage.ghost;
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

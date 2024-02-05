@@ -19,8 +19,8 @@ import {infiniteLoop, initializeScript} from '/scripts/workflows/execution';
 import {SCRIPTS_DIR} from '/scripts/common/shared';
 import {
   NetscriptPackage,
-  getLocatorPackage,
-} from '/scripts/netscript-services/netscript-locator';
+  getGhostPackage,
+} from '/scripts/netscript-services/netscript-ghost';
 import {openTail} from '/scripts/workflows/ui';
 import {EventListener, sendMessage} from '/scripts/comms/event-comms';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
@@ -297,7 +297,7 @@ function handleExit(eventData: ExitEvent, netscript: NS) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getLocatorPackage(netscript);
+  const nsPackage = getGhostPackage(netscript);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

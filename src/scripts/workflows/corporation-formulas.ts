@@ -15,7 +15,7 @@ import {
   INDUSTRY_MULTIPLIER_MATERIALS,
   ResearchUpgrade,
 } from '/scripts/workflows/corporation-shared';
-import {NetscriptLocator} from '/scripts/netscript-services/netscript-locator';
+import {NetscriptGhost} from '/scripts/netscript-services/netscript-ghost';
 
 interface OfficeAssignments {
   city: CityName;
@@ -180,7 +180,7 @@ function getAdvertisingFactor(
 }
 
 async function getDivisionProductLimit(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   divisionName: string
 ) {
   const corpApi = nsLocator.corporation;
@@ -222,7 +222,7 @@ function getDivisionProductionMultiplier(
 }
 
 async function getOfficeProductionMultiplier(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   divisionName: string,
   cityName: CityName
 ) {
@@ -251,7 +251,7 @@ async function getOfficeProductionMultiplier(
 }
 
 async function getOfficeMaxProduction(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   divisionName: string,
   cityName: CityName
 ) {
@@ -306,7 +306,7 @@ async function getOfficeMaxProduction(
 }
 
 async function getOfficeLimitedProduction(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   divisionName: string,
   cityName: CityName,
   productSize?: number
@@ -446,7 +446,7 @@ function getPricingBalanceFactor(
 }
 
 async function addStockedIndustryMaterials(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   divisionName: string,
   optimalIndustryMaterials: Map<CorpMaterialName, number>
 ) {
@@ -465,7 +465,7 @@ async function addStockedIndustryMaterials(
 }
 
 async function getAffordableResearchUpgrades(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   divisionName: string
 ) {
   const corpApi = nsLocator.corporation;

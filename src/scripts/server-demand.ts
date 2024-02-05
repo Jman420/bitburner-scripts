@@ -24,8 +24,8 @@ import {
 import {openTail} from '/scripts/workflows/ui';
 import {
   NetscriptPackage,
-  getLocatorPackage,
-} from '/scripts/netscript-services/netscript-locator';
+  getGhostPackage,
+} from '/scripts/netscript-services/netscript-ghost';
 
 const CMD_FLAG_AMOUNT = 'amount';
 const CMD_FLAG_RAM_AMOUNT = 'ramAmount';
@@ -56,7 +56,7 @@ function getServerOrders(
   serverNamePrefix: string,
   farmHosts: string[]
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
 
   logWriter.writeLine(
@@ -145,8 +145,8 @@ async function manageOrders(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getLocatorPackage(netscript);
-  const nsLocator = nsPackage.locator;
+  const nsPackage = getGhostPackage(netscript);
+  const nsLocator = nsPackage.ghost;
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

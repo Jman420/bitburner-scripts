@@ -65,8 +65,8 @@ import {
 } from '/scripts/corp-product';
 import {
   NetscriptPackage,
-  getLocatorPackage,
-} from '/scripts/netscript-services/netscript-locator';
+  getGhostPackage,
+} from '/scripts/netscript-services/netscript-ghost';
 import {killWorkerScripts} from '/scripts/workflows/orchestration';
 import {EventListener} from '/scripts/comms/event-comms';
 import {ExitEvent} from '/scripts/comms/events/exit-event';
@@ -125,8 +125,8 @@ async function handleExit(eventData: ExitEvent, nsPackage: NetscriptPackage) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getLocatorPackage(netscript);
-  const nsLocator = nsPackage.locator;
+  const nsPackage = getGhostPackage(netscript);
+  const nsLocator = nsPackage.ghost;
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

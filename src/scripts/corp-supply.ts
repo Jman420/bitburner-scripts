@@ -10,10 +10,10 @@ import {getOfficeLimitedProduction} from '/scripts/workflows/corporation-formula
 import {ExitEvent} from '/scripts/comms/events/exit-event';
 import {sendMessage} from '/scripts/comms/event-comms';
 import {
-  NetscriptLocator,
+  NetscriptGhost,
   NetscriptPackage,
-  getLocatorPackage,
-} from '/scripts/netscript-services/netscript-locator';
+  getGhostPackage,
+} from '/scripts/netscript-services/netscript-ghost';
 import {infiniteLoop} from '/scripts/workflows/execution';
 import {CorpState} from '/scripts/data/corporation-enums';
 
@@ -30,7 +30,7 @@ const MAX_CONGESTION_COUNT = 5;
 let officeProductionMap: Map<string, number>;
 let warehouseCongestionMap: Map<string, number>;
 
-async function handleShutdown(nsLocator: NetscriptLocator) {
+async function handleShutdown(nsLocator: NetscriptGhost) {
   const corpApi = nsLocator.corporation;
   const corporationInfo = await corpApi['getCorporation']();
   for (const divisionName of corporationInfo.divisions) {
@@ -69,7 +69,7 @@ async function monitorOfficeProduction(
   nsPackage: NetscriptPackage,
   logWriter: Logger
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
 
   await waitForState(netscript, CorpState.PURCHASE);
@@ -132,7 +132,7 @@ async function monitorWarehouseCongestion(
   nsPackage: NetscriptPackage,
   logWriter: Logger
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
 
   await waitForState(netscript, CorpState.PRODUCTION);
@@ -198,7 +198,7 @@ async function monitorWarehouseCongestion(
 }
 
 async function manageWarehouse(nsPackage: NetscriptPackage, logWriter: Logger) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
 
   await waitForState(netscript, CorpState.START);
@@ -342,8 +342,8 @@ async function manageWarehouse(nsPackage: NetscriptPackage, logWriter: Logger) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getLocatorPackage(netscript);
-  const nsLocator = nsPackage.locator;
+  const nsPackage = getGhostPackage(netscript);
+  const nsLocator = nsPackage.ghost;
 
   netscript.atExit(async () => {
     handleShutdown(nsLocator);

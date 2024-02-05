@@ -1,6 +1,6 @@
 import {NS} from '@ns';
 
-import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
+import {getGhostPackage} from '/scripts/netscript-services/netscript-ghost';
 
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {scanWideNetwork} from '/scripts/workflows/recon';
@@ -13,8 +13,8 @@ const SUBSCRIBER_NAME = 'contracts-find';
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getLocatorPackage(netscript);
-  const nsLocator = nsPackage.locator;
+  const nsPackage = getGhostPackage(netscript);
+  const nsLocator = nsPackage.ghost;
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

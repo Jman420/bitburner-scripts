@@ -2,8 +2,8 @@ import {AutocompleteData, NS} from '@ns';
 
 import {
   NetscriptPackage,
-  getLocatorPackage,
-} from '/scripts/netscript-services/netscript-locator';
+  getGhostPackage,
+} from '/scripts/netscript-services/netscript-ghost';
 
 import {Logger, LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
@@ -41,7 +41,7 @@ async function solveContracts(
   includeHome: boolean,
   logWriter: Logger
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
 
   logWriter.writeLine('Finding coding contracts...');
   const codingContacts = await findContracts(nsPackage, includeHome);
@@ -76,7 +76,7 @@ async function solveContracts(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getLocatorPackage(netscript);
+  const nsPackage = getGhostPackage(netscript);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const terminalWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

@@ -1,9 +1,9 @@
 import {NS} from '@ns';
 
 import {
-  NetscriptLocator,
+  NetscriptGhost,
   NetscriptPackage,
-} from '/scripts/netscript-services/netscript-locator';
+} from '/scripts/netscript-services/netscript-ghost';
 
 // https://github.com/bitburner-official/bitburner-src/blob/dev/src/Faction/formulas/favor.ts#L5
 function favorToRep(f: number): number {
@@ -23,7 +23,7 @@ function repDonationAmount(netscript: NS, repAmount: number) {
 }
 
 async function weakenThreadsRequired(
-  nsLocator: NetscriptLocator,
+  nsLocator: NetscriptGhost,
   targetReduction: number
 ) {
   return Math.ceil(targetReduction / (await nsLocator['weakenAnalyze'](1)));
@@ -34,7 +34,7 @@ async function growThreadsRequired(
   hostname: string,
   targetFunds: number
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
 
   const playerInfo = netscript.getPlayer();
@@ -52,7 +52,7 @@ async function hackThreadsRequired(
   hostname: string,
   targetHackFundsPercent: number
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
 
   const playerInfo = netscript.getPlayer();

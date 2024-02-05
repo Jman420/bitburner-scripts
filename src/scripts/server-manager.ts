@@ -24,8 +24,8 @@ import {
 } from '/scripts/workflows/server-farm';
 import {
   NetscriptPackage,
-  getLocatorPackage,
-} from '/scripts/netscript-services/netscript-locator';
+  getGhostPackage,
+} from '/scripts/netscript-services/netscript-ghost';
 
 const CMD_FLAG_MIN_RAM = 'minimumRam';
 const CMD_FLAGS_SCHEMA: CmdArgsSchema = [
@@ -44,7 +44,7 @@ function sortUpgradeOrders(upgradeOrders: Array<ServerFarmOrder>) {
 }
 
 async function initializeUpgradeOrders(nsPackage: NetscriptPackage) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
 
   const upgradeOrders = [];
@@ -63,7 +63,7 @@ async function manageOrdersAndPurchases(
   namePrefix: string,
   minRamOrder = 2
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
 
   logWriter.writeLine('Checking Server Farm Purchase Node Order...');
@@ -133,7 +133,7 @@ async function manageOrdersAndPurchases(
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getLocatorPackage(netscript);
+  const nsPackage = getGhostPackage(netscript);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.TERMINAL);

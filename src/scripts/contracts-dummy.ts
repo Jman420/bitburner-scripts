@@ -1,6 +1,6 @@
 import {AutocompleteData, NS} from '@ns';
 
-import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
+import {getGhostPackage} from '/scripts/netscript-services/netscript-ghost';
 
 import {LoggerMode, getLogger} from '/scripts/logging/loggerManager';
 import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
@@ -26,8 +26,8 @@ let CONTRACT_TYPES: string[];
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getLocatorPackage(netscript);
-  const nsLocator = nsPackage.locator;
+  const nsPackage = getGhostPackage(netscript);
+  const nsLocator = nsPackage.ghost;
   const contractApi = nsLocator.codingcontract;
 
   CONTRACT_TYPES = (await contractApi['getContractTypes']()).map(

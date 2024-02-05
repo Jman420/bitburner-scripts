@@ -1,6 +1,6 @@
 import {CodingContractData} from '@ns';
 
-import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
+import {NetscriptPackage} from '/scripts/netscript-services/netscript-ghost';
 
 import {scanWideNetwork} from '/scripts/workflows/recon';
 
@@ -137,7 +137,7 @@ async function findContracts(
   includeHome = false,
   targetHosts?: string[]
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
   const contractApi = nsLocator.codingcontract;
 

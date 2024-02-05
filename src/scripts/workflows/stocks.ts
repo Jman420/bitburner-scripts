@@ -2,9 +2,9 @@ import {NS} from '@ns';
 import {runScript} from '/scripts/workflows/execution';
 import {scanWideNetwork} from '/scripts/workflows/recon';
 import {
-  NetscriptLocator,
+  NetscriptGhost,
   NetscriptPackage,
-} from '/scripts/netscript-services/netscript-locator';
+} from '/scripts/netscript-services/netscript-ghost';
 import {SCRIPTS_DIR} from '/scripts/common/shared';
 
 type BuySellStockFunction = (
@@ -76,7 +76,7 @@ function runStockTicker(netscript: NS) {
   return stockForecastPid !== 0;
 }
 
-async function getStockPosition(nsLocator: NetscriptLocator, symbol: string) {
+async function getStockPosition(nsLocator: NetscriptGhost, symbol: string) {
   const [longShares, longPrice, shortShares, shortPrice] =
     await nsLocator.stock['getPosition'](symbol);
   const result: StockPosition = {
@@ -89,7 +89,7 @@ async function getStockPosition(nsLocator: NetscriptLocator, symbol: string) {
 }
 
 async function getPortfolioValue(nsPackage: NetscriptPackage) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
   const stockApi = nsLocator.stock;
 
@@ -155,7 +155,7 @@ async function sellPosition(
   return saleTotal - saleCost;
 }
 
-async function sellPortfolio(nsLocator: NetscriptLocator) {
+async function sellPortfolio(nsLocator: NetscriptGhost) {
   const stockApi = nsLocator.stock;
 
   if (!(await stockApi['hasTIXAPIAccess']())) {
@@ -178,7 +178,7 @@ async function getHostnamesFromSymbol(
   nsPackage: NetscriptPackage,
   symbol: string
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
 
   const results = [];

@@ -16,9 +16,9 @@ import {StocksTickerEvent} from '/scripts/comms/events/stocks-ticker-event';
 import {StockListingsRequest} from '/scripts/comms/requests/stocks-listing-request';
 import {StockListingsResponse} from '/scripts/comms/responses/stocks-listing-response';
 import {
-  getLocatorPackage,
+  getGhostPackage,
   NetscriptPackage,
-} from '/scripts/netscript-services/netscript-locator';
+} from '/scripts/netscript-services/netscript-ghost';
 
 class FixedLengthQueue<TElement> extends Array<TElement> {
   readonly fixedLength: number;
@@ -57,7 +57,7 @@ async function updateStockListings(
   nsPackage: NetscriptPackage,
   logWriter: Logger
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
 
   logWriter.writeLine('Updating Stock Listings from Historical Market Data');
@@ -146,7 +146,7 @@ function sendListings(eventData: StockListingsRequest) {
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getLocatorPackage(netscript);
+  const nsPackage = getGhostPackage(netscript);
 
   initializeScript(netscript, SUBSCRIBER_NAME);
   const logWriter = getLogger(netscript, MODULE_NAME, LoggerMode.SCRIPT);

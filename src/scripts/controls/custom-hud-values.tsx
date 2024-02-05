@@ -16,7 +16,7 @@ import {getPortfolioValue, TOTAL_STOCKS} from '/scripts/workflows/stocks';
 import {
   NetscriptExtended,
   NetscriptPackage,
-} from '/scripts/netscript-services/netscript-locator';
+} from '/scripts/netscript-services/netscript-ghost';
 import {getPlayerTotalValue} from '/scripts/workflows/player';
 
 const React = getReactModel().reactNS;
@@ -71,7 +71,7 @@ async function updatePolledMetrics(
   setKarmaLevel: ReactSetStateFunction<string>,
   setPlayerTotalValue: ReactSetStateFunction<string>
 ) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
   const netscriptExtended = netscript as NetscriptExtended;
 

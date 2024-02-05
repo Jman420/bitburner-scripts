@@ -42,7 +42,7 @@ import {
   CMD_FLAG_BUDGET_PERCENT,
 } from '/scripts/corp-product';
 import {FRAUD_DIVISION_NAME_PREFIX} from '/scripts/workflows/corporation-shared';
-import {NetscriptPackage} from '/scripts/netscript-services/netscript-locator';
+import {NetscriptPackage} from '/scripts/netscript-services/netscript-ghost';
 
 interface InterfaceControls {
   divisionName?: HTMLSelectElement;
@@ -180,7 +180,7 @@ function ProductLifecycleUI({
   nsPackage: NetscriptPackage;
   eventListener: EventListener;
 }) {
-  const nsLocator = nsPackage.locator;
+  const nsLocator = nsPackage.ghost;
   const netscript = nsPackage.netscript;
 
   const uiStyle = netscript.ui.getStyles();

@@ -12,7 +12,7 @@ import {
 } from '/scripts/workflows/cmd-args';
 
 import {initializeScript} from '/scripts/workflows/execution';
-import {getLocatorPackage} from '/scripts/netscript-services/netscript-locator';
+import {getGhostPackage} from '/scripts/netscript-services/netscript-ghost';
 import {NEUROFLUX_AUGMENTATION_NAME} from '/scripts/workflows/singularity';
 
 const CMD_FLAG_FACTION = 'faction';
@@ -26,8 +26,8 @@ let FACTION_NAMES: string[];
 
 /** @param {NS} netscript */
 export async function main(netscript: NS) {
-  const nsPackage = getLocatorPackage(netscript);
-  const nsLocator = nsPackage.locator;
+  const nsPackage = getGhostPackage(netscript);
+  const nsLocator = nsPackage.ghost;
   const singularityApi = nsLocator.singularity;
 
   FACTION_NAMES = netscript.getPlayer().factions;
