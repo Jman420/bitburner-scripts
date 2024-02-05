@@ -136,6 +136,8 @@ class NetscriptProxyHandler<TTarget extends NS>
               `Unable to offload netscript function ${memberNameStr} - Endpoint function not found`
             );
           }
+
+          // TODO (JMG) : After calling endpoint() write to service port to allow script to exit
           return await endpoint(...argArray);
         },
       });

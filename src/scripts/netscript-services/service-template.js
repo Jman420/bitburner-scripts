@@ -30,5 +30,6 @@ export async function main(netscript) {
   registerEndpoint(netscript.path, 'FUNCTION_NAME', handleServiceCall.bind(undefined, netscript));
   netscript.writePort(netscript.pid, 1);
 
+  // TODO (JMG) : Replace shutdown logic with logic to await another write to its PID Port
   while (!await handleShutdown(netscript)) {}
 }

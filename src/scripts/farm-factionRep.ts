@@ -14,17 +14,13 @@ import {
 import {openTail} from '/scripts/workflows/ui';
 import {SCRIPTS_DIR} from '/scripts/common/shared';
 
-import {scanWideNetwork} from '/scripts/workflows/recon';
 import {WORKERS_PACKAGE} from '/scripts/workers/package';
 import {
   SHARE_RAM_WORKER_SCRIPT,
+  runWorkerScript,
   waitForWorkers,
 } from '/scripts/workflows/orchestration';
-import {
-  infiniteLoop,
-  initializeScript,
-  runScript,
-} from '/scripts/workflows/execution';
+import {infiniteLoop, initializeScript} from '/scripts/workflows/execution';
 
 import {FactionReputationFarmConfig} from '/scripts/workflows/farms';
 import {EventListener, sendMessage} from '/scripts/comms/event-comms';
@@ -50,26 +46,15 @@ let scriptConfig: FactionReputationFarmConfig;
 let workerPids: number[] | undefined;
 
 async function shareRam(netscript: NS, logWriter: Logger) {
-  logWriter.writeLine('Identifying available targets...');
-  const targetHosts = scanWideNetwork(netscript, {
-    includeHome: scriptConfig.includeHome,
-    rootOnly: true,
-    requireRam: true,
-  });
-  logWriter.writeLine(`Found ${targetHosts.length} target hosts.`);
-
   logWriter.writeLine('Sharing RAM to boost faction reputation gains...');
-  workerPids = [];
-  for (const hostname of targetHosts) {
-    netscript.scp(WORKERS_PACKAGE, hostname);
-    workerPids.push(
-      runScript(netscript, SHARE_RAM_WORKER_SCRIPT, {
-        hostname: hostname,
-        useMaxThreads: true,
-        tempScript: true,
-      })
-    );
-  }
+  workerPids = runWorkerScript(
+    netscript,
+    SHARE_RAM_WORKER_SCRIPT,
+    WORKERS_PACKAGE,
+    true,
+    1,
+    scriptConfig.includeHome
+  );
 
   logWriter.writeLine('Waiting for all RAM sharing to complete...');
   await waitForWorkers(netscript, workerPids);

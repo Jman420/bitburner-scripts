@@ -11,5 +11,6 @@ export async function main(netscript: NS) {
   logWriter.writeLine(SECTION_DIVIDER);
 
   await netscript.share();
+  netscript.writePort(netscript.pid, 'true');
   logWriter.writeLine(SECTION_DIVIDER);
 }

@@ -11,7 +11,6 @@ import {
 } from '/scripts/netscript-services/netscript-locator';
 import {ProgramName} from '/scripts/data/program-enums';
 import {ProgramData} from '/scripts/data/program-data';
-import {favorToRep, repToFavor} from '/scripts/workflows/formulas';
 import {FactionData} from '/scripts/data/faction-data';
 
 const NEUROFLUX_AUGMENTATION_NAME = 'NeuroFlux Governor';
@@ -195,24 +194,24 @@ async function getFactionsNeedFavor(nsPackage: NetscriptPackage) {
   const nsLocator = nsPackage.locator;
   const netscript = nsPackage.netscript;
   const singularityApi = nsLocator.singularity;
+  const reputationApi = netscript.formulas.reputation;
 
   const favorToDonate = netscript.getFavorToDonate();
-  const repForDonateFavor = favorToRep(favorToDonate);
+  const repForDonateFavor = reputationApi.calculateFavorToRep(favorToDonate);
   const eligibleFactions = Object.values(FactionData).filter(
     value => value.criticalPath
   );
   const factionsNeedFavor = new Map<string, number>(); // Key : factionName ; Value : reputation requirement
   for (const factionInfo of eligibleFactions) {
     const factionName = factionInfo.name;
-    const currentFactionFavor =
-      await singularityApi['getFactionFavor'](factionName);
-    const currentFactionRep =
-      await singularityApi['getFactionRep'](factionName);
-    if (
-      currentFactionFavor < favorToDonate &&
-      currentFactionRep < repForDonateFavor
-    ) {
-      factionsNeedFavor.set(factionName, repForDonateFavor - currentFactionRep);
+
+    const factionFavor = await singularityApi['getFactionFavor'](factionName);
+    const storedRep = reputationApi.calculateFavorToRep(factionFavor);
+    const earnedRep = await singularityApi['getFactionRep'](factionName);
+    const totalRep = storedRep + earnedRep;
+
+    if (totalRep < repForDonateFavor) {
+      factionsNeedFavor.set(factionName, repForDonateFavor - totalRep);
     }
   }
 
@@ -221,8 +220,10 @@ async function getFactionsNeedFavor(nsPackage: NetscriptPackage) {
 
 async function getFactionsNeedReset(nsPackage: NetscriptPackage) {
   const nsLocator = nsPackage.locator;
+  const netscript = nsPackage.netscript;
   const singularityApi = nsLocator.singularity;
   const gangApi = nsLocator.gang;
+  const reputationApi = netscript.formulas.reputation;
 
   const eligibleFactions = [
     ...new Set(
@@ -246,13 +247,21 @@ async function getFactionsNeedReset(nsPackage: NetscriptPackage) {
       value => value.name !== gangInfo.faction
     );
   }
-  const factionsNeedReset = factionsInfo.filter(
-    value =>
-      (value.favor < 66 && value.favor + repToFavor(value.reputation) >= 66) ||
-      (value.favor >= 66 &&
-        value.favor < 150 &&
-        value.favor + repToFavor(value.reputation) >= 150)
-  );
+
+  const favorToDonate = netscript.getFavorToDonate();
+  const midFavorToDonate = favorToDonate * 0.44;
+  const factionsNeedReset = factionsInfo.filter(value => {
+    const storedRep = reputationApi.calculateFavorToRep(value.favor);
+    const totalRep = storedRep + value.reputation;
+    const resetFavor = reputationApi.calculateRepToFavor(totalRep);
+
+    return (
+      (value.favor < midFavorToDonate && resetFavor >= midFavorToDonate) ||
+      (value.favor >= midFavorToDonate &&
+        value.favor < favorToDonate &&
+        resetFavor >= favorToDonate)
+    );
+  });
 
   return factionsNeedReset;
 }

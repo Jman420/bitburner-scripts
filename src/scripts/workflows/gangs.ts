@@ -14,6 +14,7 @@ import {
 import {SCRIPTS_DIR} from '/scripts/common/shared';
 
 type AscentionProperties<T> = {
+  /* eslint-disable-next-line @typescript-eslint/no-unused-vars */
   [K in keyof T as K extends `${infer Prefix}_asc_mult` ? K : never]: T[K];
 };
 

@@ -5,7 +5,11 @@ import {SECTION_DIVIDER} from '/scripts/logging/logOutput';
 
 import {getCmdFlag} from '/scripts/workflows/cmd-args';
 
-import {initializeScript, runScript} from '/scripts/workflows/execution';
+import {
+  getPid,
+  initializeScript,
+  runScript,
+} from '/scripts/workflows/execution';
 import {openTail} from '/scripts/workflows/ui';
 
 import {
@@ -45,6 +49,10 @@ import {
   CORP_ROUND4_SCRIPT,
   ROUND1_ADVERT_LEVEL as CORP_ROUND1_ADVERT_LEVEL,
   corpHasIncome,
+  PRICING_SETUP_SCRIPT,
+  SMART_SUPPLY_SCRIPT,
+  TEA_PARTY_SCRIPT,
+  PRODUCT_LIFECYCLE_SCRIPT,
 } from '/scripts/workflows/corporation-shared';
 import {REQUIRED_FUNDS as CORP_ROUND2_REQUIRED_FUNDS} from '/scripts/corp-round2';
 import {REQUIRED_FUNDS as CORP_ROUND3_REQUIRED_FUNDS} from '/scripts/corp-round3';
@@ -102,6 +110,9 @@ import {FarmHackExpConfigEvent} from '/scripts/comms/events/farm-hackExp-config-
 import {WgwhManagerConfigEvent} from '/scripts/comms/events/wgwh-manager-config-event';
 import {FarmFactionRepConfigEvent} from '/scripts/comms/events/farm-factionRep-config-event';
 import {HacknetManagerConfigEvent} from '/scripts/comms/events/hacknet-manager-config-event';
+import {CMD_FLAG_DIVISION_NAME} from '/scripts/corp-export';
+import {CMD_FLAG_DESIGN_CITY_NAME} from '/scripts/corp-product';
+import {DEFAULT_PRODUCT_DESIGN_OFFICE} from '/scripts/workflows/corporation-actions';
 
 const SINGULARITY_AUTO_SCRIPT = `${SCRIPTS_DIR}/singularity-auto.js`;
 
@@ -475,9 +486,9 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
   logWriter.writeLine(
     `${logPrefix} Earning reputation for factions to buy augmentations...`
   );
-  let factionsNeedFavor = await getFactionsNeedFavor(nsPackage);
-  let factionsNeedRep = await getFactionsNeedReputation(nsPackage);
-  while (factionsNeedFavor.size > 0 || factionsNeedRep.size > 0) {
+  /* eslint-disable-next-line no-constant-condition */
+  while (true) {
+    const factionsNeedRep = await getFactionsNeedReputation(nsPackage);
     const currentWork = (await singularityApi['getCurrentWork']()) as
       | StudyTask
       | undefined;
@@ -505,19 +516,7 @@ async function handleWorkTasks(nsPackage: NetscriptPackage, logWriter: Logger) {
     }
 
     await netscript.asleep(WAIT_DELAY);
-    factionsNeedFavor = await getFactionsNeedFavor(nsPackage);
-    factionsNeedRep = await getFactionsNeedReputation(nsPackage);
   }
-
-  logWriter.writeLine(
-    `${logPrefix} Taking Algorithms course at ZB Institute...`
-  );
-  await attendCourse(
-    nsPackage,
-    UniversityName.ZB,
-    netscript.enums.UniversityClassType.algorithms
-  );
-  logWriter.writeLine(`${logPrefix} Complete!`);
 }
 
 /* Factions Task Overview
@@ -963,20 +962,48 @@ async function handleCorporation(
     {
       round: 1,
       scriptPath: CORP_ROUND1_SCRIPT,
-      nextRoundFunds: CORP_ROUND2_REQUIRED_FUNDS,
-      waitForFunds: async () =>
-        (await corpApi['getHireAdVertCount'](DivisionNames.AGRICULTURE)) <=
-        CORP_ROUND1_ADVERT_LEVEL,
     },
     {
       round: 2,
       scriptPath: CORP_ROUND2_SCRIPT,
-      nextRoundFunds: CORP_ROUND3_REQUIRED_FUNDS,
+      requiredFunds: CORP_ROUND2_REQUIRED_FUNDS,
+      waitForFunds: async () =>
+        (await corpApi['getHireAdVertCount'](DivisionNames.AGRICULTURE)) <=
+        CORP_ROUND1_ADVERT_LEVEL,
+      runSupportScripts: () => {
+        runScript(netscript, PRICING_SETUP_SCRIPT);
+        runScript(netscript, SMART_SUPPLY_SCRIPT);
+      },
+    },
+    {
+      round: 3,
+      scriptPath: CORP_ROUND3_SCRIPT,
+      requiredFunds: CORP_ROUND3_REQUIRED_FUNDS,
       waitForFunds: async () =>
         !corpInfo.divisions.includes(DivisionNames.TOBACCO),
+      runSupportScripts: () => {
+        runScript(netscript, PRICING_SETUP_SCRIPT);
+        runScript(netscript, SMART_SUPPLY_SCRIPT);
+        runScript(netscript, TEA_PARTY_SCRIPT);
+      },
     },
-    {round: 3, scriptPath: CORP_ROUND3_SCRIPT},
-    {round: 4, scriptPath: CORP_ROUND4_SCRIPT},
+    {
+      round: 4,
+      scriptPath: CORP_ROUND4_SCRIPT,
+      runSupportScripts: () => {
+        runScript(netscript, PRICING_SETUP_SCRIPT);
+        runScript(netscript, SMART_SUPPLY_SCRIPT);
+        runScript(netscript, TEA_PARTY_SCRIPT);
+
+        const scriptArgs = [
+          getCmdFlag(CMD_FLAG_DIVISION_NAME),
+          DivisionNames.TOBACCO,
+          getCmdFlag(CMD_FLAG_DESIGN_CITY_NAME),
+          DEFAULT_PRODUCT_DESIGN_OFFICE,
+        ];
+        runScript(netscript, PRODUCT_LIFECYCLE_SCRIPT, {args: scriptArgs});
+      },
+    },
   ];
 
   let corpInfo = await corpApi['getCorporation']();
@@ -985,19 +1012,24 @@ async function handleCorporation(
     const autoRoundInfo = autoInvestmentRounds[investmentInfo.round - 1];
 
     if (
-      autoRoundInfo.nextRoundFunds &&
+      autoRoundInfo.requiredFunds &&
       autoRoundInfo.waitForFunds &&
       (await autoRoundInfo.waitForFunds())
     ) {
       logWriter.writeLine(
+        `${logPrefix} Running support scripts for round ${autoRoundInfo.round}...`
+      );
+      autoRoundInfo.runSupportScripts();
+
+      logWriter.writeLine(
         `${logPrefix} Waiting for sufficient funds for round ${
-          autoRoundInfo.round + 1
+          autoRoundInfo.round
         } investment automation : $${netscript.formatNumber(
-          autoRoundInfo.nextRoundFunds
+          autoRoundInfo.requiredFunds
         )}`
       );
       corpInfo = await corpApi['getCorporation']();
-      while (corpInfo.funds < autoRoundInfo.nextRoundFunds) {
+      while (corpInfo.funds < autoRoundInfo.requiredFunds) {
         await netscript.asleep(WAIT_DELAY);
         corpInfo = await corpApi['getCorporation']();
       }
@@ -1006,11 +1038,14 @@ async function handleCorporation(
     logWriter.writeLine(
       `${logPrefix} Running round ${autoRoundInfo.round} investment automation...`
     );
-    await killWorkerScripts(nsPackage);
-    const autoRoundScriptPid = runScript(netscript, autoRoundInfo.scriptPath, {
-      args: corpRoundScriptArgs,
-      tempScript: true,
-    });
+    let autoRoundScriptPid = getPid(netscript, autoRoundInfo.scriptPath);
+    if (autoRoundScriptPid < 1) {
+      await killWorkerScripts(nsPackage);
+      autoRoundScriptPid = runScript(netscript, autoRoundInfo.scriptPath, {
+        args: corpRoundScriptArgs,
+        tempScript: true,
+      });
+    }
     await waitForScripts(netscript, [autoRoundScriptPid]);
     investmentInfo = await corpApi['getInvestmentOffer']();
   }
@@ -1399,15 +1434,20 @@ export async function main(netscript: NS) {
 
   scriptLogWriter.writeLine('Running concurrent tasks...');
   const concurrentTasks = [];
-  concurrentTasks.push(handleHacking(nsPackage, scriptLogWriter));
-  concurrentTasks.push(handleWorkTasks(nsPackage, scriptLogWriter));
-  concurrentTasks.push(handleFactions(nsPackage, scriptLogWriter));
-  concurrentTasks.push(handleHomeServer(nsPackage, scriptLogWriter));
-  concurrentTasks.push(handleTor(nsPackage, scriptLogWriter));
-  concurrentTasks.push(handleStockMarket(nsPackage, scriptLogWriter));
+  // NOTE : Run tasks which require additional scripts first to ensure there is RAM for their execution
   concurrentTasks.push(handleGang(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleCorporation(nsPackage, scriptLogWriter));
+  concurrentTasks.push(handleStockMarket(nsPackage, scriptLogWriter));
+
+  concurrentTasks.push(handleHacking(nsPackage, scriptLogWriter)); // NOTE : Run the hacking task after any tasks which require additional scripts; this is a RAM greedy task
+  concurrentTasks.push(handleWorkTasks(nsPackage, scriptLogWriter));
+  concurrentTasks.push(handleFactions(nsPackage, scriptLogWriter));
+
+  concurrentTasks.push(handleHomeServer(nsPackage, scriptLogWriter));
+  concurrentTasks.push(handleTor(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleBribes(nsPackage, scriptLogWriter));
+
+  // TODO (JMG) : Add task to claim favor for backups when available
   concurrentTasks.push(handleAugmentations(nsPackage, scriptLogWriter));
   concurrentTasks.push(handleSoftReset(nsPackage, scriptLogWriter));
   await Promise.all(concurrentTasks);
